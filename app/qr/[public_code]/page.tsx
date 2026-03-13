@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchApi } from '../../../lib/api';
+import { fetchApi } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function QRResolve({ params }: { params: { public_code: string } }) {
