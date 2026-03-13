@@ -5,7 +5,7 @@ const API_BASE = 'http://localhost:3001/api/v1';
 export async function ensureAnonymousUser() {
   let token = getUserToken();
   if (!token) {
-    const res = await fetch(\`\${API_BASE}/auth/user/anonymous\`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/auth/user/anonymous`, { method: 'POST' });
     const data = await res.json();
     if (data.status === 'success') {
       token = data.data.access_token;
@@ -22,16 +22,16 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     token = await ensureAnonymousUser();
   }
 
-  const headers: HeadersInit = {
+  const headers = new Headers({
     'Content-Type': 'application/json',
     ...(options.headers || {}),
-  };
+  });
 
   if (token) {
-    headers['Authorization'] = \`Bearer \${token}\`;
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(\`\${API_BASE}\${endpoint}\`, {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
   });
