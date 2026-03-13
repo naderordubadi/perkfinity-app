@@ -51,49 +51,48 @@ export default function Home() {
         border: '1px solid rgba(255, 255, 255, 0.1)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        gap: '1.5rem',
-        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
-        marginTop: '1rem'
+        borderRadius: '32px',
+        padding: '2.5rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        width: '100%',
+        maxWidth: '360px',
+        position: 'relative',
+        zIndex: 1
       }}>
         <div style={{
-          width: '80px',
-          height: '80px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '24px',
+          width: '64px',
+          height: '64px',
+          background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+          borderRadius: '20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
+          fontSize: '1.5rem',
+          margin: '0 auto 1.5rem auto',
+          boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.3)'
         }}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <rect x="7" y="7" width="3" height="3"/>
-            <rect x="14" y="7" width="3" height="3"/>
-            <rect x="7" y="14" width="3" height="3"/>
-            <path d="M14 14h3v3h-3z"/>
-          </svg>
+          ✨
         </div>
         
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>Ready to Save?</h2>
-          <p style={{ color: '#94A3B8', margin: 0, fontSize: '0.875rem' }}>Scan a merchant QR code at the checkout to reveal your instant reward.</p>
-        </div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.75rem' }}>Ready to Claim?</h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9375rem', marginBottom: '2rem' }}>
+          Join the privacy-first rewards network and start saving at your favorite stores.
+        </p>
 
-        <a href="/scan" style={{
+        <a href="/onboarding" style={{
+          display: 'block',
           width: '100%',
-          padding: '1rem',
+          padding: '1.25rem',
           background: '#fff',
-          color: '#0F172A',
-          textAlign: 'center',
-          textDecoration: 'none',
+          color: '#000',
           borderRadius: '16px',
-          fontWeight: 600,
+          textDecoration: 'none',
+          fontWeight: 700,
           fontSize: '1rem',
-          boxShadow: '0 4px 12px rgba(255,255,255,0.1)',
-          transition: 'transform 0.2s active'
+          transition: 'all 0.2s ease',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
         }}>
-          Launch Scanner
+          Get Started
         </a>
       </div>
 

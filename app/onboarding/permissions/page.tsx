@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function PermissionsPage() {
+  const [locStatus, setLocStatus] = useState<"idle" | "granted" | "denied">("idle");
+  const [notifStatus, setNotifStatus] = useState<"idle" | "granted" | "denied">("idle");
+  const router = useRouter();
+
+  const requestLocation = async () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      () => setLocStatus("granted"),
+      () => setLocStatus("denied")
+    );
+  };
+
+  const requestNotifications = async () => {
+    if (!("Notification" in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotifStatus(permission === "granted" ? "granted" : "denied");
+  };
+
+  return (
+    <div style={{
+      height: '100vh',
+      background: '#0F172A',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '2rem',
+      color: '#fff',
+      fontFamily: 'Outfit, sans-serif'
+    }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>One Final Step</h1>
+        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>Help us connect you with local perks.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Geolocation Card */}
+          <div style={cardStyle}>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: '0 0 0.25rem 0' }}>Location Services</h3>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>To show you the best rewards in your neighborhood.</p>
+            </div>
+            <button 
+              onClick={requestLocation} 
+              disabled={locStatus === "granted"}
+              style={locStatus === "granted" ? successBtn : actionBtn}
+            >
+              {locStatus === "granted" ? "✓" : "Allow"}
+            </button>
+          </div>
+
+          {/* Notifications Card */}
+          <div style={cardStyle}>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ margin: '0 0 0.25rem 0' }}>Push Notifications</h3>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>Get alerted about exclusive, limited-time offers.</p>
+            </div>
+            <button 
+              onClick={requestNotifications} 
+              disabled={notifStatus === "granted"}
+              style={notifStatus === "granted" ? successBtn : actionBtn}
+            >
+              {notifStatus === "granted" ? "✓" : "Allow"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        onClick={() => router.push("/")}
+        style={{
+          width: '100%',
+          padding: '1.25rem',
+          borderRadius: '20px',
+          background: 'rgba(255,255,255,0.1)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.1)',
+          fontSize: '1rem',
+          fontWeight: 600,
+          marginBottom: '3rem',
+          cursor: 'pointer'
+        }}
+      >
+        Go to Home
+      </button>
+    </div>
+  );
+}
+
+const cardStyle = {
+  padding: '1.5rem',
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1.5rem'
+};
+
+const actionBtn = {
+  padding: '0.75rem 1.5rem',
+  borderRadius: '12px',
+  background: '#8B5CF6',
+  color: '#fff',
+  border: 'none',
+  fontSize: '0.875rem',
+  fontWeight: 600,
+  cursor: 'pointer'
+};
+
+const successBtn = {
+  ...actionBtn,
+  background: '#10B981',
+  cursor: 'default'
+};
