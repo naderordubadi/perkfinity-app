@@ -3,13 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface PerkData {
+  merchant: string;
+  title: string;
+  description: string;
+  limitations: string;
+  color: string;
+}
+
 export default function PerkDetailPage({ params }: { params: { id: string } }) {
-  const [perk, setPerk] = useState<any>(null);
+  const [perk, setPerk] = useState<PerkData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     // Mocking a fetch from Neon database
-    const mockPerks: any = {
+    const mockPerks: Record<string, PerkData> = {
       "tailor-20": {
         merchant: "Artisan Tailor Shop",
         title: "20% OFF Your Next Alteration",

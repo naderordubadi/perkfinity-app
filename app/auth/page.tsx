@@ -7,7 +7,8 @@ export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "email">("choice");
   const router = useRouter();
 
-  const handleAuth = () => {
+  const handleAuth = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     // In a real app, this would trigger the actual OAuth or Email flow
     router.push("/onboarding/pii");
   };

@@ -28,7 +28,8 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const router = useRouter();
 
-  const nextStep = () => {
+  const nextStep = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -115,8 +116,8 @@ export default function OnboardingPage() {
             cursor: 'pointer',
             transition: 'transform 0.2s'
           }}
-          onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-          onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.transform = 'scale(0.98)'}
+          onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.transform = 'scale(1)'}
         >
           {currentStep === steps.length - 1 ? "Get Started" : "Continue"}
         </button>
