@@ -1,10 +1,21 @@
 import { neon } from '@neondatabase/serverless';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not defined in environment variables');
+// Lazy initialization — only connect when actually called at runtime,
+// NOT at build time (which is what was crashing Vercel).
+let _sql: ReturnType<typeof neon> | null = null;
+
+function getDb() {
+  if (!_sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not defined in environment variables');
+    }
+    _sql = neon(process.env.DATABASE_URL);
+  }
+  return _sql;
 }
 
-export const sql = neon(process.env.DATABASE_URL);
+// Keep `sql` as a backward-compatible export for any direct tagged-template usage
+export const sql = (...args: Parameters<ReturnType<typeof neon>>) => getDb()(...args);
 
 // Helper to save user PII
 export async function saveUserPII(userData: {
