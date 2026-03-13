@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function RedeemPage() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
@@ -46,29 +47,34 @@ export default function RedeemPage() {
           {formatTime(timeLeft)}
         </div>
 
-        {/* QR Code Placeholder */}
+        {/* Dynamic QR Code Canvas */}
         <div style={{
           width: '240px',
           height: '240px',
           background: '#fff',
           margin: '0 auto',
-          borderRadius: '32px',
+          borderRadius: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '1.5rem',
           boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
         }}>
-          {/* In a real app, use a QR generation lib */}
-          <div style={{ 
-            width: '100%', 
-            height: '100%', 
-            background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 20px 20px',
-            opacity: 0.1
-          }} />
-          <div style={{ position: 'absolute', fontSize: '1.5rem', color: '#000', fontWeight: 800 }}>
-            PERK-20
-          </div>
+          <QRCodeSVG 
+            value={`perkfinity://redeem?perk=${perkId}&token=temp_tkn_123`}
+            size={192}
+            bgColor={"#ffffff"}
+            fgColor={"#000000"}
+            level={"H"} // High error correction needed for center image
+            imageSettings={{
+              src: "/logo.png",
+              x: undefined,
+              y: undefined,
+              height: 48,
+              width: 48,
+              excavate: true, // Erases the QR matrix directly underneath the logo to guarantee scannability
+            }}
+          />
         </div>
 
         {/* Letter Word Code */}
