@@ -6,15 +6,15 @@ import { fetchApi } from '../../../lib/api';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function QRResolve({ params }: { params: { public_code: string } }) {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    fetchApi(\`/qr/resolve/\${params.public_code}\`)
+    fetchApi(`/qr/resolve/${params.public_code}`)
       .then(res => setData(res.data))
-      .catch(err => setError(err.message))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [params.public_code]);
 
@@ -22,7 +22,7 @@ export default function QRResolve({ params }: { params: { public_code: string } 
     try {
       setLoading(true);
       const idempotencyKey = uuidv4();
-      const res = await fetchApi(\`/campaigns/\${data.campaign.id}/activate\`, {
+      const res = await fetchApi(`/campaigns/${(data as any).campaign.id}/activate`, {
         method: 'POST',
         headers: {
           'Idempotency-Key': idempotencyKey
@@ -35,8 +35,8 @@ export default function QRResolve({ params }: { params: { public_code: string } 
       localStorage.setItem('active_token_cache', JSON.stringify(res.data));
       router.push('/activate');
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);
     }
   };

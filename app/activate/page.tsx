@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Activate() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const router = useRouter();
 
@@ -33,7 +33,7 @@ export default function Activate() {
       } else {
         const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-        setTimeLeft(\`\${minutes.toString().padStart(2, '0')}:\${seconds.toString().padStart(2, '0')}\`);
+        setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
       }
     }, 1000);
 
@@ -52,7 +52,7 @@ export default function Activate() {
         padding: '2rem', 
         borderRadius: '12px', 
         marginBottom: '2rem',
-        border: \`2px solid \${timeLeft === 'EXPIRED' ? '#ffcccc' : '#ccffcc'}\` 
+        border: `2px solid ${timeLeft === 'EXPIRED' ? '#ffcccc' : '#ccffcc'}` 
       }}>
         <div style={{ fontSize: '1.2rem', marginBottom: '1rem', color: timeLeft === 'EXPIRED' ? '#cc0000' : '#006600' }}>
           {data.campaign.discount_percentage}% OFF
