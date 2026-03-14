@@ -17,8 +17,14 @@ export default function QRResolve({ params }: { params: { public_code: string } 
     localStorage.setItem('pending_qr', params.public_code);
 
     const isInstalled = localStorage.getItem('app_installed') === 'true';
-    const hasAccount = localStorage.getItem('pf_has_account') === 'true'; // Set during signup
     const isLoggedIn = !!localStorage.getItem('pf_user_token');
+    // pf_has_account can be missing for existing token holders — treat a valid token as proof of account
+    let hasAccount = localStorage.getItem('pf_has_account') === 'true';
+    if (isLoggedIn && !hasAccount) {
+      // Backfill: if a token exists the user signed up at some point
+      localStorage.setItem('pf_has_account', 'true');
+      hasAccount = true;
+    }
 
     // Rule 1: Not installed -> Send to App Store Mock
     if (!isInstalled) {
@@ -26,13 +32,13 @@ export default function QRResolve({ params }: { params: { public_code: string } 
       return;
     }
 
-    // Rule 2 & 3: Installed but no account -> Banners -> Signup
-    if (isInstalled && !hasAccount) {
+    // Rule 2 & 3: Installed but no account AND not logged in -> Home (shows pending-QR banner)
+    if (isInstalled && !hasAccount && !isLoggedIn) {
       router.push('/');
       return;
     }
 
-    // Rule 4: Installed, Has Account, Not Logged In -> Login page
+    // Rule 4: Installed, Has Account-or-token, Not Logged In -> Login page
     if (isInstalled && hasAccount && !isLoggedIn) {
       router.push('/auth?method=login');
       return;

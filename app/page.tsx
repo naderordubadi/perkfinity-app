@@ -13,9 +13,13 @@ const merchants = [
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [pendingQr, setPendingQr] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    // Check if user was redirected here from a QR scan
+    const qr = localStorage.getItem('pending_qr');
+    if (qr) setPendingQr(qr);
   }, []);
 
   return (
@@ -51,6 +55,35 @@ export default function Home() {
           fontWeight: 600
         }}>Sign In</Link>
       </div>
+
+      {/* Pending QR Banner — shown when user scanned a QR but isn't signed up yet */}
+      {pendingQr && (
+        <div style={{ padding: '0 1.5rem', marginTop: '1rem' }}>
+          <Link href="/onboarding" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
+              border: '1px solid rgba(251,191,36,0.35)',
+              borderRadius: '20px',
+              padding: '1rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              boxShadow: '0 4px 20px rgba(251,191,36,0.1)',
+            }}>
+              <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
+                  You Have a Pending Offer!
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
+                  You scanned a merchant QR. Sign up in seconds to claim your discount.
+                </div>
+              </div>
+              <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Hero Card */}
       <div style={{ padding: '1.75rem 1.5rem 1.5rem' }}>
