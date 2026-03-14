@@ -130,50 +130,72 @@ const steps = [
       <svg viewBox="0 0 260 210" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
         <circle cx="130" cy="105" r="80" fill="url(#hubGlow)" opacity="0.12"/>
         {/* Dashed spoke lines from center to each store */}
-        <line x1="130" y1="105" x2="52" y2="55" stroke="rgba(107,193,122,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
-        <line x1="130" y1="105" x2="210" y2="58" stroke="rgba(107,193,122,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
-        <line x1="130" y1="105" x2="42" y2="155" stroke="rgba(139,92,246,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
-        <line x1="130" y1="105" x2="220" y2="158" stroke="rgba(139,92,246,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
-        {/* Center hub — app icon */}
-        <circle cx="130" cy="105" r="26" fill="rgba(15,23,42,0.9)" stroke="#6BC17A" strokeWidth="2"/>
-        <circle cx="130" cy="105" r="18" fill="rgba(107,193,122,0.12)" stroke="rgba(107,193,122,0.4)" strokeWidth="1"/>
-        {/* Simplified bag icon */}
-        <path d="M124 102 L126 98 Q130 94 134 98 L136 102 Z" fill="#6BC17A" opacity="0.9"/>
-        <rect x="122" y="101" width="16" height="11" rx="2.5" fill="url(#bagGrad)"/>
-        <path d="M127 104 L129 107 L133 101" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <line x1="130" y1="105" x2="52" y2="45" stroke="rgba(107,193,122,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
+        <line x1="130" y1="105" x2="210" y2="48" stroke="rgba(107,193,122,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
+        <line x1="130" y1="105" x2="42" y2="135" stroke="rgba(139,92,246,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
+        <line x1="130" y1="105" x2="220" y2="138" stroke="rgba(139,92,246,0.35)" strokeWidth="1.2" strokeDasharray="5 3"/>
+        
+        {/* Center hub — real app icon */}
+        <circle cx="130" cy="105" r="28" fill="rgba(255,255,255,0.05)" stroke="#6BC17A" strokeWidth="2"/>
+        <circle cx="130" cy="105" r="24" fill="#0F172A"/>
+        <defs>
+          <clipPath id="centerIconClip">
+            <rect x="108" y="83" width="44" height="44" rx="10"/>
+          </clipPath>
+        </defs>
+        <image x="104" y="79" width="52" height="52" href="/app-icon.png" clipPath="url(#centerIconClip)"/>
+
         {/* Store: Flower Shop — top left */}
-        <circle cx="52" cy="55" r="28" fill="rgba(236,72,153,0.08)" stroke="rgba(236,72,153,0.4)" strokeWidth="1.5"/>
-        <text x="52" y="50" textAnchor="middle" fontSize="14">💐</text>
-        <text x="52" y="62" textAnchor="middle" fill="#F9A8D4" fontSize="6.5" fontWeight="700">FLOWER</text>
-        <text x="52" y="70" textAnchor="middle" fill="#F9A8D4" fontSize="6.5" fontWeight="700">SHOP</text>
+        <g transform="translate(27, 23)">
+           <rect x="0" y="12" width="50" height="34" rx="4" fill="rgba(236,72,153,0.08)" stroke="rgba(236,72,153,0.4)" strokeWidth="1.5"/>
+           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill="rgba(236,72,153,0.2)" stroke="rgba(236,72,153,0.6)" strokeWidth="1.5" strokeLinejoin="round"/>
+           <rect x="8" y="26" width="12" height="20" rx="2" fill="rgba(236,72,153,0.15)"/>
+           <rect x="26" y="22" width="16" height="14" rx="2" fill="rgba(236,72,153,0.15)"/>
+           <text x="34" y="32.5" textAnchor="middle" fontSize="9">💐</text>
+           <text x="25" y="60" textAnchor="middle" fill="#F9A8D4" fontSize="6.5" fontWeight="700">FLOWER SHOP</text>
+        </g>
+        
         {/* Store: Spa — top right */}
-        <circle cx="210" cy="58" r="28" fill="rgba(107,193,122,0.08)" stroke="rgba(107,193,122,0.4)" strokeWidth="1.5"/>
-        <text x="210" y="52" textAnchor="middle" fontSize="14">🧖</text>
-        <text x="210" y="66" textAnchor="middle" fill="#86EFAC" fontSize="6.5" fontWeight="700">SPA</text>
+        <g transform="translate(185, 26)">
+           <rect x="0" y="12" width="50" height="34" rx="4" fill="rgba(107,193,122,0.08)" stroke="rgba(107,193,122,0.4)" strokeWidth="1.5"/>
+           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill="rgba(107,193,122,0.2)" stroke="rgba(107,193,122,0.6)" strokeWidth="1.5" strokeLinejoin="round"/>
+           <rect x="8" y="26" width="12" height="20" rx="2" fill="rgba(107,193,122,0.15)"/>
+           <rect x="26" y="22" width="16" height="14" rx="2" fill="rgba(107,193,122,0.15)"/>
+           <text x="34" y="32.5" textAnchor="middle" fontSize="9">🧖</text>
+           <text x="25" y="60" textAnchor="middle" fill="#86EFAC" fontSize="6.5" fontWeight="700">SPA</text>
+        </g>
+        
         {/* Store: Hair Salon — bottom left */}
-        <circle cx="42" cy="155" r="28" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5"/>
-        <text x="42" y="149" textAnchor="middle" fontSize="14">💇</text>
-        <text x="42" y="161" textAnchor="middle" fill="#C4B5FD" fontSize="6.5" fontWeight="700">HAIR</text>
-        <text x="42" y="169" textAnchor="middle" fill="#C4B5FD" fontSize="6.5" fontWeight="700">SALON</text>
+        <g transform="translate(17, 113)">
+           <rect x="0" y="12" width="50" height="34" rx="4" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5"/>
+           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.6)" strokeWidth="1.5" strokeLinejoin="round"/>
+           <rect x="8" y="26" width="12" height="20" rx="2" fill="rgba(139,92,246,0.15)"/>
+           <rect x="26" y="22" width="16" height="14" rx="2" fill="rgba(139,92,246,0.15)"/>
+           <text x="34" y="32.5" textAnchor="middle" fontSize="9">💇</text>
+           <text x="25" y="60" textAnchor="middle" fill="#C4B5FD" fontSize="6.5" fontWeight="700">HAIR SALON</text>
+        </g>
+        
         {/* Store: Tailor — bottom right */}
-        <circle cx="220" cy="158" r="28" fill="rgba(107,193,122,0.08)" stroke="rgba(107,193,122,0.4)" strokeWidth="1.5"/>
-        <text x="220" y="152" textAnchor="middle" fontSize="14">✂️</text>
-        <text x="220" y="165" textAnchor="middle" fill="#86EFAC" fontSize="6.5" fontWeight="700">TAILOR</text>
+        <g transform="translate(195, 116)">
+           <rect x="0" y="12" width="50" height="34" rx="4" fill="rgba(107,193,122,0.08)" stroke="rgba(107,193,122,0.4)" strokeWidth="1.5"/>
+           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill="rgba(107,193,122,0.2)" stroke="rgba(107,193,122,0.6)" strokeWidth="1.5" strokeLinejoin="round"/>
+           <rect x="8" y="26" width="12" height="20" rx="2" fill="rgba(107,193,122,0.15)"/>
+           <rect x="26" y="22" width="16" height="14" rx="2" fill="rgba(107,193,122,0.15)"/>
+           <text x="34" y="32.5" textAnchor="middle" fontSize="9">✂️</text>
+           <text x="25" y="60" textAnchor="middle" fill="#86EFAC" fontSize="6.5" fontWeight="700">TAILOR</text>
+        </g>
+        
         {/* Midpoint dots on spokes */}
-        <circle cx="91" cy="80" r="3" fill="#6BC17A" opacity="0.6"/>
-        <circle cx="170" cy="81" r="3" fill="#6BC17A" opacity="0.6"/>
-        <circle cx="86" cy="130" r="3" fill="#8B5CF6" opacity="0.6"/>
-        <circle cx="175" cy="131" r="3" fill="#8B5CF6" opacity="0.6"/>
+        <circle cx="91" cy="75" r="3" fill="#6BC17A" opacity="0.6"/>
+        <circle cx="170" cy="76" r="3" fill="#6BC17A" opacity="0.6"/>
+        <circle cx="86" cy="120" r="3" fill="#8B5CF6" opacity="0.6"/>
+        <circle cx="175" cy="121" r="3" fill="#8B5CF6" opacity="0.6"/>
+        
         <defs>
           <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#6BC17A"/>
             <stop offset="100%" stopColor="#0F172A" stopOpacity="0"/>
           </radialGradient>
-          <linearGradient id="bagGrad" x1="122" y1="101" x2="138" y2="112" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#6BC17A"/>
-            <stop offset="60%" stopColor="#4B7A53"/>
-            <stop offset="100%" stopColor="#5B3FA5"/>
-          </linearGradient>
         </defs>
       </svg>
     )
