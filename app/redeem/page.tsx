@@ -6,10 +6,28 @@ import { QRCodeSVG } from "qrcode.react";
 
 // Inner component that uses useSearchParams — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes max
+  const [cache, setCache] = useState<any>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const perkId = searchParams.get("perk") || "tailor-20";
+
+  useEffect(() => {
+    const dataString = localStorage.getItem('active_token_cache');
+    if (!dataString) {
+      router.push('/');
+      return;
+    }
+    try {
+      const data = JSON.parse(dataString);
+      setCache(data);
+      // Synchronize timer with server
+      const expiresAt = new Date(data.redemption.expires_at).getTime();
+      const now = new Date().getTime();
+      const diffSecs = Math.max(0, Math.floor((expiresAt - now) / 1000));
+      setTimeLeft(diffSecs);
+    } catch {
+      router.push('/');
+    }
+  }, [router]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -23,6 +41,8 @@ function RedeemContent() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (!cache) return null;
+
   return (
     <div style={{
       height: '100vh',
@@ -35,29 +55,39 @@ function RedeemContent() {
       textAlign: 'center'
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <h2 style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.8)', fontSize: '1.25rem' }}>{cache.merchant.business_name}</h2>
         <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>SHOW THIS TO CASHIER</h2>
         
         {/* Large Timer */}
         <div style={{ 
           fontSize: '4rem', 
           fontWeight: 800, 
-          margin: '1rem 0',
+          margin: '0.5rem 0 1rem',
           color: timeLeft < 60 ? '#EF4444' : '#fff',
-          fontVariantNumeric: 'tabular-nums'
+          fontVariantNumeric: 'tabular-nums',
+          textShadow: timeLeft <= 0 ? 'none' : '0 0 20px rgba(139,92,246,0.5)'
         }}>
-          {formatTime(timeLeft)}
+          {timeLeft <= 0 ? "EXPIRED" : formatTime(timeLeft)}
         </div>
 
         {/* Promo Perk Visibility */}
         <div style={{
           marginBottom: '1.5rem',
           padding: '1.5rem 1rem',
-          background: 'rgba(107,193,122,0.15)',
-          border: '1px solid rgba(107,193,122,0.3)',
+          background: timeLeft <= 0 ? 'rgba(255,255,255,0.05)' : 'rgba(107,193,122,0.15)',
+          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.1)' : 'rgba(107,193,122,0.3)'}`,
           borderRadius: '16px',
+          opacity: timeLeft <= 0 ? 0.5 : 1
         }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#86EFAC', textTransform: 'uppercase', letterSpacing: '1px' }}>Welcome Reward</h3>
-          <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1 }}>15% off purchase over $15</p>
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: timeLeft <= 0 ? '#aaa' : '#86EFAC', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            {cache.campaign.title}
+          </h3>
+          <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1 }}>
+            {cache.campaign.discount_percentage}% OFF
+          </p>
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+            {cache.campaign.terms}
+          </p>
         </div>
 
         {/* Dynamic QR Code Canvas */}
@@ -71,20 +101,21 @@ function RedeemContent() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '1.5rem',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          opacity: timeLeft <= 0 ? 0.2 : 1,
+          filter: timeLeft <= 0 ? 'grayscale(100%) blur(4px)' : 'none',
+          transition: 'all 0.5s ease'
         }}>
           <QRCodeSVG 
-            value={`perkfinity://redeem?perk=${perkId}&token=temp_tkn_123`}
+            value={`perkfinity://redeem?campaign=${cache.campaign.id}&token=${cache.redemption.token}`}
             size={192}
             bgColor={"#ffffff"}
             fgColor={"#000000"}
             level={"H"}
             imageSettings={{
               src: "/app-icon.png",
-              x: undefined,
-              y: undefined,
-              height: 48,
-              width: 48,
+              x: undefined, y: undefined,
+              height: 48, width: 48,
               excavate: true,
             }}
           />
@@ -97,10 +128,11 @@ function RedeemContent() {
           background: 'rgba(255,255,255,0.05)',
           borderRadius: '16px',
           border: '1px dotted rgba(255,255,255,0.2)',
-          display: 'inline-block'
+          display: 'inline-block',
+          opacity: timeLeft <= 0 ? 0.3 : 1
         }}>
-          <span style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '4px' }}>
-            WHALE-TAIL-FAST
+          <span style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '8px' }}>
+            {cache.redemption.token.match(/.{1,3}/g).join('-')}
           </span>
         </div>
       </div>

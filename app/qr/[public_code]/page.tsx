@@ -19,9 +19,9 @@ export default function QRResolve({ params }: { params: { public_code: string } 
   }, [params.public_code]);
 
   const handleActivate = async () => {
-    if (!localStorage.getItem('user_token')) {
+    if (!localStorage.getItem('pf_user_token')) {
       localStorage.setItem('pending_qr', params.public_code);
-      router.push('/auth');
+      router.push('/onboarding');
       return;
     }
 
@@ -35,11 +35,12 @@ export default function QRResolve({ params }: { params: { public_code: string } 
         }
       });
       
-      // Store the active token logic could be complex (e.g., local storage array)
-      // For simplicity, we just pass the token to the activate success screen via query or context
-      // Here we will use localStorage to pass state to the next page
-      localStorage.setItem('active_token_cache', JSON.stringify(res.data));
-      router.push('/activate');
+      localStorage.setItem('active_token_cache', JSON.stringify({
+        redemption: res.data.activation,
+        campaign: (data as any).campaign,
+        merchant: (data as any).merchant
+      }));
+      router.push('/redeem');
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

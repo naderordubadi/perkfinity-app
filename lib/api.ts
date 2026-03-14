@@ -1,26 +1,9 @@
-import { getUserToken, setUserToken } from './user';
+import { getUserToken } from './user';
 
-const API_BASE = 'http://localhost:3001/api/v1';
-
-export async function ensureAnonymousUser() {
-  let token = getUserToken();
-  if (!token) {
-    const res = await fetch(`${API_BASE}/auth/user/anonymous`, { method: 'POST' });
-    const data = await res.json();
-    if (data.status === 'success') {
-      token = data.data.access_token;
-      setUserToken(token!);
-    }
-  }
-  return token;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.vercel.app/api/v1';
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  let token = getUserToken();
-  
-  if (!token && endpoint !== '/auth/user/anonymous') {
-    token = await ensureAnonymousUser();
-  }
+  const token = getUserToken();
 
   const headers = new Headers({
     'Content-Type': 'application/json',
@@ -36,10 +19,16 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Invalid JSON response from server');
+  }
   
-  if (!response.ok) {
-    throw new Error(data.message || 'API Error');
+  if (!response.ok || data.success === false) {
+    throw new Error(data.error || data.message || 'API Error');
   }
 
   return data;
