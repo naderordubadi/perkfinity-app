@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+
+const merchants = [
+  { name: 'Artisan Tailor', emoji: '✂️', color: '#6366F1', discount: '15% off' },
+  { name: 'Plant Boutique', emoji: '🌿', color: '#10B981', discount: '10% off' },
+  { name: 'Wellness Spa', emoji: '🧖', color: '#8B5CF6', discount: '20% off' },
+  { name: 'Flower Shop', emoji: '💐', color: '#EC4899', discount: '12% off' },
+];
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -10,126 +19,172 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ 
-      padding: '2.5rem 1.5rem',
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)',
       display: 'flex',
       flexDirection: 'column',
-      gap: '2rem',
+      fontFamily: 'Outfit, sans-serif',
+      color: '#fff',
       opacity: mounted ? 1 : 0,
-      transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-      transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
+      transform: mounted ? 'translateY(0)' : 'translateY(16px)',
+      transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+      paddingBottom: '100px'
     }}>
-      {/* Hero Section */}
-      <header style={{ marginTop: '2rem' }}>
-        <h1 style={{ 
-          fontSize: '2.5rem', 
-          fontWeight: 700, 
-          margin: 0,
-          background: 'linear-gradient(to right, #fff, #94A3B8)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.025em'
-        }}>
-          Perkfinity
-        </h1>
-        <p style={{ 
-          color: '#94A3B8', 
-          fontSize: '1.125rem',
-          marginTop: '0.5rem',
-          fontWeight: 300,
-          maxWidth: '280px'
-        }}>
-          Exclusive perks from local boutiques and wellness spas.
-        </p>
-      </header>
 
-      {/* Main Action Card */}
+      {/* Header with full logo */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(109, 40, 217, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%)',
-        borderRadius: '32px',
-        padding: '2rem',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        padding: '1.5rem 1.5rem 0',
         display: 'flex',
-        flexDirection: 'column',
-        borderRadius: '32px',
-        padding: '2.5rem',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        width: '100%',
-        maxWidth: '360px',
-        position: 'relative',
-        zIndex: 1
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        <div style={{
-          width: '64px',
-          height: '64px',
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+        <Image src="/logo.png" alt="Perkfinity" width={140} height={38} style={{ objectFit: 'contain' }} priority />
+        <Link href="/auth" style={{
+          padding: '0.5rem 1rem',
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.5rem',
-          margin: '0 auto 1.5rem auto',
-          boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.3)'
-        }}>
-          ✨
-        </div>
-        
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.75rem' }}>Ready to Claim?</h2>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9375rem', marginBottom: '2rem' }}>
-          Join the privacy-first rewards network and start saving at your favorite stores.
-        </p>
-
-        <a href="/onboarding" style={{
-          display: 'block',
-          width: '100%',
-          padding: '1.25rem',
-          background: '#fff',
-          color: '#000',
-          borderRadius: '16px',
+          color: 'rgba(255,255,255,0.7)',
           textDecoration: 'none',
-          fontWeight: 700,
-          fontSize: '1rem',
-          transition: 'all 0.2s ease',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-        }}>
-          Get Started
-        </a>
+          fontSize: '0.8rem',
+          fontWeight: 600
+        }}>Sign In</Link>
       </div>
 
-      {/* Quick Discovery */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Recent Merchants</h3>
-          <span style={{ fontSize: '0.875rem', color: '#8B5CF6' }}>Sponsorships</span>
+      {/* Hero Card */}
+      <div style={{ padding: '1.75rem 1.5rem 1.5rem' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(107,193,122,0.1) 0%, rgba(139,92,246,0.15) 100%)',
+          border: '1px solid rgba(107,193,122,0.2)',
+          borderRadius: '28px',
+          padding: '2rem 1.75rem',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)'
+        }}>
+          {/* Background glow blobs */}
+          <div style={{
+            position: 'absolute', top: '-30px', right: '-30px',
+            width: '120px', height: '120px',
+            background: 'radial-gradient(circle, rgba(107,193,122,0.25), transparent 70%)',
+            borderRadius: '50%'
+          }}/>
+          <div style={{
+            position: 'absolute', bottom: '-20px', left: '-20px',
+            width: '100px', height: '100px',
+            background: 'radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%)',
+            borderRadius: '50%'
+          }}/>
+
+          {/* Floating discount badges */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            {['15% off ✂️', '20% off 🧖', '10% off 🌿'].map((badge, i) => (
+              <span key={i} style={{
+                padding: '4px 10px',
+                background: 'rgba(107,193,122,0.15)',
+                border: '1px solid rgba(107,193,122,0.3)',
+                borderRadius: '20px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#86EFAC',
+                letterSpacing: '0.02em'
+              }}>{badge}</span>
+            ))}
+          </div>
+
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+            Ready to Save<br/>at Local Shops?
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', margin: '0 0 1.75rem', lineHeight: 1.5, maxWidth: '260px' }}>
+            Scan, claim, and instantly get discounts at your favorite local businesses — no cards needed.
+          </p>
+
+          <Link href="/onboarding" style={{
+            display: 'block',
+            padding: '1rem 1.5rem',
+            background: 'linear-gradient(135deg, #6BC17A, #3B9A52)',
+            borderRadius: '16px',
+            color: '#fff',
+            textDecoration: 'none',
+            fontWeight: 700,
+            fontSize: '1rem',
+            textAlign: 'center',
+            boxShadow: '0 8px 24px rgba(107,193,122,0.35)',
+            letterSpacing: '0.01em'
+          }}>Get Started →</Link>
         </div>
-        
-        <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+      </div>
+
+      {/* How it works strip */}
+      <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           {[
-            { name: 'Artisan Tailor', color: '#6366F1' },
-            { name: 'Plant Boutique', color: '#10B981' },
-            { name: 'Wellness Spa', color: '#EC4899' }
-          ].map((m, i) => (
+            { icon: '📱', label: 'Scan QR', desc: 'At any store' },
+            { icon: '✅', label: 'Claim', desc: 'Instant discount' },
+            { icon: '🎉', label: 'Save', desc: 'Every visit' }
+          ].map((s, i) => (
             <div key={i} style={{
-              minWidth: '140px',
-              padding: '1rem',
-              background: 'var(--card-bg)',
-              borderRadius: '20px',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '18px',
+              textAlign: 'center'
             }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: m.color, opacity: 0.8 }} />
-              <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.name}</div>
+              <div style={{ fontSize: '1.4rem', marginBottom: '4px' }}>{s.icon}</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>{s.label}</div>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)' }}>{s.desc}</div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      <style jsx global>{`
-        body {
-          background-color: #0F172A;
-        }
+      {/* Participating merchants */}
+      <div style={{ padding: '0 1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
+          <span style={{ fontSize: '0.78rem', color: '#6BC17A', fontWeight: 600 }}>Coming soon</span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+          {merchants.map((m, i) => (
+            <div key={i} style={{
+              minWidth: '130px',
+              padding: '1rem',
+              background: 'rgba(255,255,255,0.04)',
+              borderRadius: '20px',
+              border: `1px solid ${m.color}30`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              flexShrink: 0
+            }}>
+              <div style={{
+                width: '38px', height: '38px', borderRadius: '12px',
+                background: `${m.color}22`,
+                border: `1px solid ${m.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.1rem'
+              }}>{m.emoji}</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{m.name}</div>
+              <div style={{
+                fontSize: '0.7rem', fontWeight: 700,
+                color: '#86EFAC',
+                background: 'rgba(107,193,122,0.12)',
+                border: '1px solid rgba(107,193,122,0.25)',
+                borderRadius: '8px',
+                padding: '2px 6px',
+                display: 'inline-block'
+              }}>{m.discount}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        body { background-color: #0F172A; }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );
