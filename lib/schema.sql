@@ -2,11 +2,23 @@
 -- Last Updated: 2026-03-13
 
 -- 1. Merchants Table
+DROP TABLE IF EXISTS redemptions, campaigns, merchants CASCADE;
+
 CREATE TABLE IF NOT EXISTS merchants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    category TEXT NOT NULL, -- e.g., 'Tailor Shop', 'Wellness Spa'
+    contact_name TEXT,
     contact_email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    address TEXT,
+    city TEXT,
+    zip TEXT,
+    website TEXT,
+    category TEXT,
+    perk TEXT,
+    tier TEXT,
+    plaid_access_token TEXT,
+    subscription_status TEXT DEFAULT 'inactive',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
