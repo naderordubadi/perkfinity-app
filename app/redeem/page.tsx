@@ -68,7 +68,7 @@ function RedeemContent() {
             fgColor={"#000000"}
             level={"H"}
             imageSettings={{
-              src: "/logo.png",
+              src: "/app-icon.png",
               x: undefined,
               y: undefined,
               height: 48,
