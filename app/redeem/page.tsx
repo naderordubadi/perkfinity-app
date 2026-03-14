@@ -74,18 +74,15 @@ function RedeemContent() {
         <div style={{
           marginBottom: '1.5rem',
           padding: '1.5rem 1rem',
-          background: timeLeft <= 0 ? 'rgba(255,255,255,0.05)' : 'rgba(107,193,122,0.15)',
-          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.1)' : 'rgba(107,193,122,0.3)'}`,
+          background: timeLeft <= 0 ? 'rgba(255,255,255,0.05)' : 'rgba(139,92,246,0.15)',
+          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.1)' : 'rgba(139,92,246,0.3)'}`,
           borderRadius: '16px',
           opacity: timeLeft <= 0 ? 0.5 : 1
         }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: timeLeft <= 0 ? '#aaa' : '#86EFAC', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.75rem', fontWeight: 800, color: timeLeft <= 0 ? '#aaa' : '#A78BFA', lineHeight: 1.2 }}>
             {cache.campaign.title}
           </h3>
-          <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1 }}>
-            {cache.campaign.discount_percentage}% OFF
-          </p>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
             {cache.campaign.terms}
           </p>
         </div>

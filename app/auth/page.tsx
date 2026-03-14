@@ -83,8 +83,12 @@ export default function AuthPage() {
       fontFamily: 'Outfit, sans-serif'
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Welcome to Perkfinity</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem' }}>
+        <img 
+          src="/assets/logo.png" 
+          alt="Perkfinity Logo" 
+          style={{ width: '100%', maxWidth: '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain' }} 
+        />
+        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center' }}>
           {method === "choice" ? "Choose how you'd like to sign in." : method === "login" ? "Log in to your account." : "Create your account."}
         </p>
 
