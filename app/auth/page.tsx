@@ -45,6 +45,7 @@ export default function AuthPage() {
       
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
+        localStorage.setItem('pf_has_account', 'true'); // Flag used by QR state machine
         
         // Next Step Logic
         const target = method === "signup" ? "/profile" : "/scan"; 

@@ -11,20 +11,43 @@ export default function QRResolve({ params }: { params: { public_code: string } 
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // STATE MACHINE INITIALIZATION
   useEffect(() => {
+    // 1. Immediately store the QR code they are trying to access
+    localStorage.setItem('pending_qr', params.public_code);
+
+    const isInstalled = localStorage.getItem('app_installed') === 'true';
+    const hasAccount = localStorage.getItem('pf_has_account') === 'true'; // Set during signup
+    const isLoggedIn = !!localStorage.getItem('pf_user_token');
+
+    // Rule 1: Not installed -> Send to App Store Mock
+    if (!isInstalled) {
+      router.push('/download');
+      return;
+    }
+
+    // Rule 2 & 3: Installed but no account -> Banners -> Signup
+    if (isInstalled && !hasAccount) {
+      router.push('/');
+      return;
+    }
+
+    // Rule 4: Installed, Has Account, Not Logged In -> Login page
+    if (isInstalled && hasAccount && !isLoggedIn) {
+      router.push('/auth?method=login');
+      return;
+    }
+
+    // Rule 5: Installed, Has Account, AND Logged in -> Stay here and fetch QR data
+    // Proceed to load the data so they can click "Activate Offer"
     fetchApi(`/qr/resolve/${params.public_code}`)
       .then(res => setData(res.data))
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [params.public_code]);
+
+  }, [params.public_code, router]);
 
   const handleActivate = async () => {
-    if (!localStorage.getItem('pf_user_token')) {
-      localStorage.setItem('pending_qr', params.public_code);
-      router.push('/onboarding');
-      return;
-    }
-
     try {
       setLoading(true);
       const idempotencyKey = uuidv4();
@@ -122,7 +145,7 @@ export default function QRResolve({ params }: { params: { public_code: string } 
             fontSize: '0.875rem'
            }}>
             <span style={{ fontSize: '1.2rem' }}>⏳</span>
-            <span>Valid for <strong>{data.campaign.redemption_time_limit_minutes} minutes</strong> once activated</span>
+            <span>Valid for <strong>5 minutes</strong> once activated</span>
           </div>
 
           <button 
