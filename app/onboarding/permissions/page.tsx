@@ -70,7 +70,14 @@ export default function PermissionsPage() {
       </div>
 
       <button 
-        onClick={() => router.push("/")}
+        onClick={() => {
+          const pendingQr = localStorage.getItem('pending_qr');
+          if (pendingQr) {
+            router.push(`/redeem?perk=${pendingQr}`);
+          } else {
+            router.push("/");
+          }
+        }}
         style={{
           width: '100%',
           padding: '1.25rem',
@@ -84,7 +91,7 @@ export default function PermissionsPage() {
           cursor: 'pointer'
         }}
       >
-        Go to Home
+        Continue to App
       </button>
     </div>
   );

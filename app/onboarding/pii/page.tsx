@@ -19,6 +19,8 @@ export default function PIIPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Simulate user login/signup completion
+    localStorage.setItem('user_token', 'simulated_token_123');
     // In a real app, save to Neon database here
     router.push("/onboarding/permissions");
   };

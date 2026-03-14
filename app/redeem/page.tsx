@@ -48,6 +48,18 @@ function RedeemContent() {
           {formatTime(timeLeft)}
         </div>
 
+        {/* Promo Perk Visibility */}
+        <div style={{
+          marginBottom: '1.5rem',
+          padding: '1.5rem 1rem',
+          background: 'rgba(107,193,122,0.15)',
+          border: '1px solid rgba(107,193,122,0.3)',
+          borderRadius: '16px',
+        }}>
+          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#86EFAC', textTransform: 'uppercase', letterSpacing: '1px' }}>Welcome Reward</h3>
+          <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1 }}>15% off purchase over $15</p>
+        </div>
+
         {/* Dynamic QR Code Canvas */}
         <div style={{
           width: '240px',

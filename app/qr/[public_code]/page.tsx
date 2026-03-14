@@ -19,6 +19,12 @@ export default function QRResolve({ params }: { params: { public_code: string } 
   }, [params.public_code]);
 
   const handleActivate = async () => {
+    if (!localStorage.getItem('user_token')) {
+      localStorage.setItem('pending_qr', params.public_code);
+      router.push('/auth');
+      return;
+    }
+
     try {
       setLoading(true);
       const idempotencyKey = uuidv4();
