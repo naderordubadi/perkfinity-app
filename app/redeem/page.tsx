@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
-export default function RedeemPage() {
+// Inner component that uses useSearchParams — must be wrapped in <Suspense> by the parent
+function RedeemContent() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,14 +66,14 @@ export default function RedeemPage() {
             size={192}
             bgColor={"#ffffff"}
             fgColor={"#000000"}
-            level={"H"} // High error correction needed for center image
+            level={"H"}
             imageSettings={{
               src: "/logo.png",
               x: undefined,
               y: undefined,
               height: 48,
               width: 48,
-              excavate: true, // Erases the QR matrix directly underneath the logo to guarantee scannability
+              excavate: true,
             }}
           />
         </div>
@@ -106,5 +107,26 @@ export default function RedeemPage() {
         Done / Cancel
       </button>
     </div>
+  );
+}
+
+// Required: useSearchParams() in RedeemContent needs a Suspense boundary (Next.js 14 requirement)
+export default function RedeemPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        height: '100vh',
+        background: '#0F172A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontFamily: 'Outfit, sans-serif'
+      }}>
+        Loading...
+      </div>
+    }>
+      <RedeemContent />
+    </Suspense>
   );
 }
