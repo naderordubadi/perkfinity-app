@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { setUserToken } from "@/lib/user";
+import { setUserToken, setUserData } from "@/lib/user";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup">("choice");
@@ -46,10 +46,18 @@ export default function AuthPage() {
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
         localStorage.setItem('pf_has_account', 'true'); // Flag used by QR state machine
+        if (res.data.user) {
+          setUserData(res.data.user);
+        }
         
         // Next Step Logic
-        const target = method === "signup" ? "/profile" : "/scan"; 
-        // Note: For now, if they login we send them to /scan, if they signup they must complete /profile.
+        let target = method === "signup" ? "/profile" : "/scan"; 
+        
+        // If login but missing profile demographic data, force them to profile routing
+        if (method === "login" && res.data.user && !res.data.user.full_name) {
+          target = "/profile";
+        }
+        
         // We will make it smarter later if a pending QR is in localstorage.
         const pendingQr = localStorage.getItem('pending_qr');
         if (pendingQr) {

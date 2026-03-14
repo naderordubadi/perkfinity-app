@@ -14,3 +14,17 @@ export const getUserToken = () => {
   }
   return token;
 };
+
+export const setUserData = (userData: any) => {
+  if (typeof window !== 'undefined' && userData) {
+    localStorage.setItem('pf_user_data', JSON.stringify(userData));
+  }
+};
+
+export const getUserData = () => {
+  if (typeof window !== 'undefined') {
+    const data = localStorage.getItem('pf_user_data');
+    return data ? JSON.parse(data) : null;
+  }
+  return null;
+};

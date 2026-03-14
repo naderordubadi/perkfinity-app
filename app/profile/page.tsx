@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { getUserData, setUserData } from "@/lib/user";
 
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
@@ -12,6 +13,16 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    const data = getUserData();
+    if (data) {
+      if (data.full_name) setFullName(data.full_name);
+      if (data.phone_number) setPhone(data.phone_number);
+      if (data.city) setCity(data.city);
+      if (data.zip_code) setZipCode(data.zip_code);
+    }
+  }, []);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');
@@ -53,6 +64,15 @@ export default function ProfilePage() {
           city: city,
           zip_code: zipCode
         })
+      });
+      
+      const current = getUserData() || {};
+      setUserData({
+        ...current,
+        full_name: fullName,
+        phone_number: phone,
+        city: city,
+        zip_code: zipCode
       });
       
       router.push("/permissions");

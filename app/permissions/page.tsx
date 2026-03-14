@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { getUserData, setUserData } from "@/lib/user";
 
 export default function PermissionsPage() {
   const [geoEnabled, setGeoEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const data = getUserData();
+    if (data) {
+      if (typeof data.location_sharing_enabled === "boolean") setGeoEnabled(data.location_sharing_enabled);
+      if (typeof data.push_notifications_enabled === "boolean") setPushEnabled(data.push_notifications_enabled);
+    }
+  }, []);
 
   const handleFinish = async () => {
     try {
@@ -19,6 +28,13 @@ export default function PermissionsPage() {
           location_sharing_enabled: geoEnabled,
           push_notifications_enabled: pushEnabled
         })
+      });
+      
+      const current = getUserData() || {};
+      setUserData({
+        ...current,
+        location_sharing_enabled: geoEnabled,
+        push_notifications_enabled: pushEnabled
       });
       
       const pendingQr = localStorage.getItem('pending_qr');
