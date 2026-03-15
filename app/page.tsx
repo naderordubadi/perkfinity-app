@@ -223,7 +223,7 @@ export default function Home() {
               }}>🎁</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
-                  Pending Discount
+                  Pending Perks
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
                   Tap here to activate the offer you just scanned!
