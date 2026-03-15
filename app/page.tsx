@@ -80,7 +80,7 @@ export default function Home() {
       </div>
 
       {/* Pending QR Banner — shown when user scanned a QR but isn't signed up yet */}
-      {pendingQr && (
+      {pendingQr && !isLoggedIn && (
         <div style={{ padding: '0 1.5rem', marginTop: '1rem' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
             <div style={{
@@ -195,6 +195,45 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* Available Perks (For Logged In Users with Pending QR) */}
+      {pendingQr && isLoggedIn && (
+        <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
+            <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>1 Pending</span>
+          </div>
+          <Link href={`/qr/${pendingQr}`} style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
+              border: '1px solid rgba(251,191,36,0.35)',
+              borderRadius: '20px',
+              padding: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              boxShadow: '0 4px 20px rgba(251,191,36,0.1)',
+            }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                background: 'rgba(251,191,36,0.2)',
+                border: '1px solid rgba(251,191,36,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.4rem'
+              }}>🎁</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
+                  Pending Discount
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
+                  Tap here to activate the offer you just scanned!
+                </div>
+              </div>
+              <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Participating merchants */}
       <div style={{ padding: '0 1.5rem' }}>
