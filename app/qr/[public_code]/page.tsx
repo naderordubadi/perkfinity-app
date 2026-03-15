@@ -32,9 +32,9 @@ export default function QRResolve({ params }: { params: { public_code: string } 
       return;
     }
 
-    // Rule 2 & 3: Installed but no account AND not logged in -> Home (shows pending-QR banner)
+    // Rule 2 & 3: Installed but no account AND not logged in -> Auth (skips home banner)
     if (isInstalled && !hasAccount && !isLoggedIn) {
-      router.push('/');
+      router.push('/auth');
       return;
     }
 
