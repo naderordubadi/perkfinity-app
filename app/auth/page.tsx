@@ -58,9 +58,10 @@ export default function AuthPage() {
           target = "/profile";
         }
         
-        // We will make it smarter later if a pending QR is in localstorage.
         const pendingQr = localStorage.getItem('pending_qr');
-        if (pendingQr) {
+        if (target === "/profile") {
+          router.push("/profile");
+        } else if (pendingQr) {
           router.push(`/qr/${pendingQr}`);
         } else {
           router.push(target);

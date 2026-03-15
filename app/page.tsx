@@ -14,13 +14,23 @@ const merchants = [
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     // Check if user was redirected here from a QR scan
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
+    if (localStorage.getItem('pf_user_token')) {
+      setIsLoggedIn(true);
+    }
   }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem('pf_user_token');
+    localStorage.removeItem('pf_user_data');
+    setIsLoggedIn(false);
+  };
 
   return (
     <div style={{
@@ -44,16 +54,29 @@ export default function Home() {
         alignItems: 'center'
       }}>
         <Image src="/logo.png" alt="Perkfinity" width={140} height={38} style={{ objectFit: 'contain' }} priority />
-        <Link href="/auth" style={{
-          padding: '0.5rem 1rem',
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '20px',
-          color: 'rgba(255,255,255,0.7)',
-          textDecoration: 'none',
-          fontSize: '0.8rem',
-          fontWeight: 600
-        }}>Sign In</Link>
+        {isLoggedIn ? (
+          <button onClick={handleSignOut} style={{
+            padding: '0.5rem 1rem',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '20px',
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}>Sign Out</button>
+        ) : (
+          <Link href="/auth" style={{
+            padding: '0.5rem 1rem',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '20px',
+            color: 'rgba(255,255,255,0.7)',
+            textDecoration: 'none',
+            fontSize: '0.8rem',
+            fontWeight: 600
+          }}>Sign In</Link>
+        )}
       </div>
 
       {/* Pending QR Banner — shown when user scanned a QR but isn't signed up yet */}
