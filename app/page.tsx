@@ -27,7 +27,7 @@ export default function Home() {
     }
     
     // Fetch live participating merchants
-    fetch('https://perkfinity-backend.vercel.app/api/v1/consumers/campaigns')
+    fetch('https://perkfinity-backend.vercel.app/api/v1/consumers/campaigns', { cache: 'no-store' })
       .then(res => res.json())
       .then(json => {
          if (json.success && json.data) {

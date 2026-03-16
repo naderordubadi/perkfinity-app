@@ -26,6 +26,12 @@ function RedeemContent() {
       const now = new Date().getTime();
       const diffSecs = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(diffSecs);
+      
+      // If already redeemed according to cache, show success state immediately 
+      // (This handles page reloads after successful redemption)
+      if (data.redemption.redeemed) {
+        setRedeemSuccess(true);
+      }
     } catch {
       router.push('/');
     }
