@@ -39,7 +39,7 @@ function RedeemContent() {
 
   useEffect(() => {
     if (timeLeft <= 0) return;
-    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    const timer = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [timeLeft]);
 

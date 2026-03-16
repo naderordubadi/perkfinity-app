@@ -252,7 +252,7 @@ export default function Home() {
           <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {merchants.length > 0 ? merchants.map((m, i) => (
+          {merchants.length > 0 ? merchants.map((m: Merchant, i: number) => (
             <div key={i} style={{
               minWidth: '130px',
               padding: '1rem',
