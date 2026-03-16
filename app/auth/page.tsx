@@ -38,9 +38,10 @@ export default function AuthPage() {
       setError("");
       const endpoint = method === "login" ? "/consumers/login" : "/consumers/signup";
       
+      const pendingQr = localStorage.getItem('pending_qr');
       const res = await fetchApi(endpoint, {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, qrCode: pendingQr || undefined })
       });
       
       if (res.success && res.data?.accessToken) {
