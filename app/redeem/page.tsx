@@ -8,6 +8,8 @@ import { QRCodeSVG } from "qrcode.react";
 function RedeemContent() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes max
   const [cache, setCache] = useState<any>(null);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemSuccess, setRedeemSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,6 +41,35 @@ function RedeemContent() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleManualRedeem = async () => {
+    if (redeeming || timeLeft <= 0 || !cache) return;
+    try {
+       setRedeeming(true);
+       const res = await fetch('https://perkfinity-backend.vercel.app/api/v1/campaigns/redeem', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${localStorage.getItem('pf_user_token')}`
+         },
+         body: JSON.stringify({ token: cache.redemption.token })
+       });
+       const json = await res.json();
+       if (json.success) {
+         setRedeemSuccess(true);
+         // Optionally update local cache to show redeemed state immediately if they reload
+         const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
+         localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
+       } else {
+         alert(json.error || 'Failed to redeem');
+       }
+    } catch (err) {
+      console.error(err);
+      alert('Network error during redemption');
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   if (!cache) return null;
@@ -110,7 +141,7 @@ function RedeemContent() {
             fgColor={"#000000"}
             level={"H"}
             imageSettings={{
-              src: "/app-icon.png",
+              src: cache.merchant.logo_url || "/app-icon.png",
               x: undefined, y: undefined,
               height: 48, width: 48,
               excavate: true,
@@ -132,6 +163,41 @@ function RedeemContent() {
             {cache.redemption.token.match(/.{1,3}/g).join('-')}
           </span>
         </div>
+
+        {/* Manual Redeem Button for Merchant Verification (Cashier push it instead of scanning) */}
+        {!redeemSuccess ? (
+          <button 
+            onClick={handleManualRedeem}
+            disabled={redeeming || timeLeft <= 0}
+            style={{ 
+              marginTop: '1.5rem',
+              padding: '1rem',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '16px',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: (redeeming || timeLeft <= 0) ? 'not-allowed' : 'pointer',
+              opacity: (redeeming || timeLeft <= 0) ? 0.5 : 1
+            }}
+          >
+            {redeeming ? 'Redeeming...' : 'Cashier: Mark as Redeemed'}
+          </button>
+        ) : (
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            background: 'rgba(16,185,129,0.15)',
+            border: '1px solid rgba(16,185,129,0.4)',
+            color: '#10B981',
+            borderRadius: '16px',
+            fontSize: '1rem',
+            fontWeight: 700
+          }}>
+            ✅ Successfully Redeemed!
+          </div>
+        )}
       </div>
 
       <button 
