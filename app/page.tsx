@@ -56,7 +56,8 @@ export default function Home() {
       opacity: mounted ? 1 : 0,
       transform: mounted ? 'translateY(0)' : 'translateY(16px)',
       transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-      paddingBottom: '100px'
+      paddingBottom: '12rem', // Increased bottom padding to clear navbar
+      overflowY: 'auto'
     }}>
 
       {/* Header with full logo */}
