@@ -11,6 +11,8 @@ interface Merchant {
   merchant_name: string;
   discount: string;
   logo_url: string | null;
+  zip_code: string | null;
+  qr_code: string | null;
 }
 
 export default function Home() {
@@ -29,11 +31,25 @@ export default function Home() {
     }
     
     // Fetch live participating merchants
+    const pendingQrCode = localStorage.getItem('pending_qr');
+    const userData = localStorage.getItem('pf_user_data');
+    const userZip = userData ? JSON.parse(userData).zip_code || null : null;
+
     fetch('https://perkfinity-backend.vercel.app/api/v1/consumers/campaigns', { cache: 'no-store' })
       .then(res => res.json())
       .then(json => {
          if (json.success && json.data) {
-           setMerchants(json.data);
+           const data: Merchant[] = json.data;
+           // Sort: last-scanned merchant first, then zip-match, then rest
+           const sorted = [...data].sort((a, b) => {
+             const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
+             const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
+             if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
+             const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
+             const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
+             return bZipMatch - aZipMatch;
+           });
+           setMerchants(sorted);
          }
       })
       .catch(e => console.error("Failed to load merchants", e));
@@ -252,7 +268,7 @@ export default function Home() {
       {/* Participating merchants */}
       <div style={{ padding: '0 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants Around You</h3>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
           {merchants.length > 0 ? merchants.map((m: Merchant, i: number) => (
