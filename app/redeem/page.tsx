@@ -64,7 +64,9 @@ function RedeemContent() {
        const json = await res.json();
        if (json.success) {
          setRedeemSuccess(true);
-         // Optionally update local cache to show redeemed state immediately if they reload
+         setTimeLeft(0); // Stop the countdown timer
+         localStorage.removeItem('pending_qr'); // Clear the Pending Perk banner from home page
+         // Update local cache to show redeemed state if they reload
          const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
          localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
        } else {
@@ -97,17 +99,19 @@ function RedeemContent() {
         <h2 style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.8)', fontSize: '1.25rem' }}>{cache.merchant.business_name}</h2>
         <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>SHOW THIS TO CASHIER</h2>
         
-        {/* Large Timer */}
-        <div style={{ 
-          fontSize: '4rem', 
-          fontWeight: 800, 
-          margin: '0.5rem 0 1rem',
-          color: timeLeft < 60 ? '#EF4444' : '#fff',
-          fontVariantNumeric: 'tabular-nums',
-          textShadow: timeLeft <= 0 ? 'none' : '0 0 20px rgba(139,92,246,0.5)'
-        }}>
-          {timeLeft <= 0 ? "EXPIRED" : formatTime(timeLeft)}
-        </div>
+        {/* Large Timer — hidden after successful redemption */}
+        {!redeemSuccess && (
+          <div style={{ 
+            fontSize: '4rem', 
+            fontWeight: 800, 
+            margin: '0.5rem 0 1rem',
+            color: timeLeft < 60 ? '#EF4444' : '#fff',
+            fontVariantNumeric: 'tabular-nums',
+            textShadow: timeLeft <= 0 ? 'none' : '0 0 20px rgba(139,92,246,0.5)'
+          }}>
+            {timeLeft <= 0 ? "EXPIRED" : formatTime(timeLeft)}
+          </div>
+        )}
 
         {/* Promo Perk Visibility */}
         <div style={{
