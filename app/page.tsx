@@ -303,6 +303,9 @@ export default function Home() {
                 display: 'inline-block',
                 alignSelf: 'flex-start'
               }}>{m.discount}</div>
+              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: '2px' }}>
+                Scan QR in store to redeem
+              </div>
             </div>
           )) : (
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Loading merchants...</div>
