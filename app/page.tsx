@@ -1,20 +1,19 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-const merchants = [
-  { name: 'Artisan Tailor', emoji: '✂️', color: '#6366F1', discount: '15% off' },
-  { name: 'Plant Boutique', emoji: '🌿', color: '#10B981', discount: '10% off' },
-  { name: 'Wellness Spa', emoji: '🧖', color: '#8B5CF6', discount: '20% off' },
-  { name: 'Flower Shop', emoji: '💐', color: '#EC4899', discount: '12% off' },
-];
+interface Merchant {
+  id: string;
+  merchant_name: string;
+  discount: string;
+  logo_url: string | null;
+}
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -24,6 +23,16 @@ export default function Home() {
     if (localStorage.getItem('pf_user_token')) {
       setIsLoggedIn(true);
     }
+    
+    // Fetch live participating merchants
+    fetch('https://perkfinity-backend.vercel.app/api/v1/consumers/campaigns')
+      .then(res => res.json())
+      .then(json => {
+         if (json.success && json.data) {
+           setMerchants(json.data);
+         }
+      })
+      .catch(e => console.error("Failed to load merchants", e));
   }, []);
 
   const handleSignOut = () => {
@@ -239,16 +248,15 @@ export default function Home() {
       <div style={{ padding: '0 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
-          <span style={{ fontSize: '0.78rem', color: '#6BC17A', fontWeight: 600 }}>Coming soon</span>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {merchants.map((m, i) => (
+          {merchants.length > 0 ? merchants.map((m, i) => (
             <div key={i} style={{
               minWidth: '130px',
               padding: '1rem',
               background: 'rgba(255,255,255,0.04)',
               borderRadius: '20px',
-              border: `1px solid ${m.color}30`,
+              border: `1px solid rgba(139,92,246,0.3)`,
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
@@ -256,12 +264,14 @@ export default function Home() {
             }}>
               <div style={{
                 width: '38px', height: '38px', borderRadius: '12px',
-                background: `${m.color}22`,
-                border: `1px solid ${m.color}40`,
+                background: `rgba(139,92,246,0.22)`,
+                border: `1px solid rgba(139,92,246,0.4)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.1rem'
-              }}>{m.emoji}</div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{m.name}</div>
+                overflow: 'hidden'
+              }}>
+                {m.logo_url ? <img src={m.logo_url} style={{width:'100%', height:'100%', objectFit:'contain'}} /> : '🏪'}
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{m.merchant_name}</div>
               <div style={{
                 fontSize: '0.7rem', fontWeight: 700,
                 color: '#86EFAC',
@@ -269,10 +279,13 @@ export default function Home() {
                 border: '1px solid rgba(107,193,122,0.25)',
                 borderRadius: '8px',
                 padding: '2px 6px',
-                display: 'inline-block'
+                display: 'inline-block',
+                alignSelf: 'flex-start'
               }}>{m.discount}</div>
             </div>
-          ))}
+          )) : (
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Loading merchants...</div>
+          )}
         </div>
       </div>
 
