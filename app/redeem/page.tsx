@@ -82,14 +82,16 @@ function RedeemContent() {
 
   return (
     <div style={{
-      height: '100vh',
-      background: '#0F172A',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '2rem',
+      padding: '2rem 1rem 8rem 1rem', // Added 8rem bottom padding for navbar clearance
       color: '#fff',
       fontFamily: 'Outfit, sans-serif',
-      textAlign: 'center'
+      textAlign: 'center',
+      alignItems: 'center',
+      overflowY: 'auto'
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <h2 style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.8)', fontSize: '1.25rem' }}>{cache.merchant.business_name}</h2>
