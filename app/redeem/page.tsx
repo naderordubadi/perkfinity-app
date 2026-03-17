@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -11,6 +11,10 @@ function RedeemContent() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemSuccess, setRedeemSuccess] = useState(false);
   const router = useRouter();
+
+  // Refs so the unmount cleanup always has the latest values
+  const redeemSuccessRef = useRef(false);
+  const cacheRef = useRef<any>(null);
 
   useEffect(() => {
     const dataString = localStorage.getItem('active_token_cache');
@@ -36,6 +40,43 @@ function RedeemContent() {
       router.push('/');
     }
   }, [router]);
+
+  // Keep refs in sync with state (needed for cleanup closure)
+  useEffect(() => { redeemSuccessRef.current = redeemSuccess; }, [redeemSuccess]);
+  useEffect(() => { cacheRef.current = cache; }, [cache]);
+
+  // Auto-cancel when user navigates away without redeeming
+  // (same logic as Done/Cancel but triggered by component unmount)
+  useEffect(() => {
+    return () => {
+      const c = cacheRef.current;
+      if (redeemSuccessRef.current || !c) return; // already redeemed — nothing to do
+
+      const campaignId = c.campaign.id;
+      const token = localStorage.getItem('pf_user_token') || '';
+
+      // keepalive:true keeps the request going even after the page navigates away
+      fetch(
+        `https://perkfinity-backend.vercel.app/api/v1/campaigns/${campaignId}/cancel-activation`,
+        { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, keepalive: true }
+      ).catch(() => {});
+
+      // Restore offer to pending_offers immediately (localStorage is synchronous)
+      try {
+        const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+        if (!offers.some((o: { campaign_id: string }) => o.campaign_id === campaignId)) {
+          offers.push({
+            campaign_id: campaignId,
+            merchant_name: c.merchant.business_name,
+            title: c.campaign.title,
+            qr_code: localStorage.getItem('pending_qr') || '',
+          });
+          localStorage.setItem('pending_offers', JSON.stringify(offers));
+        }
+      } catch { /* ignore */ }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // empty deps — intentionally runs cleanup on unmount only
 
   useEffect(() => {
     if (timeLeft <= 0) return;
