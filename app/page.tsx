@@ -18,17 +18,21 @@ interface Merchant {
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
+  const [pendingOffers, setPendingOffers] = useState<Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}>>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
 
   useEffect(() => {
     setMounted(true);
-    // Check if user was redirected here from a QR scan
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
-    if (localStorage.getItem('pf_user_token')) {
-      setIsLoggedIn(true);
-    }
+    if (localStorage.getItem('pf_user_token')) setIsLoggedIn(true);
+
+    // Load member-specific pending offers (set by QR page after resolving campaigns)
+    try {
+      const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+      setPendingOffers(stored);
+    } catch { setPendingOffers([]); }
     
     // Fetch live participating merchants
     const pendingQrCode = localStorage.getItem('pending_qr');
@@ -227,13 +231,14 @@ export default function Home() {
       </div>
 
       {/* Available Perks (For Logged In Users with Pending QR) */}
-      {pendingQr && isLoggedIn && (
+      {/* Available Perks — logged-in user with pending offers */}
+      {isLoggedIn && pendingOffers.length > 0 && (
         <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
-            <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>1 Pending</span>
+            <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
           </div>
-          <Link href={`/qr/${pendingQr}`} style={{ textDecoration: 'none' }}>
+          <a href={`/qr/${pendingOffers[0].qr_code}`} style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
               border: '1px solid rgba(251,191,36,0.35)',
@@ -244,26 +249,22 @@ export default function Home() {
               gap: '1rem',
               boxShadow: '0 4px 20px rgba(251,191,36,0.1)',
             }}>
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '12px',
-                background: 'rgba(251,191,36,0.2)',
-                border: '1px solid rgba(251,191,36,0.4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.4rem'
-              }}>🎁</div>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🎁</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
-                  Pending Perks
+                  {pendingOffers.length === 1 ? pendingOffers[0].title : `${pendingOffers.length} Offers Available`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
-                  Tap here to activate the offer you just scanned!
+                  {pendingOffers.length === 1 ? 'Tap to activate your pending offer!' : `Tap to view and activate your ${pendingOffers.length} pending offers!`}
                 </div>
               </div>
               <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
             </div>
-          </Link>
+          </a>
         </div>
       )}
+
+      {/* Fallback banner for unauthenticated users who scanned a QR */}
 
       {/* Participating merchants */}
       <div style={{ padding: '0 1.5rem' }}>
