@@ -213,10 +213,22 @@ function RedeemContent() {
       </div>
 
       <button 
-        onClick={() => {
-          // If the offer wasn't redeemed, put it back in pending_offers
-          // so it reappears on the home page rather than silently disappearing
+        onClick={async () => {
+          // If the offer wasn't redeemed, revert its status back to 'created'
+          // and restore it to pending_offers so home page shows it again
           if (!redeemSuccess && cache) {
+            // 1. Tell the backend to revert status: pending → created
+            try {
+              await fetch(
+                `https://perkfinity-backend.vercel.app/api/v1/campaigns/${cache.campaign.id}/cancel-activation`,
+                {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${localStorage.getItem('pf_user_token')}` }
+                }
+              );
+            } catch { /* best-effort — proceed even if network fails */ }
+
+            // 2. Restore offer to pending_offers so it reappears on home page
             try {
               const existing: Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}> =
                 JSON.parse(localStorage.getItem('pending_offers') || '[]');
