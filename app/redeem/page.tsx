@@ -213,7 +213,27 @@ function RedeemContent() {
       </div>
 
       <button 
-        onClick={() => router.push("/")}
+        onClick={() => {
+          // If the offer wasn't redeemed, put it back in pending_offers
+          // so it reappears on the home page rather than silently disappearing
+          if (!redeemSuccess && cache) {
+            try {
+              const existing: Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}> =
+                JSON.parse(localStorage.getItem('pending_offers') || '[]');
+              const alreadyThere = existing.some(o => o.campaign_id === cache.campaign.id);
+              if (!alreadyThere) {
+                existing.push({
+                  campaign_id: cache.campaign.id,
+                  merchant_name: cache.merchant.business_name,
+                  title: cache.campaign.title,
+                  qr_code: localStorage.getItem('pending_qr') || '',
+                });
+                localStorage.setItem('pending_offers', JSON.stringify(existing));
+              }
+            } catch { /* ignore */ }
+          }
+          router.push('/');
+        }}
         style={{
           width: '100%',
           padding: '1rem',

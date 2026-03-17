@@ -13,6 +13,7 @@ interface Merchant {
   logo_url: string | null;
   zip_code: string | null;
   qr_code: string | null;
+  offer_count?: number;
 }
 
 export default function Home() {
@@ -303,7 +304,9 @@ export default function Home() {
                 padding: '2px 6px',
                 display: 'inline-block',
                 alignSelf: 'flex-start'
-              }}>{m.discount}</div>
+              }}>
+                {m.offer_count && m.offer_count > 1 ? `${m.offer_count} offers` : m.discount}
+              </div>
               <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: '2px' }}>
                 Scan QR in store to redeem
               </div>
