@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import NavigationGuard from "./components/NavigationGuard";
 
 export const metadata: Metadata = {
   title: "Perkfinity | Rewards & Experiences",
@@ -119,6 +120,7 @@ export default function RootLayout({
         `}</style>
       </head>
       <body>
+        <NavigationGuard />
         <div className="mesh-bg" />
         <main>
           {children}
