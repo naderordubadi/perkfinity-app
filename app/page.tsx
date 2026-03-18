@@ -29,6 +29,32 @@ export default function Home() {
     if (qr) setPendingQr(qr);
     if (localStorage.getItem('pf_user_token')) setIsLoggedIn(true);
 
+    // ── Reliable cancel-activation fallback ──────────────────────────
+    // If the user navigated away from /redeem without completing the redemption,
+    // the QR page stored a 'pending_cancel' entry. Process it here so the
+    // member-list status always reverts to Created when the home page loads.
+    const pendingCancelRaw = localStorage.getItem('pending_cancel');
+    if (pendingCancelRaw) {
+      try {
+        const pc = JSON.parse(pendingCancelRaw);
+        const userToken = localStorage.getItem('pf_user_token');
+        if (pc.campaign_id && userToken) {
+          // Fire-and-forget — don't block home page loading
+          fetch(
+            `https://perkfinity-backend.vercel.app/api/v1/campaigns/${pc.campaign_id}/cancel-activation`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${userToken}` } }
+          ).catch(() => {});
+          // Restore offer to pending_offers if not already present
+          const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+          if (!offers.some((o: { campaign_id: string }) => o.campaign_id === pc.campaign_id)) {
+            offers.push({ campaign_id: pc.campaign_id, merchant_name: pc.merchant_name, title: pc.title, qr_code: pc.qr_code });
+            localStorage.setItem('pending_offers', JSON.stringify(offers));
+          }
+        }
+      } catch { /* ignore */ }
+      localStorage.removeItem('pending_cancel'); // always clear, even if processing failed
+    }
+
     // Load member-specific pending offers (set by QR page after resolving campaigns)
     try {
       const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');

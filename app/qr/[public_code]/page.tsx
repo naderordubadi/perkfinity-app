@@ -84,6 +84,16 @@ export default function QRResolve({ params }: { params: { public_code: string } 
         location: data?.location,
       }));
 
+      // Persist a pending_cancel flag so any page (especially Home) can reliably
+      // revert the member-list status to Created if the user navigates away
+      // without completing the redemption.
+      localStorage.setItem('pending_cancel', JSON.stringify({
+        campaign_id: campaign.id,
+        merchant_name: data?.merchant.business_name,
+        title: campaign.title,
+        qr_code: params.public_code,
+      }));
+
       // Remove this campaign from pending_offers since it's now being activated
       try {
         const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');

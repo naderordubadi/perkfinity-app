@@ -107,6 +107,7 @@ function RedeemContent() {
          setRedeemSuccess(true);
          setTimeLeft(0); // Stop the countdown timer
          localStorage.removeItem('pending_qr'); // Clear the Pending Perk banner from home page
+         localStorage.removeItem('pending_cancel'); // Redeemed — no auto-cancel needed
          // Update local cache to show redeemed state if they reload
          const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
          localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
@@ -285,6 +286,7 @@ function RedeemContent() {
               }
             } catch { /* ignore */ }
           }
+          localStorage.removeItem('pending_cancel'); // explicit cancel already handled above
           router.push('/');
         }}
         style={{
