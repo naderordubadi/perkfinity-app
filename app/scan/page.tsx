@@ -58,7 +58,7 @@ export default function ScanPage() {
     if (code?.data) {
       setDetected(true);
       stopCamera();
-      const qrMatch = code.data.match(/\/qr\/([a-zA-Z0-9_-]+)/);
+      const qrMatch = code.data.match(/\/qr\/([^\/?#]+)/);
       if (qrMatch?.[1]) {
         router.push(`/qr/${qrMatch[1]}`);
       } else {

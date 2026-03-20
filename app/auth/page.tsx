@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup">("choice");
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,9 +14,51 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleOAuth = (e: React.MouseEvent<HTMLButtonElement>, provider: string) => {
-    e.preventDefault();
-    alert(`${provider} login is mocked for this demo. Use Email to test end-to-end.`);
+  // ── Apple Sign-In (native Capacitor) ────────────────────────────
+  const handleAppleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      // Dynamic import so Next.js static export doesn't fail on web
+      const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
+      const result = await SignInWithApple.authorize({
+        clientId: "net.perkfinity.app",
+        redirectURI: "perkfinity://auth",
+        scopes: "email name",
+      });
+      const credential = result.response;
+      const fullName = [credential.givenName, credential.familyName].filter(Boolean).join(" ");
+      const res = await fetchApi("/consumers/apple-signin", {
+        method: "POST",
+        body: JSON.stringify({
+          identityToken: credential.identityToken,
+          authorizationCode: credential.authorizationCode,
+          fullName,
+        }),
+      });
+      if (res.success && res.data?.accessToken) {
+        setUserToken(res.data.accessToken);
+        localStorage.setItem("pf_has_account", "true");
+        if (res.data.user) setUserData(res.data.user);
+        const pendingQr = localStorage.getItem("pending_qr");
+        if (!res.data.user?.full_name) {
+          router.push("/profile");
+        } else if (pendingQr) {
+          router.push(`/qr/${pendingQr}`);
+        } else {
+          router.push("/");
+        }
+      } else {
+        setError(res.error || "Apple Sign-In failed");
+      }
+    } catch (err: any) {
+      // User cancelled = no error to display
+      if (err?.message !== "The operation couldn't be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)") {
+        setError("Apple Sign-In failed. Please try email instead.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -105,12 +146,26 @@ export default function AuthPage() {
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <button onClick={(e) => handleOAuth(e, "Apple")} style={btnStyle("#fff", "#000")}>
-              <span style={{ marginRight: '12px' }}></span> Sign in with Apple
+            {/* Apple Sign-In — real native Capacitor plugin */}
+            <button
+              onClick={handleAppleSignIn}
+              disabled={loading}
+              style={btnStyle("#fff", "#000")}
+            >
+              <span style={{ marginRight: '12px' }}></span>
+              {loading ? "Signing in..." : "Sign in with Apple"}
             </button>
-            <button onClick={(e) => handleOAuth(e, "Google")} style={btnStyle("#fff", "#000")}>
+
+            {/* Google Sign-In — disabled until Google Cloud project is configured */}
+            <button
+              disabled
+              title="Google Sign-In coming soon"
+              style={{ ...btnStyle("rgba(255,255,255,0.08)", "rgba(255,255,255,0.3)"), cursor: "not-allowed", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
               <span style={{ marginRight: '12px' }}>G</span> Sign in with Google
+              <span style={{ fontSize: '0.7rem', marginLeft: '8px', opacity: 0.6 }}>(Coming Soon)</span>
             </button>
+
             <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
               <div style={lineStyle} />
               <span style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>OR</span>
@@ -123,6 +178,7 @@ export default function AuthPage() {
               Already registered? Log in
             </button>
           </div>
+
         ) : (
           <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
