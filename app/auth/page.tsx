@@ -23,7 +23,7 @@ export default function AuthPage() {
       const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
       const result = await SignInWithApple.authorize({
         clientId: "net.perkfinity.app",
-        redirectURI: "perkfinity://auth",
+        redirectURI: "",   // required by types; ignored by native iOS
         scopes: "email name",
       });
       const credential = result.response;
@@ -67,7 +67,11 @@ export default function AuthPage() {
       setLoading(true);
       setError("");
       const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
-      await GoogleAuth.initialize();
+      await GoogleAuth.initialize({
+        clientId: "1053337094970-c38gunb5oljfncb4avar8c6fc4jg5kjg.apps.googleusercontent.com",
+        scopes: ["profile", "email"],
+        grantOfflineAccess: true,
+      });
       const googleUser = await GoogleAuth.signIn();
       const idToken = googleUser.authentication?.idToken;
       if (!idToken) throw new Error("No ID token returned from Google");
