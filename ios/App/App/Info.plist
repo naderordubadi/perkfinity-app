@@ -4,6 +4,10 @@
 <dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Perkfinity needs camera access to scan QR codes and unlock exclusive discounts at local merchants.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is required alongside camera for video capture on iOS.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -47,5 +51,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>net.perkfinity.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>perkfinity</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -1,116 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { useEffect } from "react";
+
+const TESTFLIGHT_URL = "https://testflight.apple.com/join/tYvdH41G";
+const APP_SCHEME = "perkfinity://open";
 
 export default function DownloadPage() {
-  const router = useRouter();
-  const [pendingQr, setPendingQr] = useState<string | null>(null);
-
   useEffect(() => {
-    // If they were redirected here from a QR scan, we saved it.
-    const qr = localStorage.getItem('pending_qr');
-    if (qr) setPendingQr(qr);
+    // Step 1: Mark storage so the QR page knows the app is installed
+    // (This runs if they somehow land back here after installing — clean it up)
+    // Step 2: Try to open the app via its custom URL scheme.
+    //         If the app is installed, iOS hands control to Perkfinity immediately.
+    //         If NOT installed, the scheme fails silently and we fall back to TestFlight.
+    const tryOpenApp = () => {
+      // Attempt to wake the installed app
+      window.location.href = APP_SCHEME;
+
+      // After 1.5s, if we're still here the app is NOT installed → go to TestFlight
+      const fallbackTimer = setTimeout(() => {
+        window.location.href = TESTFLIGHT_URL;
+      }, 1500);
+
+      // If the app opens, iOS will blur the page — clear the timer on visibility change
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) clearTimeout(fallbackTimer);
+      }, { once: true });
+    };
+
+    tryOpenApp();
   }, []);
 
-  const handleDownload = () => {
-    // Simulate App Store installation
-    localStorage.setItem('app_installed', 'true');
-    
-    // Once "installed", they open the app and see the onboarding banners
-    router.push('/');
-  };
-
+  // Visual while the redirect logic runs
   return (
     <div style={{
-      minHeight: '100vh',
-      background: '#fff',
-      color: '#000',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      display: 'flex',
-      flexDirection: 'column'
+      minHeight: "100vh",
+      background: "linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "2rem",
+      fontFamily: "Outfit, sans-serif",
+      color: "#fff",
+      gap: "1.5rem",
+      textAlign: "center",
     }}>
-      {/* Fake App Store Header */}
-      <div style={{
-        padding: '1rem',
-        borderBottom: '1px solid #E5E5EA',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '1.2rem',
-        fontWeight: 600
-      }}>
-        App Store
+      <img
+        src="/logo.png"
+        alt="Perkfinity"
+        style={{ height: "48px", objectFit: "contain", marginBottom: "0.5rem" }}
+      />
+
+      <div>
+        <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.4rem", fontWeight: 700 }}>
+          Get the Perkfinity App
+        </h2>
+        <p style={{ margin: 0, color: "rgba(255,255,255,0.55)", fontSize: "0.9rem", lineHeight: 1.6, maxWidth: "260px" }}>
+          Scan QR codes and unlock exclusive discounts at local merchants — no cards needed.
+        </p>
       </div>
 
-      <div style={{ padding: '2rem 1.5rem', flex: 1 }}>
-        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem' }}>
-          {/* App Icon */}
-          <div style={{
-            width: '120px',
-            height: '120px',
-            background: '#0F172A',
-            borderRadius: '26px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
-          }}>
-            <Image src="/assets/logo.png" alt="Icon" width={80} height={80} style={{ objectFit: 'contain' }} />
-          </div>
-          
-          {/* App Title & Get Button */}
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem' }}>Perkfinity</h1>
-            <p style={{ margin: '0 0 1rem', color: '#8E8E93', fontSize: '0.9rem' }}>Local Rewards & Deals</p>
-            
-            <button 
-              onClick={handleDownload}
-              style={{
-                background: '#007AFF',
-                color: '#fff',
-                border: 'none',
-                padding: '8px 24px',
-                borderRadius: '20px',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                width: 'fit-content',
-                cursor: 'pointer'
-              }}
-            >
-              GET
-            </button>
-          </div>
-        </div>
+      {/* Manual fallback button in case auto-redirect doesn't fire */}
+      <a
+        href={TESTFLIGHT_URL}
+        style={{
+          padding: "1rem 2rem",
+          background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
+          border: "none",
+          borderRadius: "20px",
+          color: "#fff",
+          fontSize: "1rem",
+          fontWeight: 700,
+          textDecoration: "none",
+          boxShadow: "0 8px 24px rgba(109,40,217,0.4)",
+          width: "100%",
+          maxWidth: "280px",
+          display: "block",
+          textAlign: "center",
+        }}
+      >
+        Download on TestFlight
+      </a>
 
-        {/* Fake Screenshots/Preview */}
-        <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem' }}>Preview</h2>
-          <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
-            <div style={{
-              width: '200px', height: '400px', flexShrink: 0, background: '#F2F2F7', borderRadius: '24px', padding: '12px'
-            }}>
-              <div style={{
-                width: '100%', height: '100%', background: '#0F172A', borderRadius: '16px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🛍️</div>
-                <div style={{ fontWeight: 600 }}>Earn Rewards</div>
-              </div>
-            </div>
-            <div style={{
-              width: '200px', height: '400px', flexShrink: 0, background: '#F2F2F7', borderRadius: '24px', padding: '12px'
-            }}>
-              <div style={{
-                width: '100%', height: '100%', background: '#0F172A', borderRadius: '16px', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>💸</div>
-                <div style={{ fontWeight: 600 }}>Save Money</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", maxWidth: "240px", lineHeight: 1.5 }}>
+        Already have the app? Opening it now…
+      </p>
     </div>
   );
 }

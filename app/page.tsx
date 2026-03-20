@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
@@ -109,12 +108,13 @@ export default function Home() {
 
       {/* Header with full logo */}
       <div style={{
-        padding: '1.5rem 1.5rem 0',
+        padding: 'max(env(safe-area-inset-top, 44px), 44px) 1.5rem 0',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <Image src="/logo.png" alt="Perkfinity" width={140} height={38} style={{ objectFit: 'contain' }} priority />
+        {/* Plain img — next/image generates /_next/image?url= paths that Capacitor file:// can't resolve */}
+        <img src="/logo.png" alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain' }} />
         {isLoggedIn ? (
           <button onClick={handleSignOut} style={{
             padding: '0.5rem 1rem',

@@ -34,7 +34,16 @@ export default function QRResolveClient({ params }: { params: { public_code: str
   useEffect(() => {
     localStorage.setItem('pending_qr', params.public_code);
 
-    const isInstalled = localStorage.getItem('app_installed') === 'true';
+    const isCapacitor = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform();
+
+    // 1. If we are on the Web (Safari), ALWAYS send them to the download page
+    // which tries to deep-link into the app, and falls back to TestFlight.
+    if (!isCapacitor) {
+      router.push('/download');
+      return;
+    }
+
+    // 2. We are inside the Native App. Proceed with Auth checks.
     const isLoggedIn = !!localStorage.getItem('pf_user_token');
     let hasAccount = localStorage.getItem('pf_has_account') === 'true';
     if (isLoggedIn && !hasAccount) {
@@ -42,9 +51,8 @@ export default function QRResolveClient({ params }: { params: { public_code: str
       hasAccount = true;
     }
 
-    if (!isInstalled) { router.push('/download'); return; }
-    if (isInstalled && !hasAccount && !isLoggedIn) { router.push('/auth'); return; }
-    if (isInstalled && hasAccount && !isLoggedIn) { router.push('/auth?method=login'); return; }
+    if (!hasAccount && !isLoggedIn) { router.push('/auth'); return; }
+    if (hasAccount && !isLoggedIn) { router.push('/auth?method=login'); return; }
 
     fetchApi(`/qr/resolve/${params.public_code}`)
       .then(res => {
