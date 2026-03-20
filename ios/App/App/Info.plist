@@ -61,6 +61,14 @@
 				<string>perkfinity</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.google.reverseClientId</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1053337094970-c38gunb5oljfncb4avar8c6fc4jg5kjg</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
