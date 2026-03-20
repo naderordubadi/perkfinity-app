@@ -61,6 +61,44 @@ export default function AuthPage() {
     }
   };
 
+  // ── Google Sign-In (native Capacitor) ───────────────────────────
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
+      await GoogleAuth.initialize();
+      const googleUser = await GoogleAuth.signIn();
+      const idToken = googleUser.authentication?.idToken;
+      if (!idToken) throw new Error("No ID token returned from Google");
+      const res = await fetchApi("/consumers/google-signin", {
+        method: "POST",
+        body: JSON.stringify({ idToken }),
+      });
+      if (res.success && res.data?.accessToken) {
+        setUserToken(res.data.accessToken);
+        localStorage.setItem("pf_has_account", "true");
+        if (res.data.user) setUserData(res.data.user);
+        const pendingQr = localStorage.getItem("pending_qr");
+        if (!res.data.user?.full_name) {
+          router.push("/profile");
+        } else if (pendingQr) {
+          router.push(`/qr/${pendingQr}`);
+        } else {
+          router.push("/");
+        }
+      } else {
+        setError(res.error || "Google Sign-In failed");
+      }
+    } catch (err: any) {
+      if (err?.message && !err.message.includes("cancelled")) {
+        setError("Google Sign-In failed. Please try email instead.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return setError("Please enter email and password");
@@ -156,14 +194,14 @@ export default function AuthPage() {
               {loading ? "Signing in..." : "Sign in with Apple"}
             </button>
 
-            {/* Google Sign-In — disabled until Google Cloud project is configured */}
+            {/* Google Sign-In — real native Capacitor plugin */}
             <button
-              disabled
-              title="Google Sign-In coming soon"
-              style={{ ...btnStyle("rgba(255,255,255,0.08)", "rgba(255,255,255,0.3)"), cursor: "not-allowed", border: "1px solid rgba(255,255,255,0.1)" }}
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              style={btnStyle("#fff", "#1a1a1a")}
             >
-              <span style={{ marginRight: '12px' }}>G</span> Sign in with Google
-              <span style={{ fontSize: '0.7rem', marginLeft: '8px', opacity: 0.6 }}>(Coming Soon)</span>
+              <span style={{ marginRight: '12px' }}>G</span>
+              {loading ? "Signing in..." : "Sign in with Google"}
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
