@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchApi } from "@/lib/api";
 
 interface HistoryItem {
   id: string;
@@ -49,11 +50,7 @@ export default function History() {
       return;
     }
 
-    fetch("https://perkfinity-backend.vercel.app/api/v1/consumers/history", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    })
-      .then((res) => res.json())
+    fetchApi('/consumers/history')
       .then((json) => {
         if (json.success) {
           // Only show entries that are redeemed OR expired (expires_at is in the past)

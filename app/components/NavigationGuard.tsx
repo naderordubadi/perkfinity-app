@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { fetchApi } from '@/lib/api';
 
 /**
  * NavigationGuard — mounted in the root layout, always present.
@@ -41,12 +42,9 @@ export default function NavigationGuard() {
       if (!pc.campaign_id || !userToken) return;
 
       // Revert member-list status to Created in the DB
-      fetch(
-        `https://perkfinity-backend.vercel.app/api/v1/campaigns/${pc.campaign_id}/cancel-activation`,
-        {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${userToken}` },
-        }
+      fetchApi(
+        `/campaigns/${pc.campaign_id}/cancel-activation`,
+        { method: 'POST' }
       ).catch(() => { /* best-effort */ });
 
       // Restore offer to pending_offers so it reappears on the home page

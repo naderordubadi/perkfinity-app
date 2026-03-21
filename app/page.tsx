@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { fetchApi } from "@/lib/api";
 
 export const dynamic = 'force-dynamic';
 
@@ -39,9 +40,9 @@ export default function Home() {
         const userToken = localStorage.getItem('pf_user_token');
         if (pc.campaign_id && userToken) {
           // Fire-and-forget — don't block home page loading
-          fetch(
-            `https://perkfinity-backend.vercel.app/api/v1/campaigns/${pc.campaign_id}/cancel-activation`,
-            { method: 'POST', headers: { 'Authorization': `Bearer ${userToken}` } }
+          fetchApi(
+            `/campaigns/${pc.campaign_id}/cancel-activation`,
+            { method: 'POST' }
           ).catch(() => {});
           // Restore offer to pending_offers if not already present
           const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
@@ -65,8 +66,7 @@ export default function Home() {
     const userData = localStorage.getItem('pf_user_data');
     const userZip = userData ? JSON.parse(userData).zip_code || null : null;
 
-    fetch('https://perkfinity-backend.vercel.app/api/v1/consumers/campaigns', { cache: 'no-store' })
-      .then(res => res.json())
+    fetchApi('/consumers/campaigns')
       .then(json => {
          if (json.success && json.data) {
            const data: Merchant[] = json.data;
