@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
+import { fetchApi } from "@/lib/api";
 
 // Inner component that uses useSearchParams — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
@@ -56,9 +57,9 @@ function RedeemContent() {
       const token = localStorage.getItem('pf_user_token') || '';
 
       // keepalive:true keeps the request going even after the page navigates away
-      fetch(
-        `https://perkfinity-backend.vercel.app/api/v1/campaigns/${campaignId}/cancel-activation`,
-        { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, keepalive: true }
+      fetchApi(
+        `/campaigns/${campaignId}/cancel-activation`,
+        { method: 'POST', keepalive: true }
       ).catch(() => {});
 
       // Restore offer to pending_offers immediately (localStorage is synchronous)
@@ -94,15 +95,11 @@ function RedeemContent() {
     if (redeeming || timeLeft <= 0 || !cache) return;
     try {
        setRedeeming(true);
-       const res = await fetch('https://perkfinity-backend.vercel.app/api/v1/campaigns/redeem', {
+       const res = await fetchApi('/campaigns/redeem', {
          method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-           'Authorization': `Bearer ${localStorage.getItem('pf_user_token')}`
-         },
          body: JSON.stringify({ token: cache.redemption.token })
        });
-       const json = await res.json();
+       const json = res;
        if (json.success) {
          setRedeemSuccess(true);
          setTimeLeft(0); // Stop the countdown timer
@@ -261,12 +258,9 @@ function RedeemContent() {
           if (!redeemSuccess && cache) {
             // 1. Tell the backend to revert status: pending → created
             try {
-              await fetch(
-                `https://perkfinity-backend.vercel.app/api/v1/campaigns/${cache.campaign.id}/cancel-activation`,
-                {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${localStorage.getItem('pf_user_token')}` }
-                }
+              await fetchApi(
+                `/campaigns/${cache.campaign.id}/cancel-activation`,
+                { method: 'POST' }
               );
             } catch { /* best-effort — proceed even if network fails */ }
 
