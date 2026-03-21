@@ -232,7 +232,7 @@ export default function OnboardingPage() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '1.25rem 1.5rem 0'
+        padding: 'max(env(safe-area-inset-top, 44px), 44px) 1.5rem 0'
       }}>
         <Image src="/app-icon.png" alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
         <div style={{ display: 'flex', gap: '6px' }}>
