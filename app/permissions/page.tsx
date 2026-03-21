@@ -39,7 +39,7 @@ export default function PermissionsPage() {
       
       const pendingQr = localStorage.getItem('pending_qr');
       if (pendingQr) {
-        router.push(`/qr/${pendingQr}`);
+        router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
       } else {
         router.push("/scan");
       }

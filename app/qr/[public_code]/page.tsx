@@ -1,5 +1,6 @@
 // Server component — generateStaticParams() must live here (not in a
 // 'use client' file). The actual UI is rendered by QRResolveClient.
+import { Suspense } from 'react';
 import QRResolveClient from './QRResolveClient';
 
 export function generateStaticParams() {
@@ -9,5 +10,13 @@ export function generateStaticParams() {
 }
 
 export default function QRPage({ params }: { params: { public_code: string } }) {
-  return <QRResolveClient params={params} />;
+  return (
+    <Suspense fallback={
+      <div style={{ height: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
+        Loading...
+      </div>
+    }>
+      <QRResolveClient params={params} />
+    </Suspense>
+  );
 }

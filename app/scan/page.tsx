@@ -60,7 +60,7 @@ export default function ScanPage() {
       stopCamera();
       const qrMatch = code.data.match(/\/qr\/([^\/?#]+)/);
       if (qrMatch?.[1]) {
-        router.push(`/qr/${qrMatch[1]}`);
+        router.push(`/qr/_/?code=${encodeURIComponent(qrMatch[1])}`);
       } else {
         try { window.location.href = code.data; } catch { router.push("/"); }
       }
