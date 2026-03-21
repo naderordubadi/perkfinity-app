@@ -6,12 +6,13 @@ import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
 
 export default function AuthPage() {
-  const [method, setMethod] = useState<"choice" | "login" | "signup">("choice");
+  const [method, setMethod] = useState<"choice" | "login" | "signup" | "forgot">("choice");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState(false);
   const router = useRouter();
 
   // ── Apple Sign-In (native Capacitor) ────────────────────────────
@@ -163,6 +164,30 @@ export default function AuthPage() {
     }
   };
 
+  // ── Forgot Password ─────────────────────────────────────────────
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return setError("Please enter your email address");
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetchApi('/consumers/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      });
+      if (res.success) {
+        setForgotSuccess(true);
+      } else {
+        setError(res.error || "Failed to send reset email");
+      }
+    } catch (err: any) {
+      // Show generic success even on error to not leak user existence
+      setForgotSuccess(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Password validation checks
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
@@ -276,10 +301,78 @@ export default function AuthPage() {
             <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
               {loading ? "Please wait..." : method === "login" ? "Sign In" : "Create Account"}
             </button>
+            {method === "login" && (
+              <button
+                type="button"
+                onClick={() => { setMethod("forgot"); setError(""); setForgotSuccess(false); }}
+                style={{ background: 'none', border: 'none', color: '#8B5CF6', fontSize: '0.875rem', cursor: 'pointer', marginTop: '-0.5rem' }}
+              >
+                Forgot Password?
+              </button>
+            )}
             <button type="button" onClick={() => setMethod("choice")} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}>
               Go Back
             </button>
           </form>
+        )}
+
+        {method === "forgot" && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {forgotSuccess ? (
+              <>
+                <div style={{
+                  background: 'rgba(107,193,122,0.12)',
+                  border: '1px solid rgba(107,193,122,0.35)',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✉️</div>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, color: '#86EFAC' }}>Check Your Email</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                    If an account exists for <strong style={{ color: '#fff' }}>{email}</strong>, we've sent a password reset link. Check your inbox and spam folder.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setMethod("login"); setError(""); setForgotSuccess(false); }}
+                  style={btnStyle("#8B5CF6", "#fff")}
+                >
+                  Back to Sign In
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, fontSize: '1.25rem' }}>Reset Password</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                    Enter your email address and we'll send you a link to reset your password.
+                  </p>
+                </div>
+                {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+                <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMethod("login"); setError(""); }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}
+                >
+                  Back to Sign In
+                </button>
+              </form>
+            )}
+          </div>
         )}
       </div>
 
