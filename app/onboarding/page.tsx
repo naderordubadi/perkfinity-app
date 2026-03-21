@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 const steps = [
   {
@@ -234,7 +233,7 @@ export default function OnboardingPage() {
         alignItems: 'center',
         padding: 'max(env(safe-area-inset-top, 44px), 44px) 1.5rem 0'
       }}>
-        <Image src="/app-icon.png" alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
+        <img src="/app-icon.png" alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
         <div style={{ display: 'flex', gap: '6px' }}>
           {steps.map((_, i) => (
             <div key={i} style={{
