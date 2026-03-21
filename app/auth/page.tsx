@@ -28,12 +28,14 @@ export default function AuthPage() {
       });
       const credential = result.response;
       const fullName = [credential.givenName, credential.familyName].filter(Boolean).join(" ");
+      const pendingQr = localStorage.getItem("pending_qr");
       const res = await fetchApi("/consumers/apple-signin", {
         method: "POST",
         body: JSON.stringify({
           identityToken: credential.identityToken,
           authorizationCode: credential.authorizationCode,
           fullName,
+          qrCode: pendingQr || undefined
         }),
       });
       if (res.success && res.data?.accessToken) {
@@ -75,9 +77,10 @@ export default function AuthPage() {
       const googleUser = await GoogleAuth.signIn();
       const idToken = googleUser.authentication?.idToken;
       if (!idToken) throw new Error("No ID token returned from Google");
+      const pendingQr = localStorage.getItem("pending_qr");
       const res = await fetchApi("/consumers/google-signin", {
         method: "POST",
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ idToken, qrCode: pendingQr || undefined }),
       });
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
