@@ -57,16 +57,24 @@ export default function QRResolveClient({ params }: { params: { public_code: str
     fetchApi(`/qr/resolve/${params.public_code}`)
       .then(res => {
         const qrData = res.data as QRData;
-        setData(qrData);
         if (qrData.campaigns && qrData.campaigns.length > 0) {
-          const pendingOffers = qrData.campaigns.map((c: Campaign) => ({
-            campaign_id: c.id,
-            merchant_name: qrData.merchant.business_name,
-            title: c.title,
-            qr_code: params.public_code,
-          }));
-          localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
+          // Only store campaigns that are personally assigned to this user with 'created' status
+          // (i.e., not yet activated/pending 5-min timer, not already redeemed)
+          const createdCampaigns = qrData.campaigns.filter(
+            (c: Campaign) => c.status === 'created' || c.status === 'active'
+          );
+          if (createdCampaigns.length > 0) {
+            const pendingOffers = createdCampaigns.map((c: Campaign) => ({
+              campaign_id: c.id,
+              merchant_name: qrData.merchant.business_name,
+              title: c.title,
+              qr_code: params.public_code,
+            }));
+            localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
+          }
         }
+        // Redirect to home so it mounts fresh and picks up the pending_offers we just wrote
+        router.push('/');
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));

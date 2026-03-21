@@ -299,13 +299,20 @@ export default function Home() {
           <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants Around You</h3>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {merchants.length > 0 ? merchants.map((m: Merchant, i: number) => (
+          {merchants.length > 0 ? merchants.map((m: Merchant, i: number) => {
+            // For the scanned merchant, show this user's personal pending offer count
+            const isScannedMerchant = pendingQr && m.qr_code === pendingQr;
+            const displayCount = isScannedMerchant && pendingOffers.length > 0
+              ? pendingOffers.length
+              : (m.offer_count ?? 0);
+            const displayLabel = displayCount > 1 ? `${displayCount} offers` : m.discount;
+            return (
             <div key={i} style={{
               minWidth: '130px',
               padding: '1rem',
-              background: 'rgba(255,255,255,0.04)',
+              background: isScannedMerchant ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
               borderRadius: '20px',
-              border: `1px solid rgba(139,92,246,0.3)`,
+              border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(139,92,246,0.3)',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
@@ -313,8 +320,8 @@ export default function Home() {
             }}>
               <div style={{
                 width: '38px', height: '38px', borderRadius: '12px',
-                background: `rgba(139,92,246,0.22)`,
-                border: `1px solid rgba(139,92,246,0.4)`,
+                background: isScannedMerchant ? 'rgba(251,191,36,0.22)' : 'rgba(139,92,246,0.22)',
+                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(139,92,246,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 overflow: 'hidden'
               }}>
@@ -323,21 +330,22 @@ export default function Home() {
               <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{m.merchant_name}</div>
               <div style={{
                 fontSize: '0.7rem', fontWeight: 700,
-                color: '#86EFAC',
-                background: 'rgba(107,193,122,0.12)',
-                border: '1px solid rgba(107,193,122,0.25)',
+                color: isScannedMerchant ? '#FDE68A' : '#86EFAC',
+                background: isScannedMerchant ? 'rgba(251,191,36,0.15)' : 'rgba(107,193,122,0.12)',
+                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(107,193,122,0.25)',
                 borderRadius: '8px',
                 padding: '2px 6px',
                 display: 'inline-block',
                 alignSelf: 'flex-start'
               }}>
-                {m.offer_count && m.offer_count > 1 ? `${m.offer_count} offers` : m.discount}
+                {displayLabel}
               </div>
-              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: '2px' }}>
-                Scan QR in store to redeem
+              <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: '2px' }}>
+                {isScannedMerchant ? 'Tap banner to activate!' : 'Scan QR in store to redeem'}
               </div>
             </div>
-          )) : (
+            );
+          }) : (
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Loading merchants...</div>
           )}
         </div>
