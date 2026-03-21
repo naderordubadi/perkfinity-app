@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,9 +30,22 @@ export default function QRResolveClient({ params }: { params: { public_code: str
   const [activating, setActivating] = useState<string | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    localStorage.setItem('pending_qr', params.public_code);
+    // Resolve the actual QR code: prefer query param, then route param (if not placeholder), then localStorage
+    const qrCode = searchParams.get('code')
+      || (params.public_code !== '_' ? params.public_code : null)
+      || localStorage.getItem('pending_qr')
+      || '';
+
+    if (!qrCode) {
+      setError('No QR code found');
+      setLoading(false);
+      return;
+    }
+
+    localStorage.setItem('pending_qr', qrCode);
 
     // Auth checks — redirect to login/signup if not authenticated
     const isLoggedIn = !!localStorage.getItem('pf_user_token');
@@ -45,7 +58,7 @@ export default function QRResolveClient({ params }: { params: { public_code: str
     if (!hasAccount && !isLoggedIn) { router.push('/auth'); return; }
     if (hasAccount && !isLoggedIn) { router.push('/auth?method=login'); return; }
 
-    fetchApi(`/qr/resolve/${params.public_code}`)
+    fetchApi(`/qr/resolve/${qrCode}`)
       .then(res => {
         const qrData = res.data as QRData;
         if (qrData.campaigns && qrData.campaigns.length > 0) {

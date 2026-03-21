@@ -47,7 +47,7 @@ export default function AuthPage() {
         if (!res.data.user?.full_name) {
           router.push("/profile");
         } else if (pendingQr) {
-          router.push(`/qr/${pendingQr}`);
+          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
         } else {
           router.push("/");
         }
@@ -91,7 +91,7 @@ export default function AuthPage() {
         if (!res.data.user?.full_name) {
           router.push("/profile");
         } else if (pendingQr) {
-          router.push(`/qr/${pendingQr}`);
+          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
         } else {
           router.push("/");
         }
@@ -150,7 +150,7 @@ export default function AuthPage() {
         if (target === "/profile") {
           router.push("/profile");
         } else if (pendingQr) {
-          router.push(`/qr/${pendingQr}`);
+          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
         } else {
           router.push(target);
         }
