@@ -18,6 +18,7 @@ interface Campaign {
   terms: string;
   discount_percentage: number;
   status: string;
+  end_at?: string;
 }
 
 interface MerchantInfo {
@@ -28,6 +29,30 @@ interface MerchantInfo {
 interface LocationInfo {
   address?: string;
   city?: string;
+}
+
+function formatExpiryLine(end_at?: string): { text: string; color: string; icon: string } {
+  if (!end_at) {
+    return { text: "No expiry date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+  }
+  const expires = new Date(end_at);
+  const now = new Date();
+  const diffDays = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Far future (> 365 days) — treat like no expiry
+  if (diffDays > 365) {
+    return { text: "No expiry date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+  }
+
+  const formatted = expires.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  if (diffDays <= 3) {
+    return { text: `Expires ${formatted} — act fast!`, color: '#F87171', icon: '🔥' };
+  }
+  if (diffDays <= 7) {
+    return { text: `Expires ${formatted} — offer ending soon`, color: '#FDE68A', icon: '⚠️' };
+  }
+  return { text: `Expires ${formatted}`, color: 'rgba(255,255,255,0.5)', icon: '📅' };
 }
 
 export default function ActivatePage() {
@@ -126,7 +151,7 @@ export default function ActivatePage() {
   // Use campaign details from API if available, fallback to localStorage data
   const displayCampaigns = campaignDetails.length > 0
     ? campaignDetails
-    : offers.map(o => ({ id: o.campaign_id, title: o.title, terms: '', discount_percentage: 0, status: 'created' }));
+    : offers.map(o => ({ id: o.campaign_id, title: o.title, terms: '', discount_percentage: 0, status: 'created', end_at: undefined }));
   const totalCampaigns = displayCampaigns.length;
   const campaign = displayCampaigns[currentIdx];
   const merchantName = merchantInfo?.business_name || offers[0]?.merchant_name || 'Merchant';
@@ -186,6 +211,17 @@ export default function ActivatePage() {
                 <span>Scan the Perkfinity QR in store <strong style={{ color: 'rgba(255,255,255,0.8)' }}>before you order</strong></span>
               </div>
             </div>
+
+            {/* Expiry Line */}
+            {(() => {
+              const expiry = formatExpiryLine((campaign as Campaign)?.end_at);
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.85rem', fontSize: '0.78rem', color: expiry.color, fontWeight: 600 }}>
+                  <span>{expiry.icon}</span>
+                  <span>{expiry.text}</span>
+                </div>
+              );
+            })()}
 
             <button
               onClick={() => campaign && handleActivate(campaign.id)}
