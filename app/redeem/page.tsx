@@ -11,6 +11,7 @@ function RedeemContent() {
   const [cache, setCache] = useState<any>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemSuccess, setRedeemSuccess] = useState(false);
+  const [expired, setExpired] = useState(false);
   const router = useRouter();
 
   // Refs so the unmount cleanup always has the latest values
@@ -80,10 +81,31 @@ function RedeemContent() {
   }, []); // empty deps — intentionally runs cleanup on unmount only
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (timeLeft <= 0) {
+      // Timer just hit zero — mark as expired
+      if (cache && !redeemSuccess && !expired) {
+        setExpired(true);
+        // 1. Tell the backend to set status → 'expired'
+        fetchApi(
+          `/campaigns/${cache.campaign.id}/expire`,
+          { method: 'POST' }
+        ).catch(() => {});
+
+        // 2. Remove from pending_offers so banner count drops
+        try {
+          const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+          const updated = offers.filter((o: { campaign_id: string }) => o.campaign_id !== cache.campaign.id);
+          localStorage.setItem('pending_offers', JSON.stringify(updated));
+        } catch { /* ignore */ }
+
+        // 3. Clear pending_cancel since we explicitly expired it
+        localStorage.removeItem('pending_cancel');
+      }
+      return;
+    }
     const timer = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, cache, redeemSuccess, expired]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -253,9 +275,9 @@ function RedeemContent() {
 
       <button 
         onClick={async () => {
-          // If the offer wasn't redeemed, revert its status back to 'created'
-          // and restore it to pending_offers so home page shows it again
-          if (!redeemSuccess && cache) {
+          // If expired, just go home — the expire API was already called
+          // If not redeemed and not expired, revert status back to 'created'
+          if (!redeemSuccess && !expired && cache) {
             // 1. Tell the backend to revert status: pending → created
             try {
               await fetchApi(
