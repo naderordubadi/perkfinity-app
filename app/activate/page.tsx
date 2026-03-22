@@ -127,13 +127,6 @@ export default function ActivatePage() {
         location: locationInfo,
       }));
 
-      localStorage.setItem('pending_cancel', JSON.stringify({
-        campaign_id: campaignId,
-        merchant_name: merchantInfo?.business_name || offer?.merchant_name || '',
-        title: detail?.title || offer?.title || '',
-        qr_code: offer?.qr_code || '',
-      }));
-
       // Remove activated offer from pending list
       try {
         const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
