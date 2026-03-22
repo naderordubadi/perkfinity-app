@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { fetchApi } from "@/lib/api";
+import { App } from '@capacitor/app';
 
 // Inner component that uses useSearchParams — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
@@ -93,11 +94,15 @@ function RedeemContent() {
 
   // Auto-cancel when app is backgrounded (user swipes home, opens another app)
   // In Capacitor WebView, the page stays mounted when backgrounded, so the
-  // unmount cleanup above won't fire. This listener handles that case.
+  // unmount cleanup above won't fire. We use the native Capacitor App plugin
+  // because visibilitychange does NOT reliably fire in iOS WKWebView.
   const cancelledByBackgroundRef = useRef(false);
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') {
+    let pauseListener: { remove: () => void } | null = null;
+    let resumeListener: { remove: () => void } | null = null;
+
+    const setup = async () => {
+      pauseListener = await App.addListener('pause', () => {
         // App went to background — treat as Done/Cancel
         const c = cacheRef.current;
         if (redeemSuccessRef.current || expiredRef.current || !c) return;
@@ -127,15 +132,22 @@ function RedeemContent() {
         } catch { /* ignore */ }
 
         localStorage.removeItem('pending_cancel');
-      }
+      });
 
-      if (document.visibilityState === 'visible' && cancelledByBackgroundRef.current) {
-        // User came back after backgrounding — redirect to home
-        router.push('/');
-      }
+      resumeListener = await App.addListener('resume', () => {
+        if (cancelledByBackgroundRef.current) {
+          // User came back after backgrounding — redirect to home
+          router.push('/');
+        }
+      });
     };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+
+    setup();
+
+    return () => {
+      pauseListener?.remove();
+      resumeListener?.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
