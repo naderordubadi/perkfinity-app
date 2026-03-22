@@ -91,6 +91,54 @@ function RedeemContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // empty deps — intentionally runs cleanup on unmount only
 
+  // Auto-cancel when app is backgrounded (user swipes home, opens another app)
+  // In Capacitor WebView, the page stays mounted when backgrounded, so the
+  // unmount cleanup above won't fire. This listener handles that case.
+  const cancelledByBackgroundRef = useRef(false);
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        // App went to background — treat as Done/Cancel
+        const c = cacheRef.current;
+        if (redeemSuccessRef.current || expiredRef.current || !c) return;
+
+        cancelledByBackgroundRef.current = true;
+        // Prevent unmount cleanup from also firing cancel
+        expiredRef.current = true;
+
+        // Call cancel-activation
+        fetchApi(
+          `/campaigns/${c.campaign.id}/cancel-activation`,
+          { method: 'POST', keepalive: true }
+        ).catch(() => {});
+
+        // Restore offer to pending_offers
+        try {
+          const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+          if (!offers.some((o: { campaign_id: string }) => o.campaign_id === c.campaign.id)) {
+            offers.push({
+              campaign_id: c.campaign.id,
+              merchant_name: c.merchant.business_name,
+              title: c.campaign.title,
+              qr_code: localStorage.getItem('pending_qr') || '',
+            });
+            localStorage.setItem('pending_offers', JSON.stringify(offers));
+          }
+        } catch { /* ignore */ }
+
+        localStorage.removeItem('pending_cancel');
+      }
+
+      if (document.visibilityState === 'visible' && cancelledByBackgroundRef.current) {
+        // User came back after backgrounding — redirect to home
+        router.push('/');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
+
   useEffect(() => {
     if (timeLeft <= 0) {
       // Timer just hit zero — mark as expired
