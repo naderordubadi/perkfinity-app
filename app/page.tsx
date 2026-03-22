@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchApi } from "@/lib/api";
 
@@ -17,6 +18,7 @@ interface Merchant {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [pendingOffers, setPendingOffers] = useState<Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}>>([]);
@@ -265,7 +267,7 @@ export default function Home() {
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
             <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
           </div>
-          <a href="/activate/" style={{ textDecoration: 'none' }}>
+          <div onClick={() => router.push('/activate/')} style={{ cursor: 'pointer' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
               border: '1px solid rgba(251,191,36,0.35)',
@@ -287,7 +289,7 @@ export default function Home() {
               </div>
               <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
             </div>
-          </a>
+          </div>
         </div>
       )}
 
