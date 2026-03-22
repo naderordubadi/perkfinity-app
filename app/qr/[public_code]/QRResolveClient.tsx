@@ -8,6 +8,7 @@ interface Campaign {
   id: string;
   title: string;
   status: string;
+  discount_percentage?: number;
 }
 
 interface QRData {
@@ -50,7 +51,9 @@ export default function QRResolveClient({ params }: { params: { public_code: str
         const qrData = res.data as QRData;
         if (qrData.campaigns && qrData.campaigns.length > 0) {
           const createdCampaigns = qrData.campaigns.filter(
-            (c: Campaign) => c.status === 'created' || c.status === 'active'
+            (c: Campaign) =>
+              (c.status === 'created' || c.status === 'active') &&
+              (c.discount_percentage === undefined || c.discount_percentage >= 0)
           );
           if (createdCampaigns.length > 0) {
             const pendingOffers = createdCampaigns.map((c: Campaign) => ({
