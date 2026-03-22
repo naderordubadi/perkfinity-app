@@ -32,7 +32,7 @@ function RedeemContent() {
       const now = new Date().getTime();
       const diffSecs = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(diffSecs);
-      
+
       // If already redeemed according to cache, show success state immediately 
       // (This handles page reloads after successful redemption)
       if (data.redemption.redeemed) {
@@ -61,7 +61,7 @@ function RedeemContent() {
       fetchApi(
         `/campaigns/${campaignId}/cancel-activation`,
         { method: 'POST', keepalive: true }
-      ).catch(() => {});
+      ).catch(() => { });
 
       // Restore offer to pending_offers immediately (localStorage is synchronous)
       try {
@@ -77,7 +77,7 @@ function RedeemContent() {
         }
       } catch { /* ignore */ }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // empty deps — intentionally runs cleanup on unmount only
 
   useEffect(() => {
@@ -89,7 +89,7 @@ function RedeemContent() {
         fetchApi(
           `/campaigns/${cache.campaign.id}/expire`,
           { method: 'POST' }
-        ).catch(() => {});
+        ).catch(() => { });
 
         // 2. Remove from pending_offers so banner count drops
         try {
@@ -116,23 +116,23 @@ function RedeemContent() {
   const handleManualRedeem = async () => {
     if (redeeming || timeLeft <= 0 || !cache) return;
     try {
-       setRedeeming(true);
-       const res = await fetchApi('/campaigns/redeem', {
-         method: 'POST',
-         body: JSON.stringify({ token: cache.redemption.token })
-       });
-       const json = res;
-       if (json.success) {
-         setRedeemSuccess(true);
-         setTimeLeft(0); // Stop the countdown timer
-         localStorage.removeItem('pending_qr'); // Clear the Pending Perk banner from home page
-         localStorage.removeItem('pending_cancel'); // Redeemed — no auto-cancel needed
-         // Update local cache to show redeemed state if they reload
-         const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
-         localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
-       } else {
-         alert(json.error || 'Failed to redeem');
-       }
+      setRedeeming(true);
+      const res = await fetchApi('/campaigns/redeem', {
+        method: 'POST',
+        body: JSON.stringify({ token: cache.redemption.token })
+      });
+      const json = res;
+      if (json.success) {
+        setRedeemSuccess(true);
+        setTimeLeft(0); // Stop the countdown timer
+        localStorage.removeItem('pending_qr'); // Clear the Pending Perk banner from home page
+        localStorage.removeItem('pending_cancel'); // Redeemed — no auto-cancel needed
+        // Update local cache to show redeemed state if they reload
+        const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
+        localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
+      } else {
+        alert(json.error || 'Failed to redeem');
+      }
     } catch (err) {
       console.error(err);
       alert('Network error during redemption');
@@ -159,12 +159,12 @@ function RedeemContent() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '2rem', paddingBottom: '4rem' }}>
         <h2 style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.8)', fontSize: '1.25rem' }}>{cache.merchant.business_name}</h2>
         <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>SHOW THIS TO CASHIER</h2>
-        
+
         {/* Large Timer — hidden after successful redemption */}
         {!redeemSuccess && (
-          <div style={{ 
-            fontSize: '4rem', 
-            fontWeight: 800, 
+          <div style={{
+            fontSize: '4rem',
+            fontWeight: 800,
             margin: '0.5rem 0 1rem',
             color: timeLeft < 60 ? '#EF4444' : '#fff',
             fontVariantNumeric: 'tabular-nums',
@@ -207,7 +207,7 @@ function RedeemContent() {
           filter: timeLeft <= 0 ? 'grayscale(100%) blur(4px)' : 'none',
           transition: 'all 0.5s ease'
         }}>
-          <QRCodeSVG 
+          <QRCodeSVG
             value={`perkfinity://redeem?campaign=${cache.campaign.id}&token=${cache.redemption.token}`}
             size={192}
             bgColor={"#ffffff"}
@@ -239,10 +239,10 @@ function RedeemContent() {
 
         {/* Manual Redeem Button for Merchant Verification (Cashier push it instead of scanning) */}
         {!redeemSuccess ? (
-          <button 
+          <button
             onClick={handleManualRedeem}
             disabled={redeeming || timeLeft <= 0}
-            style={{ 
+            style={{
               marginTop: '1.5rem',
               padding: '1rem',
               background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
@@ -273,7 +273,7 @@ function RedeemContent() {
         )}
       </div>
 
-      <button 
+      <button
         onClick={async () => {
           // If expired, just go home — the expire API was already called
           // If not redeemed and not expired, revert status back to 'created'
@@ -288,7 +288,7 @@ function RedeemContent() {
 
             // 2. Restore offer to pending_offers so it reappears on home page
             try {
-              const existing: Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}> =
+              const existing: Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }> =
                 JSON.parse(localStorage.getItem('pending_offers') || '[]');
               const alreadyThere = existing.some(o => o.campaign_id === cache.campaign.id);
               if (!alreadyThere) {
