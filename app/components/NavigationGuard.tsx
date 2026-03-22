@@ -61,7 +61,9 @@ export default function NavigationGuard() {
           localStorage.setItem('pending_offers', JSON.stringify(offers));
         }
       } catch { /* ignore */ }
-    } catch { /* ignore bad JSON */ }
+    } catch (err) {
+      console.error('Failed to parse pending_cancel:', err);
+    }
   }, [pathname]);
 
   return null;

@@ -28,6 +28,17 @@ function RedeemContent() {
     try {
       const data = JSON.parse(dataString);
       setCache(data);
+
+      // Only set pending_cancel once we actually arrive on the redeem page
+      // This prevents race conditions where NavigationGuard cancels the offer
+      // while still transitioning away from the activate page.
+      localStorage.setItem('pending_cancel', JSON.stringify({
+        campaign_id: data.campaign.id,
+        merchant_name: data.merchant.business_name,
+        title: data.campaign.title,
+        qr_code: localStorage.getItem('pending_qr') || '',
+      }));
+
       // Synchronize timer with server
       const expiresAt = new Date(data.redemption.expires_at).getTime();
       const now = new Date().getTime();
