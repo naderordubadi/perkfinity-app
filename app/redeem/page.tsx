@@ -17,6 +17,7 @@ function RedeemContent() {
   // Refs so the unmount cleanup always has the latest values
   const redeemSuccessRef = useRef(false);
   const cacheRef = useRef<any>(null);
+  const expiredRef = useRef(false);
 
   useEffect(() => {
     const dataString = localStorage.getItem('active_token_cache');
@@ -47,15 +48,14 @@ function RedeemContent() {
   useEffect(() => { redeemSuccessRef.current = redeemSuccess; }, [redeemSuccess]);
   useEffect(() => { cacheRef.current = cache; }, [cache]);
 
-  // Auto-cancel when user navigates away without redeeming
-  // (same logic as Done/Cancel but triggered by component unmount)
+  // Auto-cancel when user navigates away without redeeming AND not expired
+  // If expired, expire API was already called — do NOT call cancel-activation
   useEffect(() => {
     return () => {
       const c = cacheRef.current;
-      if (redeemSuccessRef.current || !c) return; // already redeemed — nothing to do
+      if (redeemSuccessRef.current || expiredRef.current || !c) return;
 
       const campaignId = c.campaign.id;
-      const token = localStorage.getItem('pf_user_token') || '';
 
       // keepalive:true keeps the request going even after the page navigates away
       fetchApi(
@@ -84,6 +84,9 @@ function RedeemContent() {
     if (timeLeft <= 0) {
       // Timer just hit zero — mark as expired
       if (cache && !redeemSuccess && !expired) {
+        // Set ref SYNCHRONOUSLY first — prevents unmount cleanup race
+        // (useEffect-based sync only updates after render; this is immediate)
+        expiredRef.current = true;
         setExpired(true);
         // 1. Tell the backend to set status → 'expired'
         fetchApi(
