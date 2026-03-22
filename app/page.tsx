@@ -265,7 +265,7 @@ export default function Home() {
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
             <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
           </div>
-          <a href={`/qr/_/?code=${encodeURIComponent(pendingOffers[0].qr_code)}`} style={{ textDecoration: 'none' }}>
+          <a href="/activate/" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
               border: '1px solid rgba(251,191,36,0.35)',
