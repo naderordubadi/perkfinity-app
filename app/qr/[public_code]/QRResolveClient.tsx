@@ -22,11 +22,25 @@ export default function QRResolveClient({ params }: { params: { public_code: str
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    // ── Browser detection: if opened in Safari (not inside native Capacitor app),
+    //    redirect to /download page which handles TestFlight redirect.
+    //    This is the Stage 1 flow: user has no app, scans QR → goes to TestFlight.
+    const isNative = typeof window !== 'undefined'
+      && (window as any).Capacitor?.isNativePlatform?.();
+
     // Resolve the actual QR code: prefer query param, then route param (if not placeholder), then localStorage
     const qrCode = searchParams.get('code')
       || (params.public_code !== '_' ? params.public_code : null)
       || localStorage.getItem('pending_qr')
       || '';
+
+    if (!isNative) {
+      // Running in Safari/browser — user doesn't have the app.
+      // Save QR code so it persists, then redirect to TestFlight download page.
+      if (qrCode) localStorage.setItem('pending_qr', qrCode);
+      router.push('/download');
+      return;
+    }
 
     if (!qrCode) {
       setError('No QR code found');
