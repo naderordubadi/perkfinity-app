@@ -377,7 +377,10 @@ export default function AuthPage() {
       </div>
 
       <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingBottom: '2rem' }}>
-        By continuing, you agree to Perkfinity's <br/><strong>Terms of Service</strong> and <strong>Privacy Policy</strong>.
+        By continuing, you agree to Perkfinity&apos;s <br/>
+        <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Terms of Use</a>
+        {' '}and{' '}
+        <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Privacy Policy</a>.
       </p>
     </div>
   );
