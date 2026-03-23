@@ -6,5 +6,10 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:perkfinity-app.vercel.app</string>
+		<string>webcredentials:perkfinity-app.vercel.app</string>
+	</array>
 </dict>
 </plist>
