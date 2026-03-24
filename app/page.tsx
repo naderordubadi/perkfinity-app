@@ -27,9 +27,17 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    const token = localStorage.getItem('pf_user_token');
+
+    // New/unauthenticated users → show onboarding slides first
+    if (!token) {
+      router.push('/onboarding');
+      return;
+    }
+
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
-    if (localStorage.getItem('pf_user_token')) setIsLoggedIn(true);
+    setIsLoggedIn(true);
 
     // ── Reliable cancel-activation fallback ──────────────────────────
     // If the user navigated away from /redeem without completing the redemption,
