@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getUserToken } from "@/lib/user";
 
 const steps = [
   {
@@ -211,7 +212,9 @@ export default function OnboardingPage() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      router.push("/auth");
+      // If already signed in → go home; if not → go to sign up
+      const isSignedIn = !!getUserToken();
+      router.push(isSignedIn ? "/" : "/auth");
     }
   };
 
@@ -246,7 +249,7 @@ export default function OnboardingPage() {
           ))}
         </div>
         <button
-          onClick={() => router.push("/auth")}
+          onClick={() => router.push(getUserToken() ? "/" : "/auth")}
           style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', cursor: 'pointer' }}
         >
           Skip

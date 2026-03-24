@@ -41,7 +41,7 @@ export default function PermissionsPage() {
       if (pendingQr) {
         router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
       } else {
-        router.push("/scan");
+        router.push("/onboarding");
       }
     } catch (err) {
       console.error(err);
