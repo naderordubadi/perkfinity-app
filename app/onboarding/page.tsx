@@ -212,9 +212,9 @@ export default function OnboardingPage() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // If already signed in → go home; if not → go to sign up
+      // If already signed in → go to Scan so they know what to do next; if not → sign up
       const isSignedIn = !!getUserToken();
-      router.push(isSignedIn ? "/" : "/auth");
+      router.push(isSignedIn ? "/scan" : "/auth");
     }
   };
 
@@ -249,7 +249,7 @@ export default function OnboardingPage() {
           ))}
         </div>
         <button
-          onClick={() => router.push(getUserToken() ? "/" : "/auth")}
+          onClick={() => router.push(getUserToken() ? "/scan" : "/auth")}
           style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', cursor: 'pointer' }}
         >
           Skip
