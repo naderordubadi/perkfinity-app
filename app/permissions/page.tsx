@@ -23,12 +23,21 @@ export default function PermissionsPage() {
     try {
       setLoading(true);
 
+      let finalGeoEnabled = geoEnabled;
+      let finalPushEnabled = pushEnabled;
+
       // Trigger standard Location prompt
       if (geoEnabled && typeof window !== "undefined" && navigator.geolocation) {
         await new Promise<void>((resolve) => {
           navigator.geolocation.getCurrentPosition(
             () => resolve(),
-            () => resolve(),
+            (err) => {
+              if (err.code === err.PERMISSION_DENIED) {
+                finalGeoEnabled = false;
+                // Optionally alert for location too, but usually it's obvious when they tap Don't Allow
+              }
+              resolve();
+            },
             { timeout: 10000 }
           );
         });
@@ -54,30 +63,36 @@ export default function PermissionsPage() {
                   });
                 }
               }
+            } else {
+              // OS Denied or Previously Denied
+              finalPushEnabled = false;
+              alert("Push notifications are currently blocked by iOS. Please go to your iPhone's Settings > Perkfinity to enable them.");
             }
           } else {
             if ("Notification" in window) {
-              await Notification.requestPermission();
+              const perm = await Notification.requestPermission();
+              if (perm !== "granted") finalPushEnabled = false;
             }
           }
         } catch (err) {
           console.error('[Permissions] Push registration failed', err);
+          finalPushEnabled = false;
         }
       }
 
       await fetchApi('/consumers/profile', {
         method: 'PUT',
         body: JSON.stringify({
-          location_sharing_enabled: geoEnabled,
-          push_notifications_enabled: pushEnabled
+          location_sharing_enabled: finalGeoEnabled,
+          push_notifications_enabled: finalPushEnabled
         })
       });
       
       const current = getUserData() || {};
       setUserData({
         ...current,
-        location_sharing_enabled: geoEnabled,
-        push_notifications_enabled: pushEnabled
+        location_sharing_enabled: finalGeoEnabled,
+        push_notifications_enabled: finalPushEnabled
       });
       
       const pendingQr = localStorage.getItem('pending_qr');
