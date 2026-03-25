@@ -22,6 +22,49 @@ export default function PermissionsPage() {
   const handleFinish = async () => {
     try {
       setLoading(true);
+
+      // Trigger standard Location prompt
+      if (geoEnabled && typeof window !== "undefined" && navigator.geolocation) {
+        await new Promise<void>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(),
+            () => resolve(),
+            { timeout: 10000 }
+          );
+        });
+      }
+
+      // Trigger Push Notifications native FCM prompt
+      if (pushEnabled) {
+        try {
+          const { Capacitor } = await import('@capacitor/core');
+          if (Capacitor.isNativePlatform()) {
+            const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+            const { receive } = await FirebaseMessaging.requestPermissions();
+            if (receive === 'granted') {
+              const { token: fcmToken } = await FirebaseMessaging.getToken();
+              if (fcmToken) {
+                const authToken = localStorage.getItem('pf_user_token');
+                const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.vercel.app/api/v1';
+                if (authToken) {
+                  await fetch(`${API_BASE}/consumers/push-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ token: fcmToken }),
+                  });
+                }
+              }
+            }
+          } else {
+            if ("Notification" in window) {
+              await Notification.requestPermission();
+            }
+          }
+        } catch (err) {
+          console.error('[Permissions] Push registration failed', err);
+        }
+      }
+
       await fetchApi('/consumers/profile', {
         method: 'PUT',
         body: JSON.stringify({

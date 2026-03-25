@@ -2,16 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>Perkfinity needs camera access to scan QR codes and unlock exclusive discounts at local merchants.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required alongside camera for video capture on iOS.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Perkfinity</string>
+	<string>Perkfinity</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,10 +18,41 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>net.perkfinity.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>perkfinity</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.google.reverseClientId</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1053337094970-c38gunb5oljfncb4avar8c6fc4jg5kjg</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Perkfinity needs camera access to scan QR codes and unlock exclusive discounts at local merchants.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is required alongside camera for video capture on iOS.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location solely to notify you when you walk near a participating store offering a targeted discount.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -51,24 +76,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>net.perkfinity.app</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>perkfinity</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.google.reverseClientId</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1053337094970-c38gunb5oljfncb4avar8c6fc4jg5kjg</string>
-			</array>
-		</dict>
-	</array>
 </dict>
 </plist>
