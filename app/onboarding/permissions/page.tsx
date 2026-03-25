@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.vercel.app/api/v1';
+
 export default function PermissionsPage() {
   const [locStatus, setLocStatus] = useState<"idle" | "granted" | "denied">("idle");
   const [notifStatus, setNotifStatus] = useState<"idle" | "granted" | "denied">("idle");
@@ -17,10 +19,37 @@ export default function PermissionsPage() {
   };
 
   const requestNotifications = async () => {
-    if (!("Notification" in window)) return;
-    const permission = await Notification.requestPermission();
-    setNotifStatus(permission === "granted" ? "granted" : "denied");
+    try {
+      // Use Firebase FCM (native iOS) — NOT the web Notification API
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const { receive } = await FirebaseMessaging.requestPermissions();
+        if (receive !== 'granted') { setNotifStatus("denied"); return; }
+        const { token: fcmToken } = await FirebaseMessaging.getToken();
+        if (!fcmToken) { setNotifStatus("denied"); return; }
+        // Save token to backend
+        const authToken = localStorage.getItem('pf_user_token');
+        if (authToken) {
+          await fetch(`${API_BASE}/consumers/push-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ token: fcmToken }),
+          });
+        }
+        setNotifStatus("granted");
+      } else {
+        // Web fallback (for browser testing only)
+        if (!("Notification" in window)) return;
+        const permission = await Notification.requestPermission();
+        setNotifStatus(permission === "granted" ? "granted" : "denied");
+      }
+    } catch (err) {
+      console.error('[Permissions] Notification registration failed:', err);
+      setNotifStatus("denied");
+    }
   };
+
 
   return (
     <div style={{
