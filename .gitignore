@@ -10,3 +10,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
+
+# Firebase config — never commit these
+GoogleService-Info.plist
+google-services.json
