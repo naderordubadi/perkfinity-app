@@ -5,6 +5,10 @@ const config: CapacitorConfig = {
   appName: 'Perkfinity',
   webDir: 'out',
   bundledWebRuntime: false,
+  server: {
+    hostname: 'perkfinity.net',
+    androidScheme: 'https',
+  },
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],
