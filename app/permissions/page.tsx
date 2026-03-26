@@ -34,44 +34,69 @@ export default function PermissionsPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Check current iOS permission states on page load
-  useEffect(() => {
-    async function checkPermissions() {
-      try {
-        const { Capacitor } = await import('@capacitor/core');
-        if (Capacitor.isNativePlatform()) {
-          // Check Location
-          const { Geolocation } = await import('@capacitor/geolocation');
-          const locStatus = await Geolocation.checkPermissions();
-          if (locStatus.location === 'granted' || locStatus.coarseLocation === 'granted') {
-            setGeoState('granted');
-          } else if (locStatus.location === 'denied' || locStatus.coarseLocation === 'denied') {
-            setGeoState('denied');
-          } else {
-            setGeoState('prompt');
-          }
-
-          // Check Push Notifications
-          const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
-          const pushStatus = await FirebaseMessaging.checkPermissions();
-          if (pushStatus.receive === 'granted') {
-            setPushState('granted');
-          } else if (pushStatus.receive === 'denied') {
-            setPushState('denied');
-          } else {
-            setPushState('prompt');
-          }
+  // Reusable function to check current iOS permission states
+  const checkPermissions = async () => {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        const locStatus = await Geolocation.checkPermissions();
+        if (locStatus.location === 'granted' || locStatus.coarseLocation === 'granted') {
+          setGeoState('granted');
+        } else if (locStatus.location === 'denied' || locStatus.coarseLocation === 'denied') {
+          setGeoState('denied');
         } else {
           setGeoState('prompt');
+        }
+
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const pushStatus = await FirebaseMessaging.checkPermissions();
+        if (pushStatus.receive === 'granted') {
+          setPushState('granted');
+        } else if (pushStatus.receive === 'denied') {
+          setPushState('denied');
+        } else {
           setPushState('prompt');
         }
-      } catch (err) {
-        console.error('[Permissions] checkPermissions failed:', err);
+      } else {
         setGeoState('prompt');
         setPushState('prompt');
       }
+    } catch (err) {
+      console.error('[Permissions] checkPermissions failed:', err);
+      setGeoState('prompt');
+      setPushState('prompt');
     }
+  };
+
+  // Check on page load
+  useEffect(() => {
     checkPermissions();
+  }, []);
+
+  // Re-check when user returns from iOS Settings (app comes back to foreground)
+  useEffect(() => {
+    let removeListener: (() => void) | undefined;
+
+    async function setupListener() {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          const { App } = await import('@capacitor/app');
+          const handle = await App.addListener('appStateChange', (state) => {
+            if (state.isActive) {
+              checkPermissions();
+            }
+          });
+          removeListener = () => handle.remove();
+        }
+      } catch (err) {
+        console.error('[Permissions] Failed to set up foreground listener:', err);
+      }
+    }
+
+    setupListener();
+    return () => { if (removeListener) removeListener(); };
   }, []);
 
   const handleAllowLocation = async () => {
