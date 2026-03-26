@@ -26,21 +26,29 @@ export default function PermissionsPage() {
       let finalGeoEnabled = geoEnabled;
       let finalPushEnabled = pushEnabled;
 
-      // Trigger standard Location prompt
-      if (geoEnabled && typeof window !== "undefined" && navigator.geolocation) {
-        await new Promise<void>((resolve) => {
-          navigator.geolocation.getCurrentPosition(
-            () => resolve(),
-            (err) => {
-              if (err.code === err.PERMISSION_DENIED) {
-                finalGeoEnabled = false;
-                // Optionally alert for location too, but usually it's obvious when they tap Don't Allow
-              }
-              resolve();
-            },
-            { timeout: 10000 }
-          );
-        });
+      // Trigger Native iOS Location prompt via Capacitor plugin (not web API)
+      if (geoEnabled) {
+        try {
+          const { Capacitor } = await import('@capacitor/core');
+          if (Capacitor.isNativePlatform()) {
+            const { Geolocation } = await import('@capacitor/geolocation');
+            const result = await Geolocation.requestPermissions();
+            if (result.location !== 'granted' && result.coarseLocation !== 'granted') {
+              finalGeoEnabled = false;
+            }
+          } else if (typeof window !== 'undefined' && navigator.geolocation) {
+            await new Promise<void>((resolve) => {
+              navigator.geolocation.getCurrentPosition(
+                () => resolve(),
+                (err) => { if (err.code === err.PERMISSION_DENIED) finalGeoEnabled = false; resolve(); },
+                { timeout: 10000 }
+              );
+            });
+          }
+        } catch (err) {
+          console.error('[Permissions] Location request failed', err);
+          finalGeoEnabled = false;
+        }
       }
 
       // Trigger Push Notifications native FCM prompt
