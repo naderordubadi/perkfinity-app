@@ -11,10 +11,20 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.
 
 async function openAppSettings() {
   try {
-    // Opens iPhone Settings > Perkfinity
-    window.open('app-settings:', '_system');
+    const { Capacitor } = await import('@capacitor/core');
+    if (Capacitor.isNativePlatform()) {
+      // Use Capacitor's native bridge to open iOS Settings for this app
+      const win = window as any;
+      if (win.Capacitor?.Plugins?.App) {
+        // @capacitor/app has underlying native support for opening URLs
+        await win.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' });
+      } else {
+        // Fallback: use webkit message handler (works in Capacitor WKWebView)
+        window.location.href = 'app-settings:';
+      }
+    }
   } catch {
-    // fallback: do nothing, user sees the button label as instruction
+    alert('Please open Settings > Perkfinity on your iPhone to change this permission.');
   }
 }
 
