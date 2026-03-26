@@ -146,14 +146,14 @@ export default function PermissionsPage() {
 
   const renderLocationButton = () => {
     if (geoState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (geoState === 'granted') return <button style={greenBtn} disabled>✓ Location Services Enabled</button>;
+    if (geoState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings > Perkfinity on your iPhone.')}>✓ Location Services Enabled</button>;
     if (geoState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
     return <button style={purpleBtn} onClick={handleAllowLocation}>Allow Location Services</button>;
   };
 
   const renderNotifButton = () => {
     if (pushState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (pushState === 'granted') return <button style={greenBtn} disabled>✓ Notifications Enabled</button>;
+    if (pushState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings > Perkfinity on your iPhone.')}>✓ Notifications Enabled</button>;
     if (pushState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
     return <button style={purpleBtn} onClick={handleAllowNotifications}>Allow Notifications</button>;
   };
