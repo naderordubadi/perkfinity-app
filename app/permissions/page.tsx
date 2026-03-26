@@ -236,21 +236,27 @@ export default function PermissionsPage() {
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '2rem' }}>
-          <button onClick={handleFinish} disabled={loading} style={{
-            width: '100%',
-            padding: '1.25rem',
-            borderRadius: '16px',
-            background: '#8B5CF6',
-            color: '#fff',
-            border: 'none',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
-            opacity: loading ? 0.7 : 1,
-          }}>
-            {loading ? 'Completing setup...' : 'Finish Setup'}
-          </button>
+          {(() => {
+            const bothResponded = (geoState === 'granted' || geoState === 'denied') && (pushState === 'granted' || pushState === 'denied');
+            const isDisabled = loading || !bothResponded;
+            return (
+              <button onClick={handleFinish} disabled={isDisabled} style={{
+                width: '100%',
+                padding: '1.25rem',
+                borderRadius: '16px',
+                background: '#8B5CF6',
+                color: '#fff',
+                border: 'none',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                cursor: isDisabled ? 'default' : 'pointer',
+                boxShadow: bothResponded ? '0 8px 24px rgba(139,92,246,0.3)' : 'none',
+                opacity: isDisabled ? 0.4 : 1,
+              }}>
+                {loading ? 'Completing setup...' : 'Finish Setup'}
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>
