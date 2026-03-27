@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { getUserData, setUserData } from "@/lib/user";
+import { useBiometricAuth } from "@/app/hooks/useBiometricAuth";
 
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { isAvailable, biometryType, isEnrolled, authenticate, enroll, unenroll } = useBiometricAuth();
 
   useEffect(() => {
     const data = getUserData();
@@ -36,6 +38,18 @@ export default function ProfilePage() {
       formatted = `${val.slice(0,3)}-${val.slice(3)}`;
     }
     setPhone(formatted);
+  };
+
+  const handleBiometricToggle = async () => {
+    if (isEnrolled) {
+      unenroll();
+    } else {
+      // Verify identity before enrolling
+      const ok = await authenticate();
+      if (ok) {
+        enroll();
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,6 +134,54 @@ export default function ProfilePage() {
               <input type="text" placeholder="78701" maxLength={5} value={zipCode} onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))} style={inputStyle} required />
             </div>
           </div>
+
+          {/* Face ID Toggle */}
+          {isAvailable && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              background: 'rgba(139,92,246,0.08)',
+              border: '1px solid rgba(139,92,246,0.2)',
+              borderRadius: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.4rem' }}>{biometryType === 'Face ID' ? '🔐' : '👆'}</span>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{biometryType}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Quick login on app open</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleBiometricToggle}
+                style={{
+                  width: '52px',
+                  height: '30px',
+                  borderRadius: '15px',
+                  border: 'none',
+                  background: isEnrolled ? '#6BC17A' : 'rgba(255,255,255,0.15)',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  transition: 'background 0.3s ease',
+                  flexShrink: 0
+                }}
+              >
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '12px',
+                  background: '#fff',
+                  position: 'absolute',
+                  top: '3px',
+                  left: isEnrolled ? '25px' : '3px',
+                  transition: 'left 0.3s ease',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                }} />
+              </button>
+            </div>
+          )}
 
           <button type="submit" disabled={loading} style={{
             marginTop: '1rem',
