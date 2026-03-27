@@ -131,6 +131,28 @@ export default function ScanPage() {
           Allow Camera Access
         </button>
         <a href="/" style={styles.cancelLink}>Cancel</a>
+
+        {/* Consent Banner */}
+        <div style={{
+          marginTop: '1.5rem',
+          padding: '14px 18px',
+          background: '#3B9A52',
+          border: '1px solid #6BC17A',
+          borderRadius: '14px',
+          maxWidth: '300px',
+          lineHeight: 1.6,
+        }}>
+          <p style={{ margin: 0, fontSize: '0.72rem', color: '#fff' }}>
+            By scanning a merchant's QR code, you agree to join their exclusive local perks member list
+            and consent to receive promotional emails and notifications from the merchant and Perkfinity.
+            By proceeding, you agree to our{' '}
+            <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer"
+              style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Privacy Policy</a>{' '}
+            and{' '}
+            <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer"
+              style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>Terms of Use</a>.
+          </p>
+        </div>
       </div>
     );
   }
