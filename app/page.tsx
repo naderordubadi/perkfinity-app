@@ -15,6 +15,9 @@ interface Merchant {
   zip_code: string | null;
   qr_code: string | null;
   offer_count?: number;
+  store_address?: string;
+  latest_offer_title?: string;
+  latest_offer_condition?: string;
 }
 
 export default function Home() {
@@ -85,6 +88,10 @@ export default function Home() {
              const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
              const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
              if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
+             // Merchants with active offers come next
+             const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
+             const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
+             if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
              const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
              const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
              return bZipMatch - aZipMatch;
@@ -315,29 +322,49 @@ export default function Home() {
             const displayCount = isScannedMerchant && pendingOffers.length > 0
               ? pendingOffers.length
               : (m.offer_count ?? 0);
+            const hasOffer = !isScannedMerchant && displayCount > 0;
             const displayLabel = displayCount > 1 ? `${displayCount} offers` : m.discount;
+            const mapsUrl = m.store_address ? `maps://maps.apple.com/?q=${encodeURIComponent(m.store_address)}` : null;
             return (
             <div key={i} style={{
-              minWidth: '130px',
+              minWidth: hasOffer ? '150px' : '130px',
               padding: '1rem',
               background: isScannedMerchant ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
               borderRadius: '20px',
-              border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(139,92,246,0.3)',
+              border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : hasOffer ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.3)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
-              flexShrink: 0
+              gap: '0.4rem',
+              flexShrink: 0,
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: hasOffer ? '0 0 20px rgba(139,92,246,0.15)' : 'none'
             }}>
+              {/* NEW OFFER Ribbon */}
+              {hasOffer && (
+                <div style={{
+                  position: 'absolute', top: '10px', right: '-28px',
+                  background: '#EF4444',
+                  color: '#fff',
+                  fontSize: '0.55rem',
+                  fontWeight: 800,
+                  padding: '3px 30px',
+                  transform: 'rotate(35deg)',
+                  letterSpacing: '0.5px',
+                  zIndex: 2,
+                  boxShadow: '0 2px 8px rgba(239,68,68,0.4)'
+                }}>NEW OFFER</div>
+              )}
               <div style={{
                 width: '38px', height: '38px', borderRadius: '12px',
                 background: isScannedMerchant ? 'rgba(251,191,36,0.22)' : 'rgba(139,92,246,0.22)',
                 border: isScannedMerchant ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(139,92,246,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden'
+                overflow: 'hidden', alignSelf: 'center'
               }}>
                 {m.logo_url ? <img src={m.logo_url} style={{width:'100%', height:'100%', objectFit:'contain'}} /> : '🏪'}
               </div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff' }}>{m.merchant_name}</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff', textAlign: 'center' }}>{m.merchant_name}</div>
               <div style={{
                 fontSize: '0.7rem', fontWeight: 700,
                 color: isScannedMerchant ? '#FDE68A' : '#86EFAC',
@@ -346,13 +373,38 @@ export default function Home() {
                 borderRadius: '8px',
                 padding: '2px 6px',
                 display: 'inline-block',
-                alignSelf: 'flex-start'
+                alignSelf: 'center'
               }}>
                 {displayLabel}
               </div>
-              <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: '2px' }}>
+              {/* Offer details for merchants with active offers */}
+              {hasOffer && m.latest_offer_condition && (
+                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, textAlign: 'center' }}>
+                  {m.latest_offer_condition}
+                </div>
+              )}
+              {/* Action text */}
+              <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, textAlign: 'center', marginTop: '2px' }}>
                 {isScannedMerchant ? 'Tap banner to activate!' : 'Scan QR in store to redeem'}
               </div>
+              {/* Address at bottom — tappable to open Apple Maps */}
+              {!isScannedMerchant && m.store_address && (
+                <div
+                  onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
+                  style={{
+                    fontSize: '0.6rem',
+                    color: 'rgba(255,255,255,0.35)',
+                    lineHeight: 1.3,
+                    textAlign: 'center',
+                    marginTop: 'auto',
+                    paddingTop: '4px',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    cursor: mapsUrl ? 'pointer' : 'default'
+                  }}
+                >
+                  📍 {m.store_address}
+                </div>
+              )}
             </div>
             );
           }) : (
