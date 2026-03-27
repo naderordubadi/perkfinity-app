@@ -18,6 +18,7 @@ interface Merchant {
   store_address?: string;
   latest_offer_title?: string;
   latest_offer_condition?: string;
+  offer_expires_at?: string;
 }
 
 export default function Home() {
@@ -381,6 +382,12 @@ export default function Home() {
               {hasOffer && m.latest_offer_condition && (
                 <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, textAlign: 'center' }}>
                   {m.latest_offer_condition}
+                </div>
+              )}
+              {/* Offer expiration */}
+              {hasOffer && m.offer_expires_at && (
+                <div style={{ fontSize: '0.6rem', color: 'rgba(251,191,36,0.7)', textAlign: 'center', fontWeight: 600 }}>
+                  Expires {new Date(m.offer_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               )}
               {/* Action text */}
