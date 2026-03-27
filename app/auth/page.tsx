@@ -44,7 +44,7 @@ export default function AuthPage() {
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
-        if (!res.data.user?.full_name) {
+        if (!res.data.user?.zip_code) {
           router.push("/profile");
         } else if (pendingQr) {
           router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
@@ -88,7 +88,7 @@ export default function AuthPage() {
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
-        if (!res.data.user?.full_name) {
+        if (!res.data.user?.zip_code) {
           router.push("/profile");
         } else if (pendingQr) {
           router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
@@ -142,7 +142,7 @@ export default function AuthPage() {
         let target = method === "signup" ? "/profile" : "/scan"; 
         
         // If login but missing profile demographic data, force them to profile routing
-        if (method === "login" && res.data.user && !res.data.user.full_name) {
+        if (method === "login" && res.data.user && !res.data.user.zip_code) {
           target = "/profile";
         }
         

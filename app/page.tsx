@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchApi } from "@/lib/api";
+import { useBiometricAuth } from "@/app/hooks/useBiometricAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,9 @@ export default function Home() {
   const [pendingOffers, setPendingOffers] = useState<Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}>>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const { isEnrolled, authenticate } = useBiometricAuth();
+  const [biometricPassed, setBiometricPassed] = useState(false);
+  const [biometricChecked, setBiometricChecked] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -42,6 +46,15 @@ export default function Home() {
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
     setIsLoggedIn(true);
+
+    // Biometric gate: if enrolled, require Face ID
+    const bioEnrolled = localStorage.getItem('pf_biometric_enrolled') === 'true';
+    if (bioEnrolled) {
+      // Will be handled by a separate useEffect after mount
+    } else {
+      setBiometricPassed(true);
+      setBiometricChecked(true);
+    }
 
     // ── Reliable cancel-activation fallback ──────────────────────────
     // If the user navigated away from /redeem without completing the redemption,
@@ -103,9 +116,28 @@ export default function Home() {
       .catch(e => console.error("Failed to load merchants", e));
   }, []);
 
+  // Biometric verification after mount
+  useEffect(() => {
+    if (!mounted || biometricChecked) return;
+    const bioEnrolled = localStorage.getItem('pf_biometric_enrolled') === 'true';
+    if (!bioEnrolled) {
+      setBiometricPassed(true);
+      setBiometricChecked(true);
+      return;
+    }
+    // Trigger Face ID
+    authenticate().then(ok => {
+      if (ok) {
+        setBiometricPassed(true);
+      }
+      setBiometricChecked(true);
+    });
+  }, [mounted, biometricChecked]);
+
   const handleSignOut = () => {
     localStorage.removeItem('pf_user_token');
     localStorage.removeItem('pf_user_data');
+    localStorage.removeItem('pf_biometric_enrolled');
     setIsLoggedIn(false);
   };
 
@@ -123,6 +155,49 @@ export default function Home() {
       paddingBottom: '12rem', // Increased bottom padding to clear navbar
       overflowY: 'auto'
     }}>
+      {/* Face ID Gate Overlay */}
+      {isLoggedIn && biometricChecked && !biometricPassed && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, gap: '1.5rem'
+        }}>
+          <div style={{ fontSize: '3.5rem' }}>🔐</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>Authentication Required</div>
+          <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', maxWidth: '260px' }}>
+            Please verify your identity to access Perkfinity
+          </div>
+          <button
+            onClick={async () => {
+              const ok = await authenticate();
+              if (ok) setBiometricPassed(true);
+            }}
+            style={{
+              padding: '0.9rem 2rem', borderRadius: '14px',
+              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+              color: '#fff', border: 'none', fontSize: '0.95rem', fontWeight: 700,
+              cursor: 'pointer', boxShadow: '0 8px 24px rgba(139,92,246,0.3)'
+            }}
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem('pf_user_token');
+              localStorage.removeItem('pf_user_data');
+              localStorage.removeItem('pf_biometric_enrolled');
+              router.push('/auth');
+            }}
+            style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+              fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.5rem'
+            }}
+          >
+            Sign in with a different account
+          </button>
+        </div>
+      )}
 
       {/* Header with full logo */}
       <div style={{
