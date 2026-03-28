@@ -240,7 +240,7 @@ export default function AuthPage() {
           style={{ width: '100%', maxWidth: '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain' }} 
         />
         <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center' }}>
-          {method === "choice" ? "Choose how you'd like to sign in." : method === "login" ? "Log in to your account." : "Create your account."}
+          {method === "choice" ? "Choose how you'd like to sign in." : method === "login" ? "Sign in to your account." : "Create your account."}
         </p>
 
         {method === "choice" ? (
@@ -292,7 +292,7 @@ export default function AuthPage() {
               Sign Up with Email
             </button>
             <button onClick={() => setMethod("login")} style={{ ...btnStyle("transparent", "rgba(255,255,255,0.7)"), padding: '0.5rem' }}>
-              Already registered? Log in
+              Already registered? Sign in
             </button>
           </div>
 
