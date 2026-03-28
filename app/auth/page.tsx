@@ -168,6 +168,8 @@ export default function AuthPage() {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return setError("Please enter your email address");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return setError("Please enter a valid email address");
     try {
       setLoading(true);
       setError("");
