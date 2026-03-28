@@ -150,7 +150,7 @@ export default function ProfilePage() {
                 <span style={{ fontSize: '1.4rem' }}>{biometryType === 'Face ID' ? '🔐' : '👆'}</span>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{biometryType}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Quick login on app open</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Quick sign-in when signed out</div>
                 </div>
               </div>
               <button

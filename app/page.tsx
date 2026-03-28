@@ -111,6 +111,7 @@ export default function Home() {
     localStorage.setItem('pf_signed_out', 'true');
     localStorage.removeItem('pf_user_data');
     setIsLoggedIn(false);
+    router.push('/auth');
   };
 
   return (
