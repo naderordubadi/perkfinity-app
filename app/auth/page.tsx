@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { setUserToken, setUserData } from "@/lib/user";
+import { setUserToken, setUserData, getUserData } from "@/lib/user";
+import { useBiometricAuth } from "@/app/hooks/useBiometricAuth";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup" | "forgot">("choice");
@@ -14,6 +15,29 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const router = useRouter();
+  const { isAvailable, biometryType, isEnrolled, authenticate } = useBiometricAuth();
+
+  // ── Face ID Sign-In (uses stored token) ─────────────────────────
+  const handleBiometricSignIn = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const ok = await authenticate();
+      if (ok) {
+        localStorage.removeItem('pf_signed_out');
+        const pendingQr = localStorage.getItem('pending_qr');
+        if (pendingQr) {
+          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
+        } else {
+          router.push('/');
+        }
+      }
+    } catch (err) {
+      setError("Biometric authentication failed. Try another method.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Apple Sign-In (native Capacitor) ────────────────────────────
   const handleAppleSignIn = async () => {
@@ -42,6 +66,7 @@ export default function AuthPage() {
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
         localStorage.setItem("pf_has_account", "true");
+        localStorage.removeItem('pf_signed_out');
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
         if (!res.data.user?.zip_code) {
@@ -86,6 +111,7 @@ export default function AuthPage() {
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
         localStorage.setItem("pf_has_account", "true");
+        localStorage.removeItem('pf_signed_out');
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
         if (!res.data.user?.zip_code) {
@@ -133,7 +159,8 @@ export default function AuthPage() {
       
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
-        localStorage.setItem('pf_has_account', 'true'); // Flag used by QR state machine
+        localStorage.setItem('pf_has_account', 'true');
+        localStorage.removeItem('pf_signed_out'); // Flag used by QR state machine
         if (res.data.user) {
           setUserData(res.data.user);
         }
@@ -218,6 +245,24 @@ export default function AuthPage() {
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Face ID Sign-In — only when enrolled from a previous session */}
+            {isAvailable && isEnrolled && (
+              <>
+                <button
+                  onClick={handleBiometricSignIn}
+                  disabled={loading}
+                  style={btnStyle("linear-gradient(135deg, #8B5CF6, #6D28D9)", "#fff")}
+                >
+                  <span style={{ marginRight: '12px', fontSize: '1.2rem' }}>🔐</span>
+                  {loading ? "Verifying..." : `Sign in with ${biometryType}`}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '0.25rem 0' }}>
+                  <div style={lineStyle} />
+                  <span style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>OR</span>
+                  <div style={lineStyle} />
+                </div>
+              </>
+            )}
             {/* Apple Sign-In — real native Capacitor plugin */}
             <button
               onClick={handleAppleSignIn}
