@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@capacitor-community/apple-sign-in": "^6.0.0",
     "@capacitor-firebase/messaging": "^6.3.1",
     "@capacitor/app": "^6.0.3",
@@ -17,7 +18,6 @@
     "@capacitor/ios": "^6.0.0",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@neondatabase/serverless": "^0.9.3",
-    "capacitor-native-biometric": "^4.2.2",
     "firebase": "^10.14.1",
     "next": "^14.2.3",
     "qrcode.react": "^3.1.0",
