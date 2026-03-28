@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { setUserToken, setUserData, getUserData } from "@/lib/user";
+import { setUserToken, setUserData } from "@/lib/user";
 import { useBiometricAuth } from "@/app/hooks/useBiometricAuth";
 
 export default function AuthPage() {
