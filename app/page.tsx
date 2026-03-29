@@ -25,25 +25,24 @@ export default function Home() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
-  const [pendingOffers, setPendingOffers] = useState<Array<{campaign_id: string; merchant_name: string; title: string; qr_code: string}>>([]);
+  const [pendingOffers, setPendingOffers] = useState<Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }>>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
 
   useEffect(() => {
     setMounted(true);
     const token = localStorage.getItem('pf_user_token');
-    const signedOut = localStorage.getItem('pf_signed_out');
+    const hasAccount = localStorage.getItem('pf_has_account');
 
-    // New/unauthenticated users → show onboarding slides first
-    // Explicitly signed-out users → go to auth (they can use Face ID there)
-    if (!token || signedOut) {
-      router.push(signedOut ? '/auth' : '/onboarding');
+    // First-time user: no token AND no account history → show onboarding slides
+    if (!token && !hasAccount) {
+      router.push('/onboarding');
       return;
     }
 
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
-    setIsLoggedIn(true);
+    setIsLoggedIn(!!token);
 
     // ── Reliable cancel-activation fallback ──────────────────────────
     // If the user navigated away from /redeem without completing the redemption,
@@ -59,7 +58,7 @@ export default function Home() {
           fetchApi(
             `/campaigns/${pc.campaign_id}/cancel-activation`,
             { method: 'POST' }
-          ).catch(() => {});
+          ).catch(() => { });
           // Restore offer to pending_offers if not already present
           const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
           if (!offers.some((o: { campaign_id: string }) => o.campaign_id === pc.campaign_id)) {
@@ -76,7 +75,7 @@ export default function Home() {
       const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
       setPendingOffers(stored);
     } catch { setPendingOffers([]); }
-    
+
     // Fetch live participating merchants
     const pendingQrCode = localStorage.getItem('pending_qr');
     const userData = localStorage.getItem('pf_user_data');
@@ -84,34 +83,33 @@ export default function Home() {
 
     fetchApi('/consumers/campaigns')
       .then(json => {
-         if (json.success && json.data) {
-           const data: Merchant[] = json.data;
-           // Sort: last-scanned merchant first, then zip-match, then rest
-           const sorted = [...data].sort((a, b) => {
-             const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
-             const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
-             if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
-             // Merchants with active offers come next
-             const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
-             const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
-             if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
-             const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
-             const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
-             return bZipMatch - aZipMatch;
-           });
-           setMerchants(sorted);
-         }
+        if (json.success && json.data) {
+          const data: Merchant[] = json.data;
+          // Sort: last-scanned merchant first, then zip-match, then rest
+          const sorted = [...data].sort((a, b) => {
+            const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
+            const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
+            if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
+            // Merchants with active offers come next
+            const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
+            const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
+            if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
+            const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
+            const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
+            return bZipMatch - aZipMatch;
+          });
+          setMerchants(sorted);
+        }
       })
       .catch(e => console.error("Failed to load merchants", e));
   }, []);
 
   const handleSignOut = () => {
-    // Keep token + biometric enrollment so Face ID sign-in works on next launch
-    // Mark as signed out so the app routes to auth instead of home
-    localStorage.setItem('pf_signed_out', 'true');
+    localStorage.removeItem('pf_user_token');
     localStorage.removeItem('pf_user_data');
     setIsLoggedIn(false);
-    router.push('/auth');
+    // Reload page or let state update handle it. Since we are on Home page,
+    // state will re-render header to say "Sign in"
   };
 
   return (
@@ -208,13 +206,13 @@ export default function Home() {
             width: '120px', height: '120px',
             background: 'radial-gradient(circle, rgba(107,193,122,0.25), transparent 70%)',
             borderRadius: '50%'
-          }}/>
+          }} />
           <div style={{
             position: 'absolute', bottom: '-20px', left: '-20px',
             width: '100px', height: '100px',
             background: 'radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%)',
             borderRadius: '50%'
-          }}/>
+          }} />
 
           {/* Floating discount badges */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
@@ -233,7 +231,7 @@ export default function Home() {
           </div>
 
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-            Ready to Save<br/>at Local Shops?
+            Ready to Save<br />at Local Shops?
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', margin: '0 0 1.75rem', lineHeight: 1.5, maxWidth: '260px' }}>
             Scan, claim, and instantly get discounts at your favorite local businesses — no cards needed.
@@ -331,92 +329,92 @@ export default function Home() {
             const displayLabel = displayCount > 1 ? `${displayCount} offers` : m.discount;
             const mapsUrl = m.store_address ? `maps://maps.apple.com/?q=${encodeURIComponent(m.store_address)}` : null;
             return (
-            <div key={i} style={{
-              minWidth: hasOffer ? '150px' : '130px',
-              padding: '1rem',
-              background: isScannedMerchant ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
-              borderRadius: '20px',
-              border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : hasOffer ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.3)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.4rem',
-              flexShrink: 0,
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: hasOffer ? '0 0 20px rgba(139,92,246,0.15)' : 'none'
-            }}>
-              {/* NEW OFFER Ribbon */}
-              {hasOffer && (
+              <div key={i} style={{
+                minWidth: hasOffer ? '150px' : '130px',
+                padding: '1rem',
+                background: isScannedMerchant ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
+                borderRadius: '20px',
+                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : hasOffer ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem',
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: hasOffer ? '0 0 20px rgba(139,92,246,0.15)' : 'none'
+              }}>
+                {/* NEW OFFER Ribbon */}
+                {hasOffer && (
+                  <div style={{
+                    position: 'absolute', top: '10px', right: '-28px',
+                    background: '#EF4444',
+                    color: '#fff',
+                    fontSize: '0.55rem',
+                    fontWeight: 800,
+                    padding: '3px 30px',
+                    transform: 'rotate(35deg)',
+                    letterSpacing: '0.5px',
+                    zIndex: 2,
+                    boxShadow: '0 2px 8px rgba(239,68,68,0.4)'
+                  }}>NEW OFFER</div>
+                )}
                 <div style={{
-                  position: 'absolute', top: '10px', right: '-28px',
-                  background: '#EF4444',
-                  color: '#fff',
-                  fontSize: '0.55rem',
-                  fontWeight: 800,
-                  padding: '3px 30px',
-                  transform: 'rotate(35deg)',
-                  letterSpacing: '0.5px',
-                  zIndex: 2,
-                  boxShadow: '0 2px 8px rgba(239,68,68,0.4)'
-                }}>NEW OFFER</div>
-              )}
-              <div style={{
-                width: '38px', height: '38px', borderRadius: '12px',
-                background: isScannedMerchant ? 'rgba(251,191,36,0.22)' : 'rgba(139,92,246,0.22)',
-                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(139,92,246,0.4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden', alignSelf: 'center'
-              }}>
-                {m.logo_url ? <img src={m.logo_url} style={{width:'100%', height:'100%', objectFit:'contain'}} /> : '🏪'}
-              </div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff', textAlign: 'center' }}>{m.merchant_name}</div>
-              <div style={{
-                fontSize: '0.7rem', fontWeight: 700,
-                color: isScannedMerchant ? '#FDE68A' : '#86EFAC',
-                background: isScannedMerchant ? 'rgba(251,191,36,0.15)' : 'rgba(107,193,122,0.12)',
-                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(107,193,122,0.25)',
-                borderRadius: '8px',
-                padding: '2px 6px',
-                display: 'inline-block',
-                alignSelf: 'center'
-              }}>
-                {displayLabel}
-              </div>
-              {/* Offer details for merchants with active offers */}
-              {hasOffer && m.latest_offer_condition && (
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, textAlign: 'center' }}>
-                  {m.latest_offer_condition}
+                  width: '38px', height: '38px', borderRadius: '12px',
+                  background: isScannedMerchant ? 'rgba(251,191,36,0.22)' : 'rgba(139,92,246,0.22)',
+                  border: isScannedMerchant ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(139,92,246,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden', alignSelf: 'center'
+                }}>
+                  {m.logo_url ? <img src={m.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : '🏪'}
                 </div>
-              )}
-              {/* Offer expiration */}
-              {hasOffer && m.offer_expires_at && (
-                <div style={{ fontSize: '0.6rem', color: 'rgba(251,191,36,0.7)', textAlign: 'center', fontWeight: 600 }}>
-                  Expires {new Date(m.offer_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff', textAlign: 'center' }}>{m.merchant_name}</div>
+                <div style={{
+                  fontSize: '0.7rem', fontWeight: 700,
+                  color: isScannedMerchant ? '#FDE68A' : '#86EFAC',
+                  background: isScannedMerchant ? 'rgba(251,191,36,0.15)' : 'rgba(107,193,122,0.12)',
+                  border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(107,193,122,0.25)',
+                  borderRadius: '8px',
+                  padding: '2px 6px',
+                  display: 'inline-block',
+                  alignSelf: 'center'
+                }}>
+                  {displayLabel}
                 </div>
-              )}
-              {/* Action text */}
-              <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, textAlign: 'center', marginTop: '2px' }}>
-                {isScannedMerchant ? 'Tap banner to activate!' : 'Scan QR in store to redeem'}
+                {/* Offer details for merchants with active offers */}
+                {hasOffer && m.latest_offer_condition && (
+                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, textAlign: 'center' }}>
+                    {m.latest_offer_condition}
+                  </div>
+                )}
+                {/* Offer expiration */}
+                {hasOffer && m.offer_expires_at && (
+                  <div style={{ fontSize: '0.6rem', color: 'rgba(251,191,36,0.7)', textAlign: 'center', fontWeight: 600 }}>
+                    Expires {new Date(m.offer_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                )}
+                {/* Action text */}
+                <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, textAlign: 'center', marginTop: '2px' }}>
+                  {isScannedMerchant ? 'Tap banner to activate!' : 'Scan QR in store to redeem'}
+                </div>
+                {/* Address at bottom — tappable to open Apple Maps */}
+                {!isScannedMerchant && m.store_address && (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
+                    style={{
+                      fontSize: '0.6rem',
+                      color: 'rgba(255,255,255,0.35)',
+                      lineHeight: 1.3,
+                      textAlign: 'center',
+                      marginTop: 'auto',
+                      paddingTop: '4px',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      cursor: mapsUrl ? 'pointer' : 'default'
+                    }}
+                  >
+                    📍 {m.store_address}
+                  </div>
+                )}
               </div>
-              {/* Address at bottom — tappable to open Apple Maps */}
-              {!isScannedMerchant && m.store_address && (
-                <div
-                  onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
-                  style={{
-                    fontSize: '0.6rem',
-                    color: 'rgba(255,255,255,0.35)',
-                    lineHeight: 1.3,
-                    textAlign: 'center',
-                    marginTop: 'auto',
-                    paddingTop: '4px',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                    cursor: mapsUrl ? 'pointer' : 'default'
-                  }}
-                >
-                  📍 {m.store_address}
-                </div>
-              )}
-            </div>
             );
           }) : (
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Loading merchants...</div>
