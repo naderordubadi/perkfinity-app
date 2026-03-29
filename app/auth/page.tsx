@@ -25,6 +25,28 @@ export default function AuthPage() {
       const ok = await authenticate();
       if (ok) {
         localStorage.removeItem('pf_signed_out');
+        
+        // Fetch user profile since handleSignOut cleared pf_user_data
+        try {
+          const profileRes = await fetchApi('/consumers/profile', { method: 'GET' });
+          if (profileRes.success && profileRes.data) {
+            setUserData(profileRes.data);
+            const pendingQr = localStorage.getItem('pending_qr');
+            
+            if (!profileRes.data.zip_code) {
+              router.push("/profile");
+            } else if (pendingQr) {
+              router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
+            } else {
+              router.push("/scan");
+            }
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to fetch profile during biometric sign in", e);
+        }
+
+        // Fallback if fetch fails
         const pendingQr = localStorage.getItem('pending_qr');
         if (pendingQr) {
           router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
@@ -245,24 +267,7 @@ export default function AuthPage() {
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Face ID Sign-In — only when enrolled from a previous session */}
-            {isAvailable && isEnrolled && (
-              <>
-                <button
-                  onClick={handleBiometricSignIn}
-                  disabled={loading}
-                  style={btnStyle("linear-gradient(135deg, #8B5CF6, #6D28D9)", "#fff")}
-                >
-                  <span style={{ marginRight: '12px', fontSize: '1.2rem' }}>🔐</span>
-                  {loading ? "Verifying..." : `Sign in with ${biometryType}`}
-                </button>
-                <div style={{ display: 'flex', alignItems: 'center', margin: '0.25rem 0' }}>
-                  <div style={lineStyle} />
-                  <span style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>OR</span>
-                  <div style={lineStyle} />
-                </div>
-              </>
-            )}
+            {/* Face ID button moved to "login" view according to new UX design */}
             {/* Apple Sign-In — real native Capacitor plugin */}
             <button
               onClick={handleAppleSignIn}
@@ -298,6 +303,26 @@ export default function AuthPage() {
 
         ) : (
           <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Face ID Sign-In — only when enrolled from a previous session */}
+            {method === "login" && isAvailable && isEnrolled && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleBiometricSignIn}
+                  disabled={loading}
+                  style={btnStyle("linear-gradient(135deg, #8B5CF6, #6D28D9)", "#fff")}
+                >
+                  <span style={{ marginRight: '12px', fontSize: '1.2rem' }}>🔐</span>
+                  {loading ? "Verifying..." : `Sign in with ${biometryType}`}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '0.25rem 0' }}>
+                  <div style={lineStyle} />
+                  <span style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>OR</span>
+                  <div style={lineStyle} />
+                </div>
+              </>
+            )}
+
             {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
