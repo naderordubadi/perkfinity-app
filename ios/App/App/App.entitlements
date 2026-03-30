@@ -10,6 +10,8 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:app.perkfinity.net</string>
+		<string>webcredentials:app.perkfinity.net</string>
 		<string>applinks:perkfinity-app.vercel.app</string>
 		<string>webcredentials:perkfinity-app.vercel.app</string>
 	</array>
