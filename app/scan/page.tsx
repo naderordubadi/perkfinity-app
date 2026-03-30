@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import jsQR from "jsqr";
 
 export default function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -45,12 +46,6 @@ export default function ScanPage() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    const jsQR = (window as any).jsQR;
-    if (!jsQR) {
-      animFrameRef.current = requestAnimationFrame(scanFrame);
-      return;
-    }
-
     const code = jsQR(imageData.data, imageData.width, imageData.height, {
       inversionAttempts: "dontInvert",
     });
@@ -70,16 +65,10 @@ export default function ScanPage() {
     animFrameRef.current = requestAnimationFrame(scanFrame);
   }, [router, stopCamera]);
 
-  // Load jsQR library once on mount
+  // Cleanup on unmount
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
-    script.async = true;
-    document.head.appendChild(script);
-
     return () => {
       stopCamera();
-      if (document.head.contains(script)) document.head.removeChild(script);
     };
   }, [stopCamera]);
 
