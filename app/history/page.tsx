@@ -118,6 +118,14 @@ function HistoryContent() {
       await fetchApi('/consumers/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
+      // Clear app icon badge on native
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          const { Badge } = await import('@capawesome/capacitor-badge');
+          await Badge.clear();
+        }
+      } catch { /* ignore in web */ }
     } catch (err) {
       console.error("Failed to mark all read:", err);
     }

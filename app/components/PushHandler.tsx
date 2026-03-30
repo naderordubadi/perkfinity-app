@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 /**
  * PushHandler — mounted in the root layout, always present.
  *
- * Registers a listener for push notification taps (when user taps the
- * notification from the lock screen or notification center).
- * On tap → navigates to the Notifications tab in History.
+ * 1. Listens for push notification taps → navigates to Notifications tab.
+ * 2. Clears app icon badge when app comes to foreground.
  */
 export default function PushHandler() {
   const router = useRouter();
@@ -22,17 +21,31 @@ export default function PushHandler() {
         if (!Capacitor.isNativePlatform()) return;
 
         const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const { Badge } = await import('@capawesome/capacitor-badge');
+
+        // Clear badge immediately when app launches
+        try { await Badge.clear(); } catch { /* ignore */ }
 
         // Called when user taps a push notification (app was in background/killed)
-        const handle = await FirebaseMessaging.addListener(
+        const pushHandle = await FirebaseMessaging.addListener(
           'notificationActionPerformed',
-          () => {
-            // Navigate to notifications tab
+          async () => {
+            // Clear badge when user taps a push notification
+            try { await Badge.clear(); } catch { /* ignore */ }
             router.push('/history?tab=notifications');
           }
         );
 
-        cleanup = () => handle.remove();
+        // Clear badge when app returns to foreground
+        const { App } = await import('@capacitor/app');
+        const resumeHandle = await App.addListener('resume', async () => {
+          try { await Badge.clear(); } catch { /* ignore */ }
+        });
+
+        cleanup = () => {
+          pushHandle.remove();
+          resumeHandle.remove();
+        };
       } catch (err) {
         console.error('[PushHandler] Setup failed:', err);
       }
