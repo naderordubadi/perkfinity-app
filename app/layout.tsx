@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import NavigationGuard from "./components/NavigationGuard";
 import BottomNav from "./components/BottomNav";
-
+import PushHandler from "./components/PushHandler";
 
 export const metadata: Metadata = {
   title: "Perkfinity | Rewards & Experiences",
@@ -124,6 +124,7 @@ export default function RootLayout({
       </head>
       <body>
         <NavigationGuard />
+        <PushHandler />
 
         <div className="mesh-bg" />
         <main>
