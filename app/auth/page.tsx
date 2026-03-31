@@ -146,6 +146,7 @@ export default function AuthPage() {
             await SavePassword.promptDialog({
               username: email,
               password: password,
+              url: 'app.perkfinity.net',
             });
           }
         } catch (saveErr) {
