@@ -143,7 +143,11 @@ export default function ProfilePage() {
         {typeof window !== 'undefined' && localStorage.getItem('pf_user_token') && (
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <a
-              href="/delete-account"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push('/delete-account');
+              }}
               style={{
                 color: '#EF4444',
                 fontSize: '0.85rem',
