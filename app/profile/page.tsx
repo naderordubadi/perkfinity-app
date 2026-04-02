@@ -159,6 +159,14 @@ export default function ProfilePage() {
             </a>
           </div>
         )}
+
+        <div style={{ textAlign: 'center', marginTop: '3rem', paddingBottom: '2rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Terms of Use</a>
+            <span style={{ margin: '0 8px' }}>•</span>
+            <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Privacy Policy</a>
+          </p>
+        </div>
       </div>
     </div>
   );
