@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3002",
     "lint": "next lint",
-    "postinstall": "patch-package"
+    "postinstall": "node -e \"try{require('child_process').execSync('npx patch-package',{stdio:'inherit'})}catch(e){process.exit(process.env.VERCEL?0:1)}\""
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^6.0.0",
