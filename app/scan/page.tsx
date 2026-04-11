@@ -117,9 +117,8 @@ export default function ScanPage() {
           </p>
         </div>
         <button onClick={startCamera} style={styles.primaryBtn}>
-          Allow Camera Access
+          Continue
         </button>
-        <a href="/" style={styles.cancelLink}>Cancel</a>
 
         {/* Consent Banner */}
         <div style={{
@@ -178,8 +177,8 @@ export default function ScanPage() {
           maxWidth: "280px",
         }}>
           <strong>How to re-enable:</strong><br />
-          iPhone <strong>Settings</strong> → scroll to <strong>Perkfinity</strong>
-          → tap <strong>Camera</strong> → select <strong>Allow</strong>
+          iPhone <strong>Settings</strong> → scroll to bottom <strong>Apps</strong><br />
+          → tap <strong>Perkfinity</strong> → Toggle on <strong>Camera</strong>
         </div>
         {/* Let them try again — on next app launch iOS may show the dialog again */}
         <button onClick={() => setPermissionState("idle")} style={styles.primaryBtn}>
@@ -214,16 +213,15 @@ export default function ScanPage() {
 
       <div style={{
         position: "absolute", inset: 0,
-        background: "radial-gradient(circle at center, transparent 150px, rgba(0,0,0,0.6) 150px)",
         zIndex: 5, display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         color: "#fff", textAlign: "center", padding: "2rem",
       }}>
         {/* Scanning Frame */}
         <div style={{
-          width: "260px", height: "260px",
-          border: "2px solid rgba(255,255,255,0.3)", borderRadius: "40px",
-          position: "relative", boxShadow: "0 0 0 4000px rgba(15,23,42,0.4)",
+          width: "280px", height: "280px",
+          border: "2px solid rgba(255,255,255,0.3)", borderRadius: "32px",
+          position: "relative", boxShadow: "0 0 0 4000px rgba(0,0,0,0.65)",
           marginBottom: "2rem",
         }}>
           {!detected && (
@@ -251,12 +249,14 @@ export default function ScanPage() {
           ))}
         </div>
 
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-          {detected ? "QR Code Detected!" : "Align QR Code"}
-        </h2>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem", maxWidth: "200px" }}>
-          {detected ? "Loading your offer..." : "Position the merchant QR code within the frame to reveal your reward."}
-        </p>
+        <div style={{ position: "relative", zIndex: 10 }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
+            {detected ? "QR Code Detected!" : "Align QR Code"}
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem", maxWidth: "200px", margin: "0 auto" }}>
+            {detected ? "Loading your offer..." : "Position the merchant QR code within the frame to reveal your reward."}
+          </p>
+        </div>
       </div>
 
       <div style={{ position: "absolute", bottom: "40px", width: "100%", display: "flex", justifyContent: "center", zIndex: 10 }}>
