@@ -77,7 +77,7 @@ export default function PermissionsPage() {
               disabled={locStatus === "granted"}
               style={locStatus === "granted" ? successBtn : actionBtn}
             >
-              {locStatus === "granted" ? "✓" : "Allow"}
+              {locStatus === "granted" ? "✓" : "Continue"}
             </button>
           </div>
 
@@ -92,7 +92,7 @@ export default function PermissionsPage() {
               disabled={notifStatus === "granted"}
               style={notifStatus === "granted" ? successBtn : actionBtn}
             >
-              {notifStatus === "granted" ? "✓" : "Allow"}
+              {notifStatus === "granted" ? "✓" : "Continue"}
             </button>
           </div>
         </div>

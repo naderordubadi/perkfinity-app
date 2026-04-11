@@ -11,10 +11,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.
 
 async function openAppSettings() {
   try {
-    // app-settings: URL scheme opens iOS Settings directly for this app
-    window.location.href = 'app-settings:';
+    const { Capacitor } = await import('@capacitor/core');
+    if (Capacitor.getPlatform() === 'ios') {
+      // iOS: open this app's settings directly
+      window.location.href = 'app-settings:';
+    } else {
+      // Android: no universal URL scheme — instruct the user manually
+      alert('To change this permission, go to Settings › Apps › Perkfinity › Permissions.');
+    }
   } catch {
-    alert('Please go to Settings > Apps > Perkfinity on your iPhone to change this permission.');
+    alert('Please go to Settings › Apps › Perkfinity to change this permission.');
   }
 }
 
@@ -171,16 +177,16 @@ export default function PermissionsPage() {
 
   const renderLocationButton = () => {
     if (geoState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (geoState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings > Apps > Perkfinity on your iPhone.')}>✓ Location Services Enabled</button>;
+    if (geoState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}>✓ Location Services Enabled</button>;
     if (geoState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
-    return <button style={purpleBtn} onClick={handleAllowLocation}>Allow Location Services</button>;
+    return <button style={purpleBtn} onClick={handleAllowLocation}>Continue</button>;
   };
 
   const renderNotifButton = () => {
     if (pushState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (pushState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings > Apps > Perkfinity on your iPhone.')}>✓ Notifications Enabled</button>;
+    if (pushState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}>✓ Notifications Enabled</button>;
     if (pushState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
-    return <button style={purpleBtn} onClick={handleAllowNotifications}>Allow Notifications</button>;
+    return <button style={purpleBtn} onClick={handleAllowNotifications}>Continue</button>;
   };
 
   return (

@@ -23,15 +23,24 @@ export default function PushHandler() {
         const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
         const { Badge } = await import('@capawesome/capacitor-badge');
 
+        const clearBadgeSafely = async () => {
+          try {
+            const status = await FirebaseMessaging.checkPermissions();
+            if (status.receive === 'granted') {
+              await Badge.clear();
+            }
+          } catch { /* ignore */ }
+        };
+
         // Clear badge immediately when app launches
-        try { await Badge.clear(); } catch { /* ignore */ }
+        await clearBadgeSafely();
 
         // Called when user taps a push notification (app was in background/killed)
         const pushHandle = await FirebaseMessaging.addListener(
           'notificationActionPerformed',
           async () => {
             // Clear badge when user taps a push notification
-            try { await Badge.clear(); } catch { /* ignore */ }
+            await clearBadgeSafely();
             router.push('/history?tab=notifications');
           }
         );
@@ -39,7 +48,7 @@ export default function PushHandler() {
         // Clear badge when app returns to foreground
         const { App } = await import('@capacitor/app');
         const resumeHandle = await App.addListener('resume', async () => {
-          try { await Badge.clear(); } catch { /* ignore */ }
+          await clearBadgeSafely();
         });
 
         cleanup = () => {

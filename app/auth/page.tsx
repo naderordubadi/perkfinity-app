@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
@@ -13,7 +13,17 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [platform, setPlatform] = useState<string>("ios"); // default ios — hides nothing until detected
   const router = useRouter();
+
+  // Detect platform on mount (ios / android / web)
+  useEffect(() => {
+    import("@capacitor/core").then(({ Capacitor }) => {
+      setPlatform(Capacitor.getPlatform());
+    }).catch(() => {
+      setPlatform("web");
+    });
+  }, []);
 
   // ── Apple Sign-In (native Capacitor) ────────────────────────────
   const handleAppleSignIn = async () => {
@@ -139,9 +149,10 @@ export default function AuthPage() {
         }
 
         // ── Trigger iOS Keychain "Save Password?" prompt ──────────
+        // iOS only — Android does not support this plugin
         try {
           const { Capacitor } = await import('@capacitor/core');
-          if (Capacitor.isNativePlatform()) {
+          if (Capacitor.getPlatform() === 'ios') {
             const { SavePassword } = await import('@capgo/capacitor-autofill-save-password');
             await SavePassword.promptDialog({
               username: email,
@@ -234,7 +245,8 @@ export default function AuthPage() {
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Apple Sign-In — real native Capacitor plugin */}
+            {/* Apple Sign-In — iOS only (not supported on Android) */}
+            {platform !== 'android' && (
             <button
               onClick={handleAppleSignIn}
               disabled={loading}
@@ -247,6 +259,7 @@ export default function AuthPage() {
               </span>
               {loading ? "Signing in..." : "Sign in with Apple"}
             </button>
+            )}
 
             {/* Google Sign-In — real native Capacitor plugin */}
             <button

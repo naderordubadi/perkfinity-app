@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Perkfinity</string>
+    <string name="title_activity_main">Perkfinity</string>
+    <string name="package_name">net.perkfinity.app</string>
+    <string name="custom_url_scheme">net.perkfinity.app</string>
+</resources>
