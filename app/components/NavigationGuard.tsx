@@ -7,20 +7,17 @@ import { fetchApi } from '@/lib/api';
 /**
  * NavigationGuard — mounted in the root layout, always present.
  *
- * WHY THIS EXISTS:
+ * Single responsibility: Redemption cancel guard.
+ *
  * When a user activates an offer and gets to /redeem, we set a
  * `pending_cancel` flag in localStorage. If the user leaves /redeem
  * without completing the redemption (by tapping any nav tab), we
  * need to call cancel-activation to revert the DB status to 'created'.
  *
- * HOW IT WORKS:
- * On every render (mount and pathname change), if we are NOT on /redeem
- * and pending_cancel exists → call cancel-activation immediately.
- * This works for BOTH:
- *   - Full page reloads (plain <a href> nav) — fires on mount of new page
- *   - Client-side navigation (<Link>) — fires when pathname changes
- *
- * No previous-pathname tracking needed. Simple and reliable.
+ * NOTE: Profile + permission gating is handled exclusively in auth/page.tsx
+ * via getPostLoginRoute(). Per product spec, already-logged-in users who
+ * simply reopen the app are NOT re-checked. The gate only fires on sign-in
+ * and sign-up flows.
  */
 export default function NavigationGuard() {
   const pathname = usePathname();

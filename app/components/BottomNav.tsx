@@ -9,8 +9,30 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Poll unread notification count
+  // Determine whether to hide the nav based on actual user state.
+  // Rules:
+  //  - Not logged in → always show nav (user needs to get back to /auth)
+  //  - /permissions → hide when logged in (only reachable via the gate, never via a nav tab)
+  //  - /profile → hide ONLY when profile is incomplete (gate flow).
+  //              When complete, user is freely editing → show nav.
+  const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('pf_user_token');
+  let isHidden = false;
+  if (isLoggedIn) {
+    if (pathname.startsWith('/permissions')) {
+      isHidden = true;
+    } else if (pathname.startsWith('/profile')) {
+      try {
+        const raw = localStorage.getItem('pf_user_data');
+        const u = raw ? JSON.parse(raw) : null;
+        isHidden = !u?.full_name || !u?.phone_number || !u?.city || !u?.zip_code;
+      } catch { isHidden = false; }
+    }
+  }
+
+  // Poll unread notification count — hooks must run unconditionally,
+  // but we skip the actual fetch when the nav is hidden.
   useEffect(() => {
+    if (isHidden) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('pf_user_token') : null;
     if (!token) return;
 
@@ -23,10 +45,12 @@ export default function BottomNav() {
     };
 
     checkUnread();
-    // Re-check every 60 seconds
     const interval = setInterval(checkUnread, 60000);
     return () => clearInterval(interval);
-  }, [pathname]); // re-run when navigating
+  }, [pathname, isHidden]);
+
+  // Early return AFTER all hooks (Rules of Hooks requirement).
+  if (isHidden) return null;
 
   const tabs = [
     {

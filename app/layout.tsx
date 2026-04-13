@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import NavigationGuard from "./components/NavigationGuard";
 import BottomNav from "./components/BottomNav";
 import PushHandler from "./components/PushHandler";
+import SafeAreaProvider from "./components/SafeAreaProvider";
 
 export const metadata: Metadata = {
   title: "Perkfinity | Rewards & Experiences",
@@ -44,6 +45,9 @@ export default function RootLayout({
             --border: rgba(255, 255, 255, 0.1);
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
+            /* Safe-area top inset — overridden at runtime by SafeAreaProvider.
+               Default: iOS-style env() so the layout never flashes on first paint. */
+            --safe-top: env(safe-area-inset-top, 44px);
           }
           
           body {
@@ -123,6 +127,7 @@ export default function RootLayout({
         `}</style>
       </head>
       <body>
+        <SafeAreaProvider />
         <NavigationGuard />
         <PushHandler />
 

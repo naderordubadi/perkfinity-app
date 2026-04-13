@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
+import { getPostLoginRoute } from "@/lib/postLoginRoute";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup" | "forgot">("choice");
@@ -13,7 +14,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
-  const [platform, setPlatform] = useState<string>("ios"); // default ios — hides nothing until detected
+  const [platform, setPlatform] = useState<string>("ios");
+  const [hasSavedCred, setHasSavedCred] = useState<{u:string;p:string}|null>(null);
   const router = useRouter();
 
   // Detect platform on mount (ios / android / web)
@@ -25,16 +27,46 @@ export default function AuthPage() {
     });
   }, []);
 
+  // ── Check for saved credentials when the login form opens ───────
+  useEffect(() => {
+    if (method !== 'login') return;
+    setHasSavedCred(null); // reset on each open
+    const checkSaved = async () => {
+      // Layer 1: native CredentialManager (Android)
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.getPlatform() === 'android') {
+          const { SavePassword } = await import('@capgo/capacitor-autofill-save-password');
+          const saved = await SavePassword.readPassword();
+          if (saved?.username && saved?.password) {
+            setEmail(saved.username);
+            setPassword(saved.password);
+            return;
+          }
+        }
+      } catch { /* no native cred — fall through */ }
+
+      // Layer 2: our own localStorage fallback
+      try {
+        const raw = localStorage.getItem('pf_cred');
+        if (raw) {
+          const cred = JSON.parse(raw);
+          if (cred?.u && cred?.p) setHasSavedCred(cred);
+        }
+      } catch { /* corrupt — ignore */ }
+    };
+    checkSaved();
+  }, [method]);
+
   // ── Apple Sign-In (native Capacitor) ────────────────────────────
   const handleAppleSignIn = async () => {
     try {
       setLoading(true);
       setError("");
-      // Dynamic import so Next.js static export doesn't fail on web
       const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
       const result = await SignInWithApple.authorize({
         clientId: "net.perkfinity.app",
-        redirectURI: "",   // required by types; ignored by native iOS
+        redirectURI: "",
         scopes: "email name",
       });
       const credential = result.response;
@@ -54,18 +86,12 @@ export default function AuthPage() {
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
-        if (!res.data.user?.zip_code) {
-          router.push("/profile");
-        } else if (pendingQr) {
-          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
-        } else {
-          router.push("/");
-        }
+        const dest = await getPostLoginRoute(res.data.user, pendingQr);
+        router.push(dest);
       } else {
         setError(res.error || "Apple Sign-In failed");
       }
     } catch (err: any) {
-      // User cancelled = no error to display
       if (err?.message !== "The operation couldn't be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)") {
         setError("Apple Sign-In failed. Please try email instead.");
       }
@@ -81,7 +107,6 @@ export default function AuthPage() {
       setError("");
       const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
       await GoogleAuth.initialize({
-        clientId: "1053337094970-c38gunb5oljfncb4avar8c6fc4jg5kjg.apps.googleusercontent.com",
         scopes: ["profile", "email"],
         grantOfflineAccess: true,
       });
@@ -98,13 +123,8 @@ export default function AuthPage() {
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
-        if (!res.data.user?.zip_code) {
-          router.push("/profile");
-        } else if (pendingQr) {
-          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
-        } else {
-          router.push("/");
-        }
+        const dest = await getPostLoginRoute(res.data.user, pendingQr);
+        router.push(dest);
       } else {
         setError(res.error || "Google Sign-In failed");
       }
@@ -134,13 +154,13 @@ export default function AuthPage() {
       setLoading(true);
       setError("");
       const endpoint = method === "login" ? "/consumers/login" : "/consumers/signup";
-      
+
       const pendingQr = localStorage.getItem('pending_qr');
       const res = await fetchApi(endpoint, {
         method: 'POST',
         body: JSON.stringify({ email, password, qrCode: pendingQr || undefined })
       });
-      
+
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
         localStorage.setItem('pf_has_account', 'true');
@@ -148,39 +168,20 @@ export default function AuthPage() {
           setUserData(res.data.user);
         }
 
-        // ── Trigger iOS Keychain "Save Password?" prompt ──────────
-        // iOS only — Android does not support this plugin
+        // Attempt native credential save — fire-and-forget, never blocks navigation.
         try {
           const { Capacitor } = await import('@capacitor/core');
-          if (Capacitor.getPlatform() === 'ios') {
+          const cp = Capacitor.getPlatform();
+          if (cp === 'ios' || cp === 'android') {
             const { SavePassword } = await import('@capgo/capacitor-autofill-save-password');
-            await SavePassword.promptDialog({
-              username: email,
-              password: password,
-              url: 'app.perkfinity.net',
-            });
+            await SavePassword.promptDialog({ username: email, password, url: 'app.perkfinity.net' });
           }
-        } catch (saveErr) {
-          // Non-fatal — don't block login if save prompt fails
-          console.warn('[Auth] Keychain save prompt skipped:', saveErr);
-        }
-        
-        // Next Step Logic
-        let target = method === "signup" ? "/profile" : "/scan"; 
-        
-        // If login but missing profile demographic data, force them to profile routing
-        if (method === "login" && res.data.user && !res.data.user.zip_code) {
-          target = "/profile";
-        }
-        
-        const pendingQr = localStorage.getItem('pending_qr');
-        if (target === "/profile") {
-          router.push("/profile");
-        } else if (pendingQr) {
-          router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
-        } else {
-          router.push(target);
-        }
+        } catch { /* native save failed — proceed without saving */ }
+
+        const pqr = localStorage.getItem('pending_qr');
+        const navTarget = await getPostLoginRoute(res.data.user, pqr);
+        router.push(navTarget);
+
       } else {
         setError(res.error || "Authentication failed");
       }
@@ -210,7 +211,6 @@ export default function AuthPage() {
         setError(res.error || "Failed to send reset email");
       }
     } catch (err: any) {
-      // Show generic success even on error to not leak user existence
       setForgotSuccess(true);
     } finally {
       setLoading(false);
@@ -234,34 +234,40 @@ export default function AuthPage() {
       fontFamily: 'Outfit, sans-serif'
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <img 
-          src="/assets/logo.png" 
-          alt="Perkfinity Logo" 
-          style={{ width: '100%', maxWidth: '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain' }} 
+        <img
+          src="/assets/logo.png"
+          alt="Perkfinity Logo"
+          style={{ width: '100%', maxWidth: '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain' }}
         />
         <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center' }}>
-          {method === "choice" ? "Choose how you'd like to sign in." : method === "login" ? "Sign in to your account." : "Create your account."}
+          {method === "choice"
+            ? "Choose how you'd like to sign in."
+            : method === "login"
+            ? "Sign in to your account."
+            : method === "signup"
+            ? "Create your account."
+            : ""}
         </p>
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Apple Sign-In — iOS only (not supported on Android) */}
+            {/* Apple Sign-In — iOS only */}
             {platform !== 'android' && (
-            <button
-              onClick={handleAppleSignIn}
-              disabled={loading}
-              style={btnStyle("#fff", "#000")}
-            >
-              <span style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
-                <svg viewBox="0 0 384 512" width="18" height="18" fill="currentColor" style={{ flexShrink: 0, minWidth: '18px', display: 'block' }}>
-                  <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.1-44.6-35.9-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
-                </svg>
-              </span>
-              {loading ? "Signing in..." : "Sign in with Apple"}
-            </button>
+              <button
+                onClick={handleAppleSignIn}
+                disabled={loading}
+                style={btnStyle("#fff", "#000")}
+              >
+                <span style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+                  <svg viewBox="0 0 384 512" width="18" height="18" fill="currentColor" style={{ flexShrink: 0, minWidth: '18px', display: 'block' }}>
+                    <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.1-44.6-35.9-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                  </svg>
+                </span>
+                {loading ? "Signing in..." : "Sign in with Apple"}
+              </button>
             )}
 
-            {/* Google Sign-In — real native Capacitor plugin */}
+            {/* Google Sign-In */}
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
@@ -284,37 +290,121 @@ export default function AuthPage() {
             </button>
           </div>
 
+        ) : method === "forgot" ? (
+          // ── Reset Password ─────────────────────────────────────
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {forgotSuccess ? (
+              <>
+                <div style={{
+                  background: 'rgba(107,193,122,0.12)',
+                  border: '1px solid rgba(107,193,122,0.35)',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✉️</div>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, color: '#86EFAC' }}>Check Your Email</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                    If an account exists for <strong style={{ color: '#fff' }}>{email}</strong>, we&apos;ve sent a password reset link. Check your inbox and spam folder.
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setMethod("login"); setError(""); setForgotSuccess(false); }}
+                  style={btnStyle("#8B5CF6", "#fff")}
+                >
+                  Back to Sign In
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, fontSize: '1.25rem' }}>Reset Password</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                    Enter your email address and we&apos;ll send you a link to reset your password.
+                  </p>
+                </div>
+                {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+                <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMethod("login"); setError(""); }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}
+                >
+                  Back to Sign In
+                </button>
+              </form>
+            )}
+          </div>
+
         ) : (
-          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          // ── Login / Sign-Up ────────────────────────────────────
+          <form onSubmit={handleAuthSubmit} action="#" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
-            
+
+            {/* Saved credentials chip */}
+            {method === 'login' && hasSavedCred && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(hasSavedCred.u);
+                  try { setPassword(atob(hasSavedCred.p)); } catch { setPassword(hasSavedCred.p); }
+                  setHasSavedCred(null);
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.4)',
+                  borderRadius: '12px', padding: '12px 16px', color: '#C4B5FD',
+                  fontSize: '0.875rem', cursor: 'pointer', width: '100%', textAlign: 'left'
+                }}
+              >
+                <span style={{ fontSize: '1.25rem' }}>🔑</span>
+                <div>
+                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.875rem' }}>Use saved credentials</div>
+                  <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{hasSavedCred.u}</div>
+                </div>
+              </button>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
-              <input 
-                type="email" 
-                placeholder="name@example.com" 
+              <input
+                type="email"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={inputStyle} 
+                style={inputStyle}
                 required
                 autoComplete="email"
               />
             </div>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
               <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Password</label>
               <div style={{ position: 'relative' }}>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••" 
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: '46px' }} 
+                  style={{ ...inputStyle, paddingRight: '46px' }}
                   required
                   autoComplete="current-password"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute', right: '14px', top: '16px',
@@ -352,65 +442,6 @@ export default function AuthPage() {
             </button>
           </form>
         )}
-
-        {method === "forgot" && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {forgotSuccess ? (
-              <>
-                <div style={{
-                  background: 'rgba(107,193,122,0.12)',
-                  border: '1px solid rgba(107,193,122,0.35)',
-                  borderRadius: '16px',
-                  padding: '1.25rem',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✉️</div>
-                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, color: '#86EFAC' }}>Check Your Email</h3>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                    If an account exists for <strong style={{ color: '#fff' }}>{email}</strong>, we've sent a password reset link. Check your inbox and spam folder.
-                  </p>
-                </div>
-                <button
-                  onClick={() => { setMethod("login"); setError(""); setForgotSuccess(false); }}
-                  style={btnStyle("#8B5CF6", "#fff")}
-                >
-                  Back to Sign In
-                </button>
-              </>
-            ) : (
-              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, fontSize: '1.25rem' }}>Reset Password</h3>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
-                    Enter your email address and we'll send you a link to reset your password.
-                  </p>
-                </div>
-                {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-                <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
-                  {loading ? "Sending..." : "Send Reset Link"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMethod("login"); setError(""); }}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}
-                >
-                  Back to Sign In
-                </button>
-              </form>
-            )}
-          </div>
-        )}
       </div>
 
       <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingBottom: '1rem' }}>
@@ -419,6 +450,7 @@ export default function AuthPage() {
         {' '}and{' '}
         <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Privacy Policy</a>.
       </p>
+
     </div>
   );
 }

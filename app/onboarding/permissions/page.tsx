@@ -34,7 +34,7 @@ export default function PermissionsPage() {
           await fetch(`${API_BASE}/consumers/push-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ token: fcmToken }),
+            body: JSON.stringify({ token: fcmToken, platform: Capacitor.getPlatform() }),
           });
         }
         setNotifStatus("granted");
