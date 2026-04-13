@@ -28,9 +28,14 @@ export default function Home() {
   const [pendingOffers, setPendingOffers] = useState<Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }>>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('ios'); // default ios — safe for SSR
 
   useEffect(() => {
     setMounted(true);
+    // Detect platform so address links open the correct maps app
+    import('@capacitor/core').then(({ Capacitor }) => {
+      setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
+    }).catch(() => setPlatform('web'));
     const token = localStorage.getItem('pf_user_token');
     const hasAccount = localStorage.getItem('pf_has_account');
 
@@ -128,7 +133,7 @@ export default function Home() {
     }}>
       {/* Header with full logo */}
       <div style={{
-        padding: 'max(env(safe-area-inset-top, 44px), 44px) 1.5rem 0',
+        padding: 'var(--safe-top, 44px) 1.5rem 0',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
@@ -327,7 +332,11 @@ export default function Home() {
               : (m.offer_count ?? 0);
             const hasOffer = !isScannedMerchant && displayCount > 0;
             const displayLabel = displayCount > 1 ? `${displayCount} offers` : m.discount;
-            const mapsUrl = m.store_address ? `maps://maps.apple.com/?q=${encodeURIComponent(m.store_address)}` : null;
+            const mapsUrl = m.store_address
+              ? platform === 'android'
+                ? `https://maps.google.com/maps?q=${encodeURIComponent(m.store_address)}`
+                : `maps://maps.apple.com/?q=${encodeURIComponent(m.store_address)}`
+              : null;
             return (
               <div key={i} style={{
                 minWidth: hasOffer ? '150px' : '130px',

@@ -17,6 +17,7 @@ export default function ScanPage() {
   const [permissionState, setPermissionState] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
   const [scanning, setScanning] = useState(false);
   const [detected, setDetected] = useState(false);
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('ios'); // default ios so SSR is safe
 
   const stopCamera = useCallback(() => {
     if (animFrameRef.current) {
@@ -64,6 +65,13 @@ export default function ScanPage() {
 
     animFrameRef.current = requestAnimationFrame(scanFrame);
   }, [router, stopCamera]);
+
+  // Detect platform on mount
+  useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
+    }).catch(() => setPlatform('web'));
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -153,6 +161,7 @@ export default function ScanPage() {
   // Only shown if user explicitly tapped "Don't Allow" in iOS native dialog.
   // Instructions tell them exactly where to find the setting.
   if (permissionState === "denied") {
+    const isAndroid = platform === 'android';
     return (
       <div style={styles.fullPage}>
         <div style={styles.iconBox("rgba(239,68,68,0.12)", "rgba(239,68,68,0.3)", "none")}>
@@ -161,8 +170,9 @@ export default function ScanPage() {
         <div style={{ textAlign: "center" }}>
           <h2 style={styles.heading}>Camera Access Denied</h2>
           <p style={styles.body}>
-            You tapped "Don't Allow" when Perkfinity asked for camera access.
-            To scan QR codes, please re-enable it in your iPhone Settings.
+            {isAndroid
+              ? 'Perkfinity needs camera access to scan QR codes. Please enable it in your device settings.'
+              : 'You tapped "Don\'t Allow" when Perkfinity asked for camera access. To scan QR codes, please re-enable it in your iPhone Settings.'}
           </p>
         </div>
         <div style={{
@@ -177,10 +187,18 @@ export default function ScanPage() {
           maxWidth: "280px",
         }}>
           <strong>How to re-enable:</strong><br />
-          iPhone <strong>Settings</strong> → scroll to bottom <strong>Apps</strong><br />
-          → tap <strong>Perkfinity</strong> → Toggle on <strong>Camera</strong>
+          {isAndroid ? (
+            <>
+              <strong>Settings</strong> → <strong>Apps</strong> → <strong>Perkfinity</strong><br />
+              → <strong>Permissions</strong> → <strong>Camera</strong> → Allow
+            </>
+          ) : (
+            <>
+              iPhone <strong>Settings</strong> → scroll to bottom <strong>Apps</strong><br />
+              → tap <strong>Perkfinity</strong> → Toggle on <strong>Camera</strong>
+            </>
+          )}
         </div>
-        {/* Let them try again — on next app launch iOS may show the dialog again */}
         <button onClick={() => setPermissionState("idle")} style={styles.primaryBtn}>
           Try Again
         </button>

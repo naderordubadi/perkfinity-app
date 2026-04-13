@@ -83,7 +83,7 @@ function NotificationDetailContent() {
       background: "linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)",
       fontFamily: "Outfit, sans-serif",
       color: "#fff",
-      padding: "max(env(safe-area-inset-top, 44px), 44px) 1.5rem 10rem",
+      padding: "var(--safe-top, 44px) 1.5rem 10rem",
     }}>
       {/* Back button */}
       <button

@@ -146,7 +146,7 @@ function HistoryContent() {
       background: "linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)",
       fontFamily: "Outfit, sans-serif",
       color: "#fff",
-      padding: "max(env(safe-area-inset-top, 44px), 44px) 1.5rem 10rem",
+      padding: "var(--safe-top, 44px) 1.5rem 10rem",
     }}>
       <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "0.25rem" }}>History</h2>
       <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.85rem", marginTop: 0, marginBottom: "1.25rem" }}>
