@@ -23,8 +23,7 @@ export default function QRResolveClient({ params }: { params: { public_code: str
 
   useEffect(() => {
     // ── Browser detection: if opened in Safari (not inside native Capacitor app),
-    //    redirect to /download page which handles TestFlight redirect.
-    //    This is the Stage 1 flow: user has no app, scans QR → goes to TestFlight.
+    //    route non-native users directly to the appropriate store — no intermediate page.
     const isNative = typeof window !== 'undefined'
       && (window as any).Capacitor?.isNativePlatform?.();
 
@@ -35,10 +34,18 @@ export default function QRResolveClient({ params }: { params: { public_code: str
       || '';
 
     if (!isNative) {
-      // Running in Safari/browser — user doesn't have the app.
-      // Save QR code so it persists, then redirect to TestFlight download page.
+      // Running in Safari/browser — user doesn't have the app yet.
+      // Save QR code so it persists after install.
       if (qrCode) localStorage.setItem('pending_qr', qrCode);
-      router.push('/download');
+
+      const isAndroid = /android/i.test(navigator.userAgent);
+      if (isAndroid) {
+        // Android: Play Store not live yet — show coming soon page
+        router.push('/download');
+      } else {
+        // iOS: go straight to App Store — no intermediate Perkfinity page
+        window.location.href = 'https://apps.apple.com/us/app/perkfinity-privacy-first-perks/id6759945540';
+      }
       return;
     }
 
