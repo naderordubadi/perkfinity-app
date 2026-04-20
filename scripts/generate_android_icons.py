@@ -20,7 +20,10 @@ import os, sys, shutil, struct, zlib, subprocess
 # ─── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-SRC_ICON     = os.path.join(PROJECT_ROOT, "assets", "icon.png")
+if len(sys.argv) > 1:
+    SRC_ICON = os.path.abspath(sys.argv[1])
+else:
+    SRC_ICON = os.path.join(PROJECT_ROOT, "assets", "icon.png")
 MIPMAP_BASE  = os.path.join(PROJECT_ROOT, "android", "app", "src", "main", "res")
 
 # ─── Android density table ────────────────────────────────────────────────────

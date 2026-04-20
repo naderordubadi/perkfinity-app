@@ -139,7 +139,7 @@ export default function Home() {
         alignItems: 'center'
       }}>
         {/* Plain img — next/image generates /_next/image?url= paths that Capacitor file:// can't resolve */}
-        <img src="/logo.png" alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain' }} />
+        <img src={platform === 'android' ? "/icon-android.png" : "/logo.png"} alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain', borderRadius: platform === 'android' ? '8px' : '0' }} />
         {isLoggedIn ? (
           <button onClick={handleSignOut} style={{
             padding: '0.5rem 1rem',

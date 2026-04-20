@@ -15,6 +15,9 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
+    const token = localStorage.getItem("pf_user_token");
+    if (!token) { router.push("/auth"); return; }
+
     const data = getUserData();
     if (data) {
       if (data.full_name) setFullName(data.full_name);
@@ -22,7 +25,7 @@ export default function ProfilePage() {
       if (data.city) setCity(data.city);
       if (data.zip_code) setZipCode(data.zip_code);
     }
-  }, []);
+  }, [router]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');

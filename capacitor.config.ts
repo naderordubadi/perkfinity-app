@@ -17,6 +17,9 @@ const config: CapacitorConfig = {
       androidClientId: '694850202109-2t65brhnd8ce819s1rosqjvcc53ik1jn.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
+    FirebaseMessaging: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 

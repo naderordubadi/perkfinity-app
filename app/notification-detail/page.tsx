@@ -13,6 +13,7 @@ interface OfferItem {
   campaign_id: string;
   merchant_id: string;
   offer_expires_at: string | null;
+  disclaimer: string | null;
 }
 
 interface NotificationDetail {
@@ -47,8 +48,13 @@ function NotificationDetailContent() {
   const [notif, setNotif] = useState<NotificationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('ios');
 
   useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
+    }).catch(() => setPlatform('web'));
+    
     const token = localStorage.getItem("pf_user_token");
     if (!token) { router.push("/auth"); return; }
     if (!notifId) { router.push("/history?tab=notifications"); return; }
@@ -168,31 +174,43 @@ function NotificationDetailContent() {
                   <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
                     {offer.title}
                   </div>
-                  {offer.store_address && (
-                    <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.3)", marginTop: "3px" }}>
-                      📍 {offer.store_address}
+                  {offer.store_address && (() => {
+                    const mapsUrl = platform === 'android'
+                      ? `https://maps.google.com/maps?q=${encodeURIComponent(offer.store_address)}`
+                      : `maps://maps.apple.com/?q=${encodeURIComponent(offer.store_address)}`;
+                    return (
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, '_blank'); }}
+                        style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+                      >
+                        📍 {offer.store_address}
+                      </div>
+                    );
+                  })()}
+                  {offer.disclaimer && (
+                    <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
+                      {offer.disclaimer}
                     </div>
                   )}
                 </div>
 
-                {/* View Offer button */}
-                <button
-                  onClick={() => router.push("/")}
+                {/* Scan instruction note */}
+                <div
                   style={{
-                    padding: "6px 14px",
-                    background: "linear-gradient(135deg, #6BC17A, #3B9A52)",
-                    borderRadius: "20px",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: "0.73rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
+                    padding: "8px 12px",
+                    background: "#E8FAEB",
+                    borderRadius: "8px",
+                    color: "#1E5E34",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    lineHeight: 1.35,
                     flexShrink: 0,
+                    maxWidth: "110px",
                   }}
                 >
-                  View Offer →
-                </button>
+                  Scan the QR code in store to unlock it
+                </div>
               </div>
             ))}
           </div>
