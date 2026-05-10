@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchApi } from "@/lib/api";
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 interface Merchant {
   id: string;
+  campaign_id?: string;
   merchant_name: string;
   discount: string;
   logo_url: string | null;
@@ -16,9 +17,32 @@ interface Merchant {
   qr_code: string | null;
   offer_count?: number;
   store_address?: string;
+  website?: string;
+  business_presence?: string;
   latest_offer_title?: string;
   latest_offer_condition?: string;
+  latest_offer_at?: string | null;
   offer_expires_at?: string;
+  is_member?: boolean;
+  promo_code?: string | null;
+  review_url?: string | null;
+  order_url?: string | null;
+}
+
+interface CampaignOffer {
+  campaign_id: string;
+  title: string;
+  discount_percentage: number | null;
+  terms: string | null;
+  end_at: string | null;
+  campaign_type: string;
+  business_presence: string;
+  promo_code: string | null;
+  redemption_id: string | null;
+  redemption_status: string | null;
+  claimed_at: string | null;
+  redeemed: boolean;
+  redeemed_at: string | null;
 }
 
 export default function Home() {
@@ -28,43 +52,54 @@ export default function Home() {
   const [pendingOffers, setPendingOffers] = useState<Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }>>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
-  const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('ios'); // default ios — safe for SSR
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('ios');
+  const [joinModal, setJoinModal] = useState<Merchant | null>(null);
+  const [joinState, setJoinState] = useState<'confirm' | 'loading' | 'success' | 'error'>('confirm');
+  const [joinError, setJoinError] = useState('');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+  const [merchantCampaigns, setMerchantCampaigns] = useState<CampaignOffer[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [revealedCodes, setRevealedCodes] = useState<Record<string, string>>({});
+  const [copyLabels, setCopyLabels] = useState<Record<string, string>>({});
+  const [revealingId, setRevealingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  const toggleFilter = (key: string) => {
+    if (key === 'all') { setActiveFilters(new Set()); return; }
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); }
+      else {
+        if (key === 'joined') next.delete('notjoined');
+        if (key === 'notjoined') next.delete('joined');
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
 
   useEffect(() => {
     setMounted(true);
-    // Detect platform so address links open the correct maps app
     import('@capacitor/core').then(({ Capacitor }) => {
       setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
     }).catch(() => setPlatform('web'));
     const token = localStorage.getItem('pf_user_token');
     const hasAccount = localStorage.getItem('pf_has_account');
-
-    // First-time user: no token AND no account history → show onboarding slides
-    if (!token && !hasAccount) {
-      router.push('/onboarding');
-      return;
-    }
-
+    if (!token && !hasAccount) { router.push('/onboarding'); return; }
     const qr = localStorage.getItem('pending_qr');
     if (qr) setPendingQr(qr);
     setIsLoggedIn(!!token);
 
-    // ── Reliable cancel-activation fallback ──────────────────────────
-    // If the user navigated away from /redeem without completing the redemption,
-    // the QR page stored a 'pending_cancel' entry. Process it here so the
-    // member-list status always reverts to Created when the home page loads.
     const pendingCancelRaw = localStorage.getItem('pending_cancel');
     if (pendingCancelRaw) {
       try {
         const pc = JSON.parse(pendingCancelRaw);
         const userToken = localStorage.getItem('pf_user_token');
         if (pc.campaign_id && userToken) {
-          // Fire-and-forget — don't block home page loading
-          fetchApi(
-            `/campaigns/${pc.campaign_id}/cancel-activation`,
-            { method: 'POST' }
-          ).catch(() => { });
-          // Restore offer to pending_offers if not already present
+          fetchApi(`/campaigns/${pc.campaign_id}/cancel-activation`, { method: 'POST' }).catch(() => {});
           const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
           if (!offers.some((o: { campaign_id: string }) => o.campaign_id === pc.campaign_id)) {
             offers.push({ campaign_id: pc.campaign_id, merchant_name: pc.merchant_name, title: pc.title, qr_code: pc.qr_code });
@@ -72,16 +107,14 @@ export default function Home() {
           }
         }
       } catch { /* ignore */ }
-      localStorage.removeItem('pending_cancel'); // always clear, even if processing failed
+      localStorage.removeItem('pending_cancel');
     }
 
-    // Load member-specific pending offers (set by QR page after resolving campaigns)
     try {
       const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
       setPendingOffers(stored);
     } catch { setPendingOffers([]); }
 
-    // Fetch live participating merchants
     const pendingQrCode = localStorage.getItem('pending_qr');
     const userData = localStorage.getItem('pf_user_data');
     const userZip = userData ? JSON.parse(userData).zip_code || null : null;
@@ -90,12 +123,10 @@ export default function Home() {
       .then(json => {
         if (json.success && json.data) {
           const data: Merchant[] = json.data;
-          // Sort: last-scanned merchant first, then zip-match, then rest
           const sorted = [...data].sort((a, b) => {
             const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
             const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
             if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
-            // Merchants with active offers come next
             const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
             const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
             if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
@@ -113,80 +144,80 @@ export default function Home() {
     localStorage.removeItem('pf_user_token');
     localStorage.removeItem('pf_user_data');
     setIsLoggedIn(false);
-    // Reload page or let state update handle it. Since we are on Home page,
-    // state will re-render header to say "Sign in"
+  };
+
+  const handleJoin = async (merchant: Merchant) => {
+    if (!isLoggedIn) { router.push('/auth?return=/'); return; }
+    setJoinModal(merchant);
+    setJoinState('confirm');
+    setJoinError('');
+    setRevealedCodes({});
+    setCopyLabels({});
+    setRevealingId(null);
+    setMerchantCampaigns([]);
+    setTimeout(() => { if (modalScrollRef.current) modalScrollRef.current.scrollTop = 0; }, 50);
+    if (merchant.is_member) {
+      setCampaignsLoading(true);
+      try {
+        const json = await fetchApi(`/consumers/merchants/${merchant.id}/campaigns`);
+        if (json.success) setMerchantCampaigns(json.data || []);
+      } catch { /* ignore */ }
+      setCampaignsLoading(false);
+    }
+  };
+
+  const confirmJoin = async () => {
+    if (!joinModal) return;
+    setJoinState('loading');
+    try {
+      await fetchApi(`/qr/resolve/${joinModal.qr_code}`);
+      setMerchants(prev => prev.map(m => m.id === joinModal.id ? { ...m, is_member: true } : m));
+      setJoinState('success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setJoinError(msg);
+      setJoinState('error');
+    }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: 'Outfit, sans-serif',
-      color: '#fff',
-      opacity: mounted ? 1 : 0,
-      transform: mounted ? 'translateY(0)' : 'translateY(16px)',
-      transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-      paddingBottom: '12rem', // Increased bottom padding to clear navbar
-      overflowY: 'auto'
-    }}>
-      {/* Header with full logo */}
-      <div style={{
-        padding: 'var(--safe-top, 44px) 1.5rem 0',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        {/* Plain img — next/image generates /_next/image?url= paths that Capacitor file:// can't resolve */}
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: '#fff', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: '12rem', overflowY: 'auto' }}>
+
+      {/* Header */}
+      <div style={{ padding: 'var(--safe-top, 44px) 1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <img src={platform === 'android' ? "/icon-android.png" : "/logo.png"} alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain', borderRadius: platform === 'android' ? '8px' : '0' }} />
         {isLoggedIn ? (
-          <button onClick={handleSignOut} style={{
-            padding: '0.5rem 1rem',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '20px',
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}>Sign Out</button>
+          <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Sign Out</button>
         ) : (
-          <Link href="/auth" style={{
-            padding: '0.5rem 1rem',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '20px',
-            color: 'rgba(255,255,255,0.7)',
-            textDecoration: 'none',
-            fontSize: '0.8rem',
-            fontWeight: 600
-          }}>Sign In</Link>
+          <Link href="/auth" style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>Sign In</Link>
         )}
       </div>
 
-      {/* Pending QR Banner — shown when user scanned a QR but isn't signed up yet */}
+      {/* Info Card — always shown, right under header */}
+      <div style={{ padding: '0.875rem 1.5rem 0' }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', border: '1px solid rgba(107,193,122,0.5)', borderRadius: '18px', padding: '0.9rem 1.1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <span style={{ fontSize: '1rem', lineHeight: 1.5, flexShrink: 0 }}>✨</span>
+            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>New local, mobile, and online businesses join regularly — check back for fresh deals near you.</p>
+          </div>
+          <div style={{ height: '1px', background: 'rgba(107,193,122,0.35)', margin: '0.7rem 0 0.55rem' }} />
+          <Link href="/onboarding" style={{ display: 'flex', alignItems: 'center', gap: '7px', textDecoration: 'none', color: '#86EFAC', fontSize: '0.76rem', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.82rem' }}>📖</span>
+            <span style={{ flex: 1 }}>Review App Benefits</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.55 }}>→</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Pending QR Banner */}
       {pendingQr && !isLoggedIn && (
         <div style={{ padding: '0 1.5rem', marginTop: '1rem' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
-              border: '1px solid rgba(251,191,36,0.35)',
-              borderRadius: '20px',
-              padding: '1rem 1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              boxShadow: '0 4px 20px rgba(251,191,36,0.1)',
-            }}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '20px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 20px rgba(251,191,36,0.1)' }}>
               <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
-                  You Have a Pending Offer!
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
-                  You scanned a merchant QR. Sign up in seconds to claim your discount.
-                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>You Have a Pending Offer!</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>You scanned a merchant QR. Sign up in seconds to claim your discount.</div>
               </div>
               <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
             </div>
@@ -194,96 +225,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero Card */}
-      <div style={{ padding: '1.75rem 1.5rem 1.5rem' }}>
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(107,193,122,0.1) 0%, rgba(139,92,246,0.15) 100%)',
-          border: '1px solid rgba(107,193,122,0.2)',
-          borderRadius: '28px',
-          padding: '2rem 1.75rem',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.4)'
-        }}>
-          {/* Background glow blobs */}
-          <div style={{
-            position: 'absolute', top: '-30px', right: '-30px',
-            width: '120px', height: '120px',
-            background: 'radial-gradient(circle, rgba(107,193,122,0.25), transparent 70%)',
-            borderRadius: '50%'
-          }} />
-          <div style={{
-            position: 'absolute', bottom: '-20px', left: '-20px',
-            width: '100px', height: '100px',
-            background: 'radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%)',
-            borderRadius: '50%'
-          }} />
 
-          {/* Floating discount badges */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            {['15% off ✂️', '20% off 🧖', '10% off 🌿'].map((badge, i) => (
-              <span key={i} style={{
-                padding: '4px 10px',
-                background: 'rgba(107,193,122,0.15)',
-                border: '1px solid rgba(107,193,122,0.3)',
-                borderRadius: '20px',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: '#86EFAC',
-                letterSpacing: '0.02em'
-              }}>{badge}</span>
-            ))}
-          </div>
-
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-            Ready to Save<br />at Local Shops?
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', margin: '0 0 1.75rem', lineHeight: 1.5, maxWidth: '260px' }}>
-            Scan, claim, and instantly get discounts at your favorite local businesses — no cards needed.
-          </p>
-
-          <Link href="/onboarding" style={{
-            display: 'block',
-            padding: '1rem 1.5rem',
-            background: 'linear-gradient(135deg, #6BC17A, #3B9A52)',
-            borderRadius: '16px',
-            color: '#fff',
-            textDecoration: 'none',
-            fontWeight: 700,
-            fontSize: '1rem',
-            textAlign: 'center',
-            boxShadow: '0 8px 24px rgba(107,193,122,0.35)',
-            letterSpacing: '0.01em'
-          }}>Get Started →</Link>
-        </div>
-      </div>
-
-      {/* How it works strip */}
-      <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          {[
-            { icon: '📱', label: 'Scan QR', desc: 'At any store' },
-            { icon: '✅', label: 'Claim', desc: 'Instant discount' },
-            { icon: '🎉', label: 'Save', desc: 'Every visit' }
-          ].map((s, i) => (
-            <div key={i} style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '18px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '1.4rem', marginBottom: '4px' }}>{s.icon}</div>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>{s.label}</div>
-              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)' }}>{s.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Available Perks (For Logged In Users with Pending QR) */}
-      {/* Available Perks — logged-in user with pending offers */}
+      {/* Pending Offers Banner */}
       {isLoggedIn && pendingOffers.length > 0 && (
         <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -291,24 +234,11 @@ export default function Home() {
             <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
           </div>
           <div onClick={() => router.push('/activate/')} style={{ cursor: 'pointer' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
-              border: '1px solid rgba(251,191,36,0.35)',
-              borderRadius: '20px',
-              padding: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              boxShadow: '0 4px 20px rgba(251,191,36,0.1)',
-            }}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 4px 20px rgba(251,191,36,0.1)' }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🎁</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>
-                  {pendingOffers.length === 1 ? pendingOffers[0].title : `${pendingOffers.length} Offers Available`}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>
-                  {pendingOffers.length === 1 ? 'Tap to activate your pending offer!' : `Tap to view and activate your ${pendingOffers.length} pending offers!`}
-                </div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>{pendingOffers.length === 1 ? pendingOffers[0].title : `${pendingOffers.length} Offers Available`}</div>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>{pendingOffers.length === 1 ? 'Tap to activate your pending offer!' : `Tap to view and activate your ${pendingOffers.length} pending offers!`}</div>
               </div>
               <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
             </div>
@@ -316,120 +246,307 @@ export default function Home() {
         </div>
       )}
 
-      {/* Fallback banner for unauthenticated users who scanned a QR */}
-
-      {/* Participating merchants */}
+      {/* Merchants Section */}
       <div style={{ padding: '0 1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants Around You</h3>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-          {merchants.length > 0 ? merchants.map((m: Merchant, i: number) => {
-            // For the scanned merchant, show this user's personal pending offer count
-            const isScannedMerchant = pendingQr && m.qr_code === pendingQr;
-            const displayCount = isScannedMerchant && pendingOffers.length > 0
-              ? pendingOffers.length
-              : (m.offer_count ?? 0);
-            const hasOffer = !isScannedMerchant && displayCount > 0;
-            const displayLabel = displayCount > 1 ? `${displayCount} offers` : m.discount;
-            const mapsUrl = m.store_address
-              ? platform === 'android'
-                ? `https://maps.google.com/maps?q=${encodeURIComponent(m.store_address)}`
-                : `maps://maps.apple.com/?q=${encodeURIComponent(m.store_address)}`
-              : null;
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
+        {/* Filter chips */}
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem' }}>
+          {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
+            const labels: Record<string, string> = { all: 'All', nearby: 'Near Me', online: 'Online', mobile: 'Mobile', joined: 'Joined', notjoined: 'Not Joined' };
+            const isActive = key === 'all' ? activeFilters.size === 0 : activeFilters.has(key);
             return (
-              <div key={i} style={{
-                minWidth: hasOffer ? '150px' : '130px',
-                padding: '1rem',
-                background: isScannedMerchant ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)',
-                borderRadius: '20px',
-                border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : hasOffer ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.3)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.4rem',
-                flexShrink: 0,
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: hasOffer ? '0 0 20px rgba(139,92,246,0.15)' : 'none'
-              }}>
-                {/* NEW OFFER Ribbon */}
-                {hasOffer && (
-                  <div style={{
-                    position: 'absolute', top: '10px', right: '-28px',
-                    background: '#EF4444',
-                    color: '#fff',
-                    fontSize: '0.55rem',
-                    fontWeight: 800,
-                    padding: '3px 30px',
-                    transform: 'rotate(35deg)',
-                    letterSpacing: '0.5px',
-                    zIndex: 2,
-                    boxShadow: '0 2px 8px rgba(239,68,68,0.4)'
-                  }}>NEW OFFER</div>
-                )}
-                <div style={{
-                  width: '38px', height: '38px', borderRadius: '12px',
-                  background: isScannedMerchant ? 'rgba(251,191,36,0.22)' : 'rgba(139,92,246,0.22)',
-                  border: isScannedMerchant ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(139,92,246,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', alignSelf: 'center'
-                }}>
-                  {m.logo_url ? <img src={m.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : '🏪'}
-                </div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fff', textAlign: 'center' }}>{m.merchant_name}</div>
-                <div style={{
-                  fontSize: '0.7rem', fontWeight: 700,
-                  color: isScannedMerchant ? '#FDE68A' : '#86EFAC',
-                  background: isScannedMerchant ? 'rgba(251,191,36,0.15)' : 'rgba(107,193,122,0.12)',
-                  border: isScannedMerchant ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(107,193,122,0.25)',
-                  borderRadius: '8px',
-                  padding: '2px 6px',
-                  display: 'inline-block',
-                  alignSelf: 'center'
-                }}>
-                  {displayLabel}
-                </div>
-                {/* Offer details for merchants with active offers */}
-                {hasOffer && m.latest_offer_condition && (
-                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3, textAlign: 'center' }}>
-                    {m.latest_offer_condition}
-                  </div>
-                )}
-                {/* Offer expiration */}
-                {hasOffer && m.offer_expires_at && (
-                  <div style={{ fontSize: '0.6rem', color: 'rgba(251,191,36,0.7)', textAlign: 'center', fontWeight: 600 }}>
-                    Expires {new Date(m.offer_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
-                )}
-                {/* Action text */}
-                <div style={{ fontSize: '0.65rem', color: isScannedMerchant ? 'rgba(253,230,138,0.6)' : 'rgba(255,255,255,0.35)', lineHeight: 1.3, textAlign: 'center', marginTop: '2px' }}>
-                  {isScannedMerchant ? 'Tap banner to activate!' : 'Scan QR in store to redeem'}
-                </div>
-                {/* Address at bottom — tappable to open Apple Maps */}
-                {!isScannedMerchant && m.store_address && (
-                  <div
-                    onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
-                    style={{
-                      fontSize: '0.6rem',
-                      color: 'rgba(255,255,255,0.35)',
-                      lineHeight: 1.3,
-                      textAlign: 'center',
-                      marginTop: 'auto',
-                      paddingTop: '4px',
-                      borderTop: '1px solid rgba(255,255,255,0.06)',
-                      cursor: mapsUrl ? 'pointer' : 'default'
-                    }}
-                  >
-                    📍 {m.store_address}
-                  </div>
-                )}
-              </div>
+              <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
             );
-          }) : (
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Loading merchants...</div>
+          })}
+        </div>
+        {/* Search bar */}
+        <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.88rem', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none', zIndex: 1 }}>🔍</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Search merchants..."
+            style={{
+              width: '100%',
+              padding: '0.6rem 2.25rem 0.6rem 2.25rem',
+              background: 'rgba(255,255,255,0.05)',
+              border: `1px solid ${searchFocused ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: '14px',
+              color: '#fff',
+              fontSize: '0.875rem',
+              fontFamily: 'Outfit, sans-serif',
+              outline: 'none',
+              boxSizing: 'border-box' as const,
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+              boxShadow: searchFocused ? '0 0 0 3px rgba(139,92,246,0.15)' : 'none',
+            }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
           )}
         </div>
+        {/* Vertical merchant list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          {(() => {
+            const userZip = (() => { try { return JSON.parse(localStorage.getItem('pf_user_data') || '{}').zip_code || null; } catch { return null; } })();
+            // 1. Filter
+            const filtered = merchants.filter(m => {
+              if (activeFilters.size === 0) return true;
+              for (const f of activeFilters) {
+                if (f === 'nearby' && (m.business_presence === 'online' || (userZip && m.zip_code !== userZip))) return false;
+                if (f === 'online' && m.business_presence !== 'online') return false;
+                if (f === 'mobile' && m.business_presence !== 'mobile') return false;
+                if (f === 'joined' && !m.is_member) return false;
+                if (f === 'notjoined' && !!m.is_member) return false;
+              }
+              return true;
+            });
+            // 2. Search
+            const query = searchQuery.trim().toLowerCase();
+            const searched = query
+              ? filtered.filter(m => m.merchant_name.toLowerCase().includes(query))
+              : filtered;
+            // 3. Sort
+            let sorted: Merchant[];
+            if (activeFilters.size === 0 && !query) {
+              // No filter, no search — preserve initial QR-at-top order
+              sorted = searched;
+            } else if (activeFilters.has('nearby')) {
+              sorted = [...searched].sort((a, b) => {
+                const aZip = userZip && a.zip_code === userZip ? 1 : 0;
+                const bZip = userZip && b.zip_code === userZip ? 1 : 0;
+                if (aZip !== bZip) return bZip - aZip;
+                return a.merchant_name.localeCompare(b.merchant_name);
+              });
+            } else if (activeFilters.has('online') || activeFilters.has('mobile') || activeFilters.has('notjoined')) {
+              sorted = [...searched].sort((a, b) => a.merchant_name.localeCompare(b.merchant_name));
+            } else {
+              // All+search, Joined — latest offer date DESC, nulls last
+              sorted = [...searched].sort((a, b) => {
+                const aDate = a.latest_offer_at ? new Date(a.latest_offer_at).getTime() : 0;
+                const bDate = b.latest_offer_at ? new Date(b.latest_offer_at).getTime() : 0;
+                return bDate - aDate;
+              });
+            }
+            if (merchants.length === 0) return <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1rem 0' }}>Loading merchants...</div>;
+            if (sorted.length === 0) return <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1rem 0' }}>{query ? `No merchants found for “${searchQuery}”.` : 'No merchants match this filter.'}</div>;
+            return sorted.map((m, i) => {
+              const isOnline = m.business_presence === 'online';
+              const isMobile = m.business_presence === 'mobile';
+              const hasOffer = (m.offer_count ?? 0) > 0;
+              const subtitle = isOnline
+                ? (m.website ? m.website.replace(/^https?:\/\//, '') : 'Online Store')
+                : isMobile
+                  ? (m.website ? m.website.replace(/^https?:\/\//, '') : (m.store_address || 'Mobile Business'))
+                  : (m.store_address || 'Location TBD');
+              return (
+                <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: hasOffer ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.03)', borderRadius: '16px', border: `1px solid ${hasOffer ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                  {hasOffer && <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: 'linear-gradient(180deg,#8B5CF6,#6BC17A)', borderRadius: '3px 0 0 3px' }} />}
+                  <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {m.logo_url ? <img src={m.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.2rem' }}>{isOnline ? '🌐' : '🏦'}</span>}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{m.merchant_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>{subtitle}</div>
+                    {hasOffer && m.latest_offer_title && <div style={{ fontSize: '0.75rem', color: '#86EFAC', fontWeight: 600, marginTop: '3px' }}>{m.latest_offer_title}</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                    {m.is_member && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#86EFAC', background: 'rgba(107,193,122,0.15)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '6px', padding: '2px 7px' }}>✓ Member</span>}
+                    {hasOffer && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#C4B5FD', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '2px 7px' }}>{m.offer_count} offer{(m.offer_count ?? 0) > 1 ? 's' : ''}</span>}
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>›</span>
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
       </div>
+
+      {/* Merchant Detail Modal */}
+      {joinModal && (() => {
+        const isOnline = joinModal.business_presence === 'online';
+        const isMobile = joinModal.business_presence === 'mobile';
+        const mapsUrl = joinModal.store_address && !isOnline && !isMobile
+          ? (platform === 'android'
+            ? `https://maps.google.com/maps?q=${encodeURIComponent(joinModal.store_address)}`
+            : `maps://maps.apple.com/?q=${encodeURIComponent(joinModal.store_address)}`)
+          : null;
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1001, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', fontFamily: 'Outfit, sans-serif' }}>
+            <div ref={modalScrollRef} style={{ width: '100%', background: 'linear-gradient(180deg, #1E1B4B 0%, #0F172A 100%)', borderRadius: '24px 24px 0 0', padding: '2rem 1.5rem calc(2rem + env(safe-area-inset-bottom))', border: '1px solid rgba(139,92,246,0.3)', borderBottom: 'none', maxHeight: '85vh', overflowY: 'auto' }}>
+
+              {/* Header row */}
+              {joinState !== 'loading' && joinState !== 'success' && joinState !== 'error' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(139,92,246,0.22)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {joinModal.logo_url ? <img src={joinModal.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.5rem' }}>{isOnline ? '🌐' : '🏪'}</span>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>{joinModal.merchant_name}</div>
+                    {(isOnline || isMobile) && joinModal.website
+                      ? <div onClick={() => { const url = joinModal.website!.startsWith('http') ? joinModal.website! : `https://${joinModal.website}`; window.open(url, '_blank'); }} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: 'pointer', textDecoration: 'underline' }}>🌐 {joinModal.website.replace(/^https?:\/\//, '')}</div>
+                      : isMobile && joinModal.store_address
+                        ? <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>📍 {joinModal.store_address}</div>
+                        : joinModal.store_address
+                          ? <div onClick={() => mapsUrl && window.open(mapsUrl, '_blank')} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none' }}>📍 {joinModal.store_address}</div>
+                          : null}
+                    {joinModal.discount && <div style={{ fontSize: '0.75rem', color: '#86EFAC', marginTop: '2px' }}>{joinModal.discount}</div>}
+                  </div>
+                  <button onClick={() => setJoinModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.4rem', cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+                </div>
+              )}
+
+              {/* Review / Order links */}
+              {(joinModal.review_url || joinModal.order_url) && joinState !== 'loading' && joinState !== 'success' && joinState !== 'error' && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {joinModal.review_url && (
+                    <button
+                      onClick={() => {
+                        const url = joinModal.review_url!.startsWith('http') ? joinModal.review_url! : `https://${joinModal.review_url}`;
+                        window.open(url, '_blank');
+                      }}
+                      style={{ padding: '0.4rem 0.85rem', background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.3)', borderRadius: '20px', color: '#FDE68A', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+                    >
+                      ⭐ Check our Reviews
+                    </button>
+                  )}
+                  {joinModal.order_url && (
+                    <button
+                      onClick={() => {
+                        const url = joinModal.order_url!.startsWith('http') ? joinModal.order_url! : `https://${joinModal.order_url}`;
+                        window.open(url, '_blank');
+                      }}
+                      style={{ padding: '0.4rem 0.85rem', background: 'rgba(107,193,122,0.1)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '20px', color: '#86EFAC', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+                    >
+                      🛒 Order Here
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {joinState === 'confirm' && !joinModal.is_member && (
+                <>
+                  <div style={{ padding: '0.875rem 1rem', background: 'rgba(59,154,82,0.1)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '14px', marginBottom: '1.25rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.77rem', color: '#fff', lineHeight: 1.65 }}>
+                      By joining <strong>{joinModal.merchant_name}</strong>&apos;s member list, you consent to receive promotional emails and notifications.{' '}
+                      <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#86EFAC', fontWeight: 700 }}>Privacy Policy</a>{' '}&amp;{' '}
+                      <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: '#86EFAC', fontWeight: 700 }}>Terms of Use</a>.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <button onClick={confirmJoin} style={{ padding: '1rem', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: '16px', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🤝 Join Member List</button>
+                    <button onClick={() => setJoinModal(null)} style={{ padding: '0.75rem', background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '16px', color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Cancel</button>
+                  </div>
+                </>
+              )}
+
+              {/* Member — unified offers list (physical, mobile, online) */}
+              {joinState === 'confirm' && joinModal.is_member && (
+                <>
+                  {campaignsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>Loading offers...</div>
+                  ) : merchantCampaigns.length === 0 ? (
+                    <div style={{ padding: '0.875rem 1rem', background: 'rgba(107,193,122,0.08)', border: '1px solid rgba(107,193,122,0.2)', borderRadius: '14px', marginBottom: '1rem' }}>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                        {isOnline ? '✓ You\'re a member! No active offers right now. Check back soon.' : '✓ You\'re a member! No active offers right now. Visit the store for future perks.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                      {merchantCampaigns.map(offer => {
+                        const isRevealed = !!revealedCodes[offer.campaign_id];
+                        const isRevealingThis = revealingId === offer.campaign_id;
+                        const copyLabel = copyLabels[offer.campaign_id] || 'Copy Again';
+                        return (
+                          <div key={offer.campaign_id} style={{ padding: '0.875rem 1rem', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', flex: 1 }}>{offer.title}</div>
+                              {offer.end_at && (
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginLeft: '0.5rem', flexShrink: 0 }}>
+                                  Exp {new Date(offer.end_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                            {isOnline ? (
+                              isRevealed ? (
+                                <div style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '10px', padding: '10px' }}>
+                                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '3px' }}>YOUR DISCOUNT CODE</div>
+                                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#C4B5FD', fontFamily: 'monospace', letterSpacing: '2px' }}>{revealedCodes[offer.campaign_id]}</div>
+                                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Auto-copied ✓</div>
+                                  <button onClick={async () => { try { await navigator.clipboard.writeText(revealedCodes[offer.campaign_id]); setCopyLabels(prev => ({ ...prev, [offer.campaign_id]: 'Copied! ✓' })); setTimeout(() => setCopyLabels(prev => ({ ...prev, [offer.campaign_id]: 'Copy Again' })), 2500); } catch { /* ignore */ } }} style={{ marginTop: '6px', padding: '4px 12px', background: 'rgba(139,92,246,0.3)', border: '1px solid rgba(139,92,246,0.5)', borderRadius: '8px', color: '#C4B5FD', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>{copyLabel}</button>
+                                </div>
+                              ) : (
+                                <button disabled={isRevealingThis} onClick={async () => {
+                                  setRevealingId(offer.campaign_id);
+                                  try {
+                                    const json = await fetchApi('/redemptions/claim', { method: 'POST', body: JSON.stringify({ campaign_id: offer.campaign_id }) });
+                                    const code = json.data?.promo_code || '';
+                                    setRevealedCodes(prev => ({ ...prev, [offer.campaign_id]: code }));
+                                    try { await navigator.clipboard.writeText(code); } catch { /* ignore */ }
+                                  } catch (err: unknown) {
+                                    const msg = err instanceof Error ? err.message : String(err);
+                                    setJoinError(`Reveal failed: ${msg}`);
+                                    setJoinState('error');
+                                  }
+                                  setRevealingId(null);
+                                }} style={{ width: '100%', padding: '0.75rem', background: isRevealingThis ? 'rgba(139,92,246,0.3)' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: isRevealingThis ? 'default' : 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+                                  {isRevealingThis ? '...' : '🛍️ Reveal & Copy Code'}
+                                </button>
+                              )
+                            ) : (
+                              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{isMobile ? '🚐 Find us and scan the QR code to activate this perk.' : '📲 Visit the store and scan the QR code to activate this perk.'}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <button onClick={() => setJoinModal(null)} style={{ width: '100%', padding: '0.75rem', background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '16px', color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Close</button>
+                </>
+              )}
+
+              {joinState === 'loading' && <div style={{ textAlign: 'center', padding: '2.5rem 0' }}><div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div><p style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>Joining member list...</p></div>}
+
+              {joinState === 'success' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.1rem' }}>
+                  <div style={{ fontSize: '3rem' }}>🎉</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#86EFAC' }}>You&apos;re on the list!</div>
+                  <div style={{ padding: '1rem 1.25rem', background: 'rgba(251,191,36,0.1)', border: '2px solid rgba(251,191,36,0.45)', borderRadius: '16px', width: '100%', boxSizing: 'border-box' as const }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', lineHeight: 1.65 }}>
+                      {isOnline
+                        ? "🛍️ You'll receive offers via app notifications. Open Perkfinity when you get a new offer to reveal and copy your discount code!"
+                        : isMobile
+                          ? '🚐 Find us and scan the QR code to activate your perks. You are signed up and will start receiving offers!'
+                          : '📲 Visit the store and scan their QR code to activate your perks. You are signed up and will start receiving offers!'}
+                    </p>
+                  </div>
+                  <button onClick={() => setJoinModal(null)} style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #6BC17A, #3B9A52)', border: 'none', borderRadius: '16px', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Done ✓</button>
+                </div>
+              )}
+
+              {joinState === 'error' && (() => {
+                const isCapError = joinError.toLowerCase().includes('capacity');
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ fontSize: '2rem' }}>{isCapError ? '🚫' : '⚠️'}</div>
+                    <p style={{ color: '#FCA5A5', fontSize: '0.9rem', margin: 0, textAlign: 'center' }}>{joinError}</p>
+                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                      {!isCapError && (
+                        <button onClick={confirmJoin} style={{ flex: 1, padding: '0.875rem', background: '#8B5CF6', border: 'none', borderRadius: '14px', color: '#fff', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Try Again</button>
+                      )}
+                      <button onClick={() => setJoinModal(null)} style={{ flex: 1, padding: '0.875rem', background: isCapError ? '#8B5CF6' : 'none', border: isCapError ? 'none' : '1px solid rgba(255,255,255,0.2)', borderRadius: '14px', color: '#fff', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>{isCapError ? 'Got It' : 'Cancel'}</button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+            </div>
+          </div>
+        );
+      })()}
 
       <style>{`
         body { background-color: #0F172A; }
