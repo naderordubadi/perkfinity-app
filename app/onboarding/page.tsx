@@ -117,6 +117,64 @@ const getSteps = (platform: string) => [
     )
   },
   {
+    id: "online",
+    title: "Online Perks Too",
+    subtitle: "Shop from anywhere",
+    description: "Some merchants are fully online. Browse their offers in the app, tap Reveal & Copy to get your personal discount code, then use it at checkout on their website — no QR scan needed.",
+    highlight: "No store visit required — shop from your couch",
+    highlightIcon: "🌐",
+    accentColor: "#8B5CF6",
+    gradientFrom: "#0F172A",
+    gradientTo: "#1A1040",
+    illustration: (
+      <svg viewBox="0 0 240 220" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+        <circle cx="120" cy="110" r="88" fill="url(#onlineGlow)" opacity="0.12" />
+        {/* Phone */}
+        <rect x="76" y="32" width="78" height="148" rx="16" fill="#0D1B2E" stroke="#8B5CF6" strokeWidth="1.5" />
+        <rect x="84" y="47" width="62" height="118" rx="8" fill="#0F172A" />
+        {/* Code reveal box */}
+        <rect x="88" y="60" width="54" height="58" rx="8" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.4)" strokeWidth="1" />
+        <text x="115" y="74" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="5.5" fontWeight="600">YOUR DISCOUNT CODE</text>
+        <rect x="92" y="78" width="46" height="22" rx="5" fill="rgba(139,92,246,0.2)" />
+        <text x="115" y="93" textAnchor="middle" fill="#C4B5FD" fontSize="9.5" fontWeight="800" letterSpacing="1">HELLO50OFF</text>
+        <text x="115" y="108" textAnchor="middle" fill="#86EFAC" fontSize="5.5">Auto-copied ✓</text>
+        {/* Copy button */}
+        <rect x="97" y="112" width="36" height="10" rx="5" fill="rgba(139,92,246,0.25)" stroke="rgba(139,92,246,0.5)" strokeWidth="0.75" />
+        <text x="115" y="119.5" textAnchor="middle" fill="#C4B5FD" fontSize="5" fontWeight="700">Copy Again</text>
+        {/* Browser bar at bottom of screen */}
+        <rect x="88" y="135" width="62" height="22" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth="0.75" />
+        <circle cx="96" cy="146" r="3.5" fill="rgba(107,193,122,0.6)" />
+        <rect x="102" y="143.5" width="30" height="3" rx="1.5" fill="rgba(255,255,255,0.2)" />
+        <rect x="102" y="148.5" width="22" height="2" rx="1" fill="rgba(255,255,255,0.1)" />
+        {/* Wi-fi signal arcs */}
+        <path d="M182 46 a26 26 0 0 1 0 32" stroke="#8B5CF6" strokeWidth="1.75" fill="none" strokeLinecap="round" opacity="0.4" />
+        <path d="M182 55 a17 17 0 0 1 0 14" stroke="#8B5CF6" strokeWidth="1.75" fill="none" strokeLinecap="round" opacity="0.65" />
+        <circle cx="182" cy="62" r="3.5" fill="#8B5CF6" opacity="0.9" />
+        {/* Shopping bag — bottom right */}
+        <rect x="160" y="130" width="42" height="36" rx="8" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.4)" strokeWidth="1.25" />
+        <path d="M170 130 C170 122 192 122 192 130" stroke="rgba(139,92,246,0.6)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <text x="181" y="154" textAnchor="middle" fontSize="14">🛍️</text>
+        {/* URL bar hint — left */}
+        <rect x="16" y="60" width="50" height="18" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.3)" strokeWidth="1" />
+        <circle cx="26" cy="69" r="3.5" fill="#8B5CF6" opacity="0.5" />
+        <rect x="32" y="66.5" width="26" height="3" rx="1.5" fill="rgba(255,255,255,0.2)" />
+        <rect x="32" y="71.5" width="18" height="2" rx="1" fill="rgba(255,255,255,0.1)" />
+        {/* Dashed connecting lines */}
+        <line x1="66" y1="69" x2="76" y2="80" stroke="rgba(139,92,246,0.3)" strokeWidth="1" strokeDasharray="3 2" />
+        <line x1="154" y1="115" x2="164" y2="133" stroke="rgba(139,92,246,0.3)" strokeWidth="1" strokeDasharray="3 2" />
+        {/* Discount tag — left bottom */}
+        <rect x="16" y="145" width="48" height="20" rx="10" fill="rgba(107,193,122,0.1)" stroke="rgba(107,193,122,0.4)" strokeWidth="1" />
+        <text x="40" y="158" textAnchor="middle" fill="#86EFAC" fontSize="6.5" fontWeight="700">💰 50% Off</text>
+        <defs>
+          <radialGradient id="onlineGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#8B5CF6" />
+            <stop offset="100%" stopColor="#0F172A" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+      </svg>
+    )
+  },
+  {
     id: "multi",
     title: "One App, Many Stores",
     subtitle: "Your neighborhood in one place",
@@ -352,7 +410,7 @@ export default function OnboardingPage() {
           onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
           onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          {currentStep === steps.length - 1 ? "Get Started →" : "Continue →"}
+          {currentStep === steps.length - 1 ? (getUserToken() ? "Back to App →" : "Let's Go! →") : "Continue →"}
         </button>
       </div>
 

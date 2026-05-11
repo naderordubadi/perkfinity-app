@@ -8,9 +8,12 @@ interface HistoryItem {
   id: string;
   token: string;
   issued_at: string;
-  expires_at: string;
+  expires_at: string | null;
   redeemed: boolean;
   redeemed_at: string | null;
+  claimed_at: string | null;
+  status: string;
+  business_presence: string;
   campaign_title: string;
   merchant_name: string;
 }
@@ -37,14 +40,17 @@ function formatTimestamp(dateStr: string): string {
   });
 }
 
-function getStatus(item: HistoryItem): "Redeemed" | "Expired" {
+function getStatus(item: HistoryItem): "Redeemed" | "Claimed" | "Expired" {
   if (item.redeemed) return "Redeemed";
+  if (item.claimed_at) return "Claimed";
   return "Expired";
 }
 
 function getStatusTimestamp(item: HistoryItem): string {
   if (item.redeemed && item.redeemed_at) return formatTimestamp(item.redeemed_at);
-  return formatTimestamp(item.expires_at);
+  if (item.claimed_at) return formatTimestamp(item.claimed_at);
+  if (item.expires_at) return formatTimestamp(item.expires_at);
+  return "";
 }
 
 function formatNotifDate(dateStr: string): string {
@@ -89,7 +95,10 @@ function HistoryContent() {
         if (json.success) {
           const now = new Date();
           const finished = (json.data as HistoryItem[]).filter(
-            (item) => item.redeemed || new Date(item.expires_at) < now
+            (item) =>
+              item.redeemed ||
+              item.claimed_at !== null ||
+              (item.expires_at && new Date(item.expires_at) < now)
           );
           setItems(finished);
         } else {
@@ -237,7 +246,7 @@ function HistoryContent() {
               color: "rgba(255,255,255,0.35)",
               fontSize: "0.9rem",
             }}>
-              Your past redeemed or expired perks will appear here.
+              Your past perks — redeemed, claimed, or expired — will appear here.
             </div>
           )}
 
@@ -245,11 +254,30 @@ function HistoryContent() {
             {items.map((item) => {
               const status = getStatus(item);
               const isRedeemed = status === "Redeemed";
+              const isClaimed = status === "Claimed";
+              const borderColor = isRedeemed
+                ? "rgba(16,185,129,0.25)"
+                : isClaimed
+                ? "rgba(139,92,246,0.25)"
+                : "rgba(239,68,68,0.2)";
+              const badgeBg = isRedeemed
+                ? "rgba(16,185,129,0.15)"
+                : isClaimed
+                ? "rgba(139,92,246,0.15)"
+                : "rgba(239,68,68,0.15)";
+              const badgeBorder = isRedeemed
+                ? "rgba(16,185,129,0.4)"
+                : isClaimed
+                ? "rgba(139,92,246,0.4)"
+                : "rgba(239,68,68,0.4)";
+              const badgeColor = isRedeemed ? "#10B981" : isClaimed ? "#8B5CF6" : "#EF4444";
+              const badgeLabel = isRedeemed ? "✅ Redeemed" : isClaimed ? "🎁 Claimed" : "⏰ Expired";
+              const timestampLabel = isRedeemed ? "Redeemed" : isClaimed ? "Claimed" : "Expired";
               return (
                 <div key={item.id} style={{
                   padding: "1rem 1.25rem",
                   background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${isRedeemed ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.2)"}`,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: "18px",
                   display: "flex",
                   flexDirection: "column",
@@ -264,18 +292,18 @@ function HistoryContent() {
                       fontWeight: 700,
                       padding: "2px 10px",
                       borderRadius: "20px",
-                      background: isRedeemed ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
-                      border: `1px solid ${isRedeemed ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"}`,
-                      color: isRedeemed ? "#10B981" : "#EF4444",
+                      background: badgeBg,
+                      border: `1px solid ${badgeBorder}`,
+                      color: badgeColor,
                     }}>
-                      {isRedeemed ? "✅ Redeemed" : "⏰ Expired"}
+                      {badgeLabel}
                     </span>
                   </div>
                   <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.65)" }}>
                     {item.campaign_title}
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.3)" }}>
-                    {isRedeemed ? "Redeemed" : "Expired"}: {getStatusTimestamp(item)}
+                    {timestampLabel}: {getStatusTimestamp(item)}
                   </div>
                 </div>
               );

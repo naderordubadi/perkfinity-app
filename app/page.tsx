@@ -198,7 +198,16 @@ export default function Home() {
         <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', border: '1px solid rgba(107,193,122,0.5)', borderRadius: '18px', padding: '0.9rem 1.1rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <span style={{ fontSize: '1rem', lineHeight: 1.5, flexShrink: 0 }}>✨</span>
-            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>New local, mobile, and online businesses join regularly — check back for fresh deals near you.</p>
+            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+              New local, mobile, and online businesses join regularly.
+              <span style={{ display: 'block', marginTop: '0.3rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500, fontSize: '0.83rem' }}>
+                💬 Know a spot you love? Tell them to join at{' '}
+                <button
+                  onClick={() => window.open('https://www.perkfinity.net/merchants.html', '_system')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 600, fontSize: '0.83rem', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+                >perkfinity.net</button>
+              </span>
+            </p>
           </div>
           <div style={{ height: '1px', background: 'rgba(107,193,122,0.35)', margin: '0.7rem 0 0.55rem' }} />
           <Link href="/onboarding" style={{ display: 'flex', alignItems: 'center', gap: '7px', textDecoration: 'none', color: '#86EFAC', fontSize: '0.76rem', fontWeight: 600 }}>
@@ -368,6 +377,7 @@ export default function Home() {
       {/* Merchant Detail Modal */}
       {joinModal && (() => {
         const isOnline = joinModal.business_presence === 'online';
+        const isHybrid = joinModal.business_presence === 'hybrid';
         const isMobile = joinModal.business_presence === 'mobile';
         const mapsUrl = joinModal.store_address && !isOnline && !isMobile
           ? (platform === 'android'
@@ -382,11 +392,11 @@ export default function Home() {
               {joinState !== 'loading' && joinState !== 'success' && joinState !== 'error' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(139,92,246,0.22)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {joinModal.logo_url ? <img src={joinModal.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.5rem' }}>{isOnline ? '🌐' : '🏪'}</span>}
+                    {joinModal.logo_url ? <img src={joinModal.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.5rem' }}>{(isOnline || isHybrid) ? '🌐' : '🏪'}</span>}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>{joinModal.merchant_name}</div>
-                    {(isOnline || isMobile) && joinModal.website
+                    {(isOnline || isHybrid || isMobile) && joinModal.website
                       ? <div onClick={() => { const url = joinModal.website!.startsWith('http') ? joinModal.website! : `https://${joinModal.website}`; window.open(url, '_blank'); }} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: 'pointer', textDecoration: 'underline' }}>🌐 {joinModal.website.replace(/^https?:\/\//, '')}</div>
                       : isMobile && joinModal.store_address
                         ? <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>📍 {joinModal.store_address}</div>
@@ -451,11 +461,17 @@ export default function Home() {
                   ) : merchantCampaigns.length === 0 ? (
                     <div style={{ padding: '0.875rem 1rem', background: 'rgba(107,193,122,0.08)', border: '1px solid rgba(107,193,122,0.2)', borderRadius: '14px', marginBottom: '1rem' }}>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
-                        {isOnline ? '✓ You\'re a member! No active offers right now. Check back soon.' : '✓ You\'re a member! No active offers right now. Visit the store for future perks.'}
+                        {(isOnline || isHybrid) ? '✓ You\'re a member! No active offers right now. Check back soon.' : '✓ You\'re a member! No active offers right now. Visit the store for future perks.'}
                       </p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.6rem 0.75rem', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px', marginBottom: '0.25rem' }}>
+                        <span style={{ fontSize: '0.78rem' }}>💡</span>
+                        <p style={{ margin: 0, fontSize: '0.74rem', color: 'rgba(210,195,255,0.9)', lineHeight: 1.6 }}>
+                          Copy for online checkout<br />Scan in-store QR for in-person use.
+                        </p>
+                      </div>
                       {merchantCampaigns.map(offer => {
                         const isRevealed = !!revealedCodes[offer.campaign_id];
                         const isRevealingThis = revealingId === offer.campaign_id;
@@ -470,7 +486,7 @@ export default function Home() {
                                 </div>
                               )}
                             </div>
-                            {isOnline ? (
+                            {(isOnline || isHybrid) ? (
                               isRevealed ? (
                                 <div style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '10px', padding: '10px' }}>
                                   <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '3px' }}>YOUR DISCOUNT CODE</div>
@@ -516,7 +532,7 @@ export default function Home() {
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#86EFAC' }}>You&apos;re on the list!</div>
                   <div style={{ padding: '1rem 1.25rem', background: 'rgba(251,191,36,0.1)', border: '2px solid rgba(251,191,36,0.45)', borderRadius: '16px', width: '100%', boxSizing: 'border-box' as const }}>
                     <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', lineHeight: 1.65 }}>
-                      {isOnline
+                      {(isOnline || isHybrid)
                         ? "🛍️ You'll receive offers via app notifications. Open Perkfinity when you get a new offer to reveal and copy your discount code!"
                         : isMobile
                           ? '🚐 Find us and scan the QR code to activate your perks. You are signed up and will start receiving offers!'

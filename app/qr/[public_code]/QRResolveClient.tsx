@@ -12,12 +12,14 @@ interface Campaign {
 }
 
 interface QRData {
-  merchant: { business_name: string };
+  merchant: { business_name: string; logo_url?: string };
   campaigns: Campaign[];
+  all_redeemed?: boolean;
 }
 
 export default function QRResolveClient({ params }: { params: { public_code: string } }) {
   const [error, setError] = useState('');
+  const [redeemedModal, setRedeemedModal] = useState<{ merchantName: string } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -70,6 +72,13 @@ export default function QRResolveClient({ params }: { params: { public_code: str
     fetchApi(`/qr/resolve/${qrCode}`)
       .then(res => {
         const qrData = res.data as QRData;
+
+        // Member has redeemed all their campaigns — show encouraging modal instead of silent redirect
+        if (qrData.all_redeemed) {
+          setRedeemedModal({ merchantName: qrData.merchant.business_name });
+          return;
+        }
+
         if (qrData.campaigns && qrData.campaigns.length > 0) {
           const createdCampaigns = qrData.campaigns.filter(
             (c: Campaign) =>
@@ -89,8 +98,38 @@ export default function QRResolveClient({ params }: { params: { public_code: str
         // Redirect to home — it will show the pending offers banner
         router.push('/');
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        // Second layer of defense: even if a technical error slips past the backend
+        // sanitizer, we never display raw DB schema info (column names, table names,
+        // SQL syntax errors) to the user. Pattern-match and replace with a clean message.
+        const msg = err.message || '';
+        const isTechnical = /column|relation|table|syntax error|null value|does not exist|violates|HTTP 5|unexpected server/i.test(msg);
+        setError(isTechnical ? 'Something went wrong loading this offer. Please try again.' : msg);
+      });
   }, [params.public_code, router, searchParams]);
+
+  // ── Already Redeemed Modal ──
+  if (redeemedModal) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ background: 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+        <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>✅</div>
+        <h2 style={{ color: '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>
+          You've Already Claimed This Perk! 🎉
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>
+          This perk is already saved in your History — you're all set! Keep an eye on your{' '}
+          <strong style={{ color: '#A78BFA' }}>Daily Digest</strong> for fresh exclusive offers from{' '}
+          <strong style={{ color: '#fff' }}>{redeemedModal.merchantName}</strong>. More great perks are on the way!
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(139,92,246,0.3)', letterSpacing: '0.01em' }}
+        >
+          Go to Home
+        </button>
+      </div>
+    </div>
+  );
 
   if (error) return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Outfit, sans-serif', padding: '2rem' }}>

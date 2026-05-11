@@ -10,6 +10,9 @@ interface OfferItem {
   title: string;
   body: string | null;
   store_address: string | null;
+  website: string | null;
+  is_online_merchant: boolean;
+  promo_code: string | null;
   campaign_id: string;
   merchant_id: string;
   offer_expires_at: string | null;
@@ -41,6 +44,207 @@ function formatDate(dateStr: string): string {
   }
 }
 
+// Per-offer claim state
+type ClaimState = 'idle' | 'loading' | 'revealed' | 'error';
+
+interface OfferCardProps {
+  offer: OfferItem;
+  platform: 'ios' | 'android' | 'web';
+  router: ReturnType<typeof useRouter>;
+}
+
+function OfferCard({ offer, platform, router }: OfferCardProps) {
+  const [claimState, setClaimState] = useState<ClaimState>('idle');
+  const [revealedCode, setRevealedCode] = useState<string | null>(null);
+  const [copyLabel, setCopyLabel] = useState('Copy Again');
+  const isOnline = offer.is_online_merchant === true;
+  const isMobile = !isOnline && offer.store_address === 'Mobile Business';
+
+  const mapsUrl = offer.store_address && offer.store_address !== 'Mobile Business'
+    ? platform === 'android'
+      ? `https://maps.google.com/maps?q=${encodeURIComponent(offer.store_address)}`
+      : `maps://maps.apple.com/?q=${encodeURIComponent(offer.store_address)}`
+    : null;
+
+  const handleReveal = async () => {
+    setClaimState('loading');
+    try {
+      const json = await fetchApi('/redemptions/claim', {
+        method: 'POST',
+        body: JSON.stringify({ campaign_id: offer.campaign_id }),
+      });
+      const code = json.data?.promo_code || offer.promo_code || '';
+      setRevealedCode(code);
+      setClaimState('revealed');
+      // Auto-copy
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        // clipboard not available (e.g. http), silently skip
+      }
+    } catch {
+      setClaimState('error');
+    }
+  };
+
+  const handleCopyAgain = async () => {
+    if (!revealedCode) return;
+    try {
+      await navigator.clipboard.writeText(revealedCode);
+      setCopyLabel('Copied! ✓');
+      setTimeout(() => setCopyLabel('Copy Again'), 2500);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div style={{
+      padding: "1rem 1.25rem",
+      background: "rgba(255,255,255,0.04)",
+      border: `1px solid ${isOnline ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.1)'}`,
+      borderRadius: "18px",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "0.75rem",
+    }}>
+      {/* Logo */}
+      <div style={{
+        width: "44px", height: "44px", borderRadius: "50%",
+        background: "rgba(139,92,246,0.2)",
+        border: "1px solid rgba(139,92,246,0.4)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden", flexShrink: 0,
+      }}>
+        {offer.logo_url ? (
+          <img src={offer.logo_url} alt={offer.store_name}
+            style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        ) : (
+          <span style={{ fontSize: "1.2rem" }}>{isOnline ? '🌐' : '🏪'}</span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#fff", marginBottom: "2px" }}>
+          {offer.store_name}
+        </div>
+        <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
+          {offer.title}
+        </div>
+
+        {/* Address / Website */}
+        {offer.website ? (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              const url = offer.website!.startsWith('http') ? offer.website! : `https://${offer.website}`;
+              window.open(url, '_blank');
+            }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+          >
+            🌐 {offer.website.replace(/^https?:\/\//, '')}
+          </div>
+        ) : offer.store_address && offer.store_address !== 'Mobile Business' ? (
+          <div
+            onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+          >
+            📍 {offer.store_address}
+          </div>
+        ) : offer.store_address === 'Mobile Business' ? (
+          <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: "4px" }}>
+            🚐 Mobile Business
+          </div>
+        ) : null}
+
+        {offer.disclaimer && (
+          <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
+            {offer.disclaimer}
+          </div>
+        )}
+
+        {/* Revealed code block */}
+        {claimState === 'revealed' && revealedCode && (
+          <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.4)", borderRadius: "10px" }}>
+            <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.5)", marginBottom: "4px", fontWeight: 600 }}>YOUR DISCOUNT CODE</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#C4B5FD", fontFamily: "monospace", letterSpacing: "2px" }}>{revealedCode}</div>
+            <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", marginTop: "2px" }}>Auto-copied to clipboard ✓</div>
+            <button
+              onClick={handleCopyAgain}
+              style={{ marginTop: "8px", padding: "5px 14px", background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", borderRadius: "8px", color: "#C4B5FD", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+            >
+              {copyLabel}
+            </button>
+          </div>
+        )}
+
+        {claimState === 'error' && (
+          <div style={{ marginTop: "8px", fontSize: "0.75rem", color: "#FCA5A5" }}>
+            Failed to reveal code. Please try again.
+          </div>
+        )}
+      </div>
+
+      {/* Right action button */}
+      {isOnline ? (
+        // Online: Reveal Code button (or claimed state)
+        claimState === 'revealed' ? (
+          <div style={{
+            padding: "8px 10px", background: "rgba(139,92,246,0.15)", borderRadius: "8px",
+            color: "#A78BFA", fontSize: "0.7rem", fontWeight: 700, textAlign: "center",
+            lineHeight: 1.35, flexShrink: 0, maxWidth: "90px",
+          }}>
+            ✓ Claimed
+          </div>
+        ) : (
+          <button
+            onClick={handleReveal}
+            disabled={claimState === 'loading'}
+            style={{
+              padding: "8px 10px",
+              background: claimState === 'loading' ? "rgba(139,92,246,0.1)" : "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(91,63,165,0.5))",
+              border: "1px solid rgba(139,92,246,0.5)",
+              borderRadius: "8px",
+              color: "#C4B5FD",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              textAlign: "center",
+              lineHeight: 1.35,
+              flexShrink: 0,
+              maxWidth: "90px",
+              cursor: claimState === 'loading' ? "default" : "pointer",
+              fontFamily: "Outfit, sans-serif",
+            }}
+          >
+            {claimState === 'loading' ? '...' : '🛍️ Tap to Reveal Code'}
+          </button>
+        )
+      ) : (
+        // Physical/Mobile: navigate to scan tab
+        <button
+          onClick={() => router.push('/scan')}
+          style={{
+            padding: "8px 12px",
+            background: "#E8FAEB",
+            border: "none",
+            borderRadius: "8px",
+            color: "#1E5E34",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            textAlign: "center",
+            lineHeight: 1.35,
+            flexShrink: 0,
+            maxWidth: "110px",
+            cursor: "pointer",
+            fontFamily: "Outfit, sans-serif",
+          }}
+        >
+          {isMobile ? 'Scan QR when you find us' : 'Scan the QR code in store to unlock it'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function NotificationDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,7 +258,7 @@ function NotificationDetailContent() {
     import('@capacitor/core').then(({ Capacitor }) => {
       setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
     }).catch(() => setPlatform('web'));
-    
+
     const token = localStorage.getItem("pf_user_token");
     if (!token) { router.push("/auth"); return; }
     if (!notifId) { router.push("/history?tab=notifications"); return; }
@@ -141,77 +345,7 @@ function NotificationDetailContent() {
           {/* Offer cards */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {offers.map((offer, i) => (
-              <div key={i} style={{
-                padding: "1rem 1.25rem",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "18px",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-              }}>
-                {/* Logo */}
-                <div style={{
-                  width: "44px", height: "44px", borderRadius: "50%",
-                  background: "rgba(139,92,246,0.2)",
-                  border: "1px solid rgba(139,92,246,0.4)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  overflow: "hidden", flexShrink: 0,
-                }}>
-                  {offer.logo_url ? (
-                    <img src={offer.logo_url} alt={offer.store_name}
-                      style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                  ) : (
-                    <span style={{ fontSize: "1.2rem" }}>🏪</span>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#fff", marginBottom: "2px" }}>
-                    {offer.store_name}
-                  </div>
-                  <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
-                    {offer.title}
-                  </div>
-                  {offer.store_address && (() => {
-                    const mapsUrl = platform === 'android'
-                      ? `https://maps.google.com/maps?q=${encodeURIComponent(offer.store_address)}`
-                      : `maps://maps.apple.com/?q=${encodeURIComponent(offer.store_address)}`;
-                    return (
-                      <div 
-                        onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, '_blank'); }}
-                        style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
-                      >
-                        📍 {offer.store_address}
-                      </div>
-                    );
-                  })()}
-                  {offer.disclaimer && (
-                    <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
-                      {offer.disclaimer}
-                    </div>
-                  )}
-                </div>
-
-                {/* Scan instruction note */}
-                <div
-                  style={{
-                    padding: "8px 12px",
-                    background: "#E8FAEB",
-                    borderRadius: "8px",
-                    color: "#1E5E34",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    textAlign: "center",
-                    lineHeight: 1.35,
-                    flexShrink: 0,
-                    maxWidth: "110px",
-                  }}
-                >
-                  Scan the QR code in store to unlock it
-                </div>
-              </div>
+              <OfferCard key={i} offer={offer} platform={platform} router={router} />
             ))}
           </div>
 

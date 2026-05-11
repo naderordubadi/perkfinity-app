@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
+import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { App } from '@capacitor/app';
 
-// Inner component that uses useSearchParams — must be wrapped in <Suspense> by the parent
+// Inner component — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes max
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
   const [cache, setCache] = useState<any>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemSuccess, setRedeemSuccess] = useState(false);
@@ -46,7 +45,7 @@ function RedeemContent() {
       const diffSecs = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(diffSecs);
 
-      // If already redeemed according to cache, show success state immediately 
+      // If already redeemed according to cache, show success state immediately
       // (This handles page reloads after successful redemption)
       if (data.redemption.redeemed) {
         setRedeemSuccess(true);
@@ -60,8 +59,10 @@ function RedeemContent() {
   useEffect(() => { redeemSuccessRef.current = redeemSuccess; }, [redeemSuccess]);
   useEffect(() => { cacheRef.current = cache; }, [cache]);
 
-  // Auto-cancel when user navigates away without redeeming AND not expired
-  // If expired, expire API was already called — do NOT call cancel-activation
+  // Auto-cancel when user navigates away without redeeming.
+  // Fires on unmount — covers: timer auto-redirect, Done/Cancel button, back navigation.
+  // Restores status to 'created' or 'claimed' so the user can reactivate later.
+  // Skipped only when: already redeemed (redeemSuccessRef) or app was backgrounded (expiredRef, handled separately).
   useEffect(() => {
     return () => {
       const c = cacheRef.current;
@@ -153,33 +154,19 @@ function RedeemContent() {
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      // Timer just hit zero — mark as expired
+      // Timer hit zero — auto-redirect home so the user doesn't get stuck.
+      // cancel-activation fires on unmount and restores the offer for future reuse.
+      // Offers only truly expire via the campaign's end date set by the merchant.
       if (cache && !redeemSuccess && !expired) {
-        // Set ref SYNCHRONOUSLY first — prevents unmount cleanup race
-        // (useEffect-based sync only updates after render; this is immediate)
-        expiredRef.current = true;
         setExpired(true);
-        // 1. Tell the backend to set status → 'expired'
-        fetchApi(
-          `/campaigns/${cache.campaign.id}/expire`,
-          { method: 'POST' }
-        ).catch(() => { });
-
-        // 2. Remove from pending_offers so banner count drops
-        try {
-          const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-          const updated = offers.filter((o: { campaign_id: string }) => o.campaign_id !== cache.campaign.id);
-          localStorage.setItem('pending_offers', JSON.stringify(updated));
-        } catch { /* ignore */ }
-
-        // 3. Clear pending_cancel since we explicitly expired it
-        localStorage.removeItem('pending_cancel');
+        localStorage.removeItem('pending_cancel'); // prevent home page re-cancel attempt
+        setTimeout(() => router.push('/'), 2500);
       }
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, cache, redeemSuccess, expired]);
+  }, [timeLeft, cache, redeemSuccess, expired, router]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -198,10 +185,9 @@ function RedeemContent() {
       const json = res;
       if (json.success) {
         setRedeemSuccess(true);
-        setTimeLeft(0); // Stop the countdown timer
-        localStorage.removeItem('pending_qr'); // Clear the Pending Perk banner from home page
-        localStorage.removeItem('pending_cancel'); // Redeemed — no auto-cancel needed
-        // Update local cache to show redeemed state if they reload
+        setTimeLeft(0);
+        localStorage.removeItem('pending_qr');
+        localStorage.removeItem('pending_cancel');
         const updatedCache = { ...cache, redemption: { ...cache.redemption, redeemed: true } };
         localStorage.setItem('active_token_cache', JSON.stringify(updatedCache));
       } else {
@@ -217,184 +203,207 @@ function RedeemContent() {
 
   if (!cache) return null;
 
+  // Determine the code to display:
+  // If the campaign has a merchant-defined promo code, show it prominently.
+  // Otherwise fall back to the system-generated redemption token formatted as groups of 3.
+  const displayCode = cache.campaign?.promo_code
+    ? cache.campaign.promo_code.toUpperCase()
+    : (cache.redemption?.token?.match(/.{1,3}/g) || []).join('-');
+  const hasPromoCode = !!cache.campaign?.promo_code;
+  // Scale font down for longer codes so they never wrap in the box (max 18 chars)
+  const codeFontSize = displayCode.length <= 8 ? '2rem' : displayCode.length <= 13 ? '1.5rem' : '1.1rem';
+  const codeLetterSpacing = displayCode.length <= 8 ? '5px' : displayCode.length <= 13 ? '3px' : '2px';
+
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '2rem 1rem 8rem 1rem', // Added 8rem bottom padding for navbar clearance
+      alignItems: 'center',
+      padding: '1.5rem 1.25rem 7rem',
       color: '#fff',
       fontFamily: 'Outfit, sans-serif',
-      textAlign: 'center',
-      alignItems: 'center',
       overflowY: 'auto'
     }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '2rem', paddingBottom: '4rem' }}>
-        <h2 style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.8)', fontSize: '1.25rem' }}>{cache.merchant.business_name}</h2>
-        <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>SHOW THIS TO CASHIER</h2>
+      <div style={{ width: '100%', maxWidth: '420px', paddingTop: '1.5rem' }}>
 
-        {/* Large Timer — hidden after successful redemption */}
+        {/* ── Merchant Identity ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', marginBottom: '1.1rem' }}>
+          {cache.merchant?.logo_url ? (
+            <img
+              src={cache.merchant.logo_url}
+              alt=""
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'contain', border: '2px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+            />
+          ) : (
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', border: '2px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🏪</div>
+          )}
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#fff', textAlign: 'center' }}>
+            {cache.merchant?.business_name}
+          </h2>
+        </div>
+
+        {/* ── Countdown Timer (smaller, subtle) ── */}
         {!redeemSuccess && (
-          <div style={{
-            fontSize: '4rem',
-            fontWeight: 800,
-            margin: '0.5rem 0 1rem',
-            color: timeLeft < 60 ? '#EF4444' : '#fff',
-            fontVariantNumeric: 'tabular-nums',
-            textShadow: timeLeft <= 0 ? 'none' : '0 0 20px rgba(139,92,246,0.5)'
-          }}>
-            {timeLeft <= 0 ? "EXPIRED" : formatTime(timeLeft)}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '1.1rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>⏱ Offer active for</span>
+            <span style={{
+              fontSize: '1.05rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+              color: timeLeft <= 0 ? '#EF4444' : timeLeft < 60 ? '#F59E0B' : '#A78BFA'
+            }}>
+              {timeLeft <= 0 ? '⏱ Returning home...' : formatTime(timeLeft)}
+            </span>
           </div>
         )}
 
-        {/* Promo Perk Visibility */}
+        {/* ── Offer Card ── */}
         <div style={{
-          marginBottom: '1.5rem',
-          padding: '1.5rem 1rem',
-          background: timeLeft <= 0 ? 'rgba(255,255,255,0.05)' : 'rgba(139,92,246,0.15)',
-          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.1)' : 'rgba(139,92,246,0.3)'}`,
-          borderRadius: '16px',
-          opacity: timeLeft <= 0 ? 0.5 : 1
+          background: timeLeft <= 0 ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.15)',
+          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.35)'}`,
+          borderRadius: '20px', padding: '1.25rem 1.5rem',
+          marginBottom: '1.25rem', textAlign: 'center',
+          opacity: timeLeft <= 0 ? 0.5 : 1, transition: 'all 0.5s ease'
         }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.75rem', fontWeight: 800, color: timeLeft <= 0 ? '#aaa' : '#A78BFA', lineHeight: 1.2 }}>
-            {cache.campaign.title}
+          <h3 style={{ margin: '0 0 0.35rem', fontSize: '2rem', fontWeight: 800, color: timeLeft <= 0 ? '#aaa' : '#A78BFA', lineHeight: 1.1 }}>
+            {cache.campaign?.title}
           </h3>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>
-            {cache.campaign.terms}
-          </p>
+          {cache.campaign?.terms && (
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              {cache.campaign.terms}
+            </p>
+          )}
         </div>
 
-        {/* Dynamic QR Code Canvas */}
-        <div style={{
-          width: '240px',
-          height: '240px',
-          background: '#fff',
-          margin: '0 auto',
-          borderRadius: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          opacity: timeLeft <= 0 ? 0.2 : 1,
-          filter: timeLeft <= 0 ? 'grayscale(100%) blur(4px)' : 'none',
-          transition: 'all 0.5s ease'
-        }}>
-          <QRCodeSVG
-            value={`perkfinity://redeem?campaign=${cache.campaign.id}&token=${cache.redemption.token}`}
-            size={192}
-            bgColor={"#ffffff"}
-            fgColor={"#000000"}
-            level={"H"}
-            imageSettings={{
-              src: cache.merchant.logo_url || "/app-icon.png",
-              x: undefined, y: undefined,
-              height: 48, width: 48,
-              excavate: true,
-            }}
-          />
+        {/* ── 3-Step Instruction Flow ── */}
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.25rem 1.25rem 1rem', marginBottom: '1.25rem' }}>
+
+          {/* Step 1 */}
+          <div style={{ display: 'flex', gap: '0.875rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.25)', border: '1.5px solid rgba(139,92,246,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#A78BFA' }}>1</div>
+              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+            </div>
+            <div style={{ paddingBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>👋 Show this screen to the cashier</div>
+              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>Present your phone at the register</div>
+            </div>
+          </div>
+
+          {/* Code Box (between Step 1 and Step 2) */}
+          <div style={{ display: 'flex', gap: '0.875rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '28px' }}>
+              <div style={{ width: '2px', flex: 1, background: 'rgba(255,255,255,0.1)', margin: '0 0 4px' }} />
+            </div>
+            <div style={{ flex: 1, paddingBottom: '0.75rem' }}>
+              <div style={{
+                background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.18)',
+                borderRadius: '14px', padding: '1rem 1.25rem', textAlign: 'center',
+                opacity: timeLeft <= 0 ? 0.3 : 1
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>
+                  {hasPromoCode ? 'Promo Code' : 'Reference Code'}
+                </div>
+                <div style={{ fontSize: codeFontSize, fontWeight: 800, letterSpacing: codeLetterSpacing, color: '#fff', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>
+                  {displayCode}
+                </div>
+                {hasPromoCode && (
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.4rem' }}>
+                    Cashier: enter this code at the register
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div style={{ display: 'flex', gap: '0.875rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', border: '1.5px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#10B981' }}>2</div>
+              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+            </div>
+            <div style={{ paddingBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>🛒 Cashier: Honor the offer</div>
+              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>
+                {hasPromoCode ? 'Apply the offer and enter the code at the register' : 'Apply the offer at checkout'}
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div style={{ display: 'flex', gap: '0.875rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(251,191,36,0.2)', border: '1.5px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#FDE68A' }}>3</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>✅ Tap "Mark as Redeemed"</div>
+              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>Records this perk in your history and the merchant's dashboard</div>
+            </div>
+          </div>
         </div>
 
-        {/* Letter Word Code */}
-        <div style={{
-          marginTop: '2.5rem',
-          padding: '1rem 2rem',
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: '16px',
-          border: '1px dotted rgba(255,255,255,0.2)',
-          display: 'inline-block',
-          opacity: timeLeft <= 0 ? 0.3 : 1
-        }}>
-          <span style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '8px' }}>
-            {cache.redemption.token.match(/.{1,3}/g).join('-')}
-          </span>
-        </div>
-
-        {/* Manual Redeem Button for Merchant Verification (Cashier push it instead of scanning) */}
+        {/* ── Mark as Redeemed / Success ── */}
         {!redeemSuccess ? (
           <button
             onClick={handleManualRedeem}
             disabled={redeeming || timeLeft <= 0}
             style={{
-              marginTop: '1.5rem',
-              padding: '1rem',
-              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '16px',
-              fontSize: '1rem',
-              fontWeight: 700,
+              width: '100%', padding: '1.1rem',
+              background: (redeeming || timeLeft <= 0) ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: (redeeming || timeLeft <= 0) ? 'rgba(255,255,255,0.3)' : '#fff',
+              border: 'none', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
               cursor: (redeeming || timeLeft <= 0) ? 'not-allowed' : 'pointer',
-              opacity: (redeeming || timeLeft <= 0) ? 0.5 : 1
+              boxShadow: (redeeming || timeLeft <= 0) ? 'none' : '0 8px 20px rgba(16,185,129,0.3)',
+              transition: 'all 0.2s ease', marginBottom: '0.75rem'
             }}
           >
-            {redeeming ? 'Redeeming...' : 'Cashier: Mark as Redeemed'}
+            {redeeming ? 'Marking as Redeemed...' : '✓ Mark as Redeemed'}
           </button>
         ) : (
           <div style={{
-            marginTop: '1.5rem',
-            padding: '1rem',
-            background: 'rgba(16,185,129,0.15)',
-            border: '1px solid rgba(16,185,129,0.4)',
-            color: '#10B981',
-            borderRadius: '16px',
-            fontSize: '1rem',
-            fontWeight: 700
+            width: '100%', padding: '1.1rem',
+            background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
+            color: '#10B981', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
+            textAlign: 'center', marginBottom: '0.75rem'
           }}>
-            ✅ Successfully Redeemed!
+            ✅ Offer Redeemed — Enjoy your perk!
           </div>
         )}
+
+        {/* ── Done / Cancel ── */}
+        <button
+          onClick={async () => {
+            if (!redeemSuccess && !expired && cache) {
+              try {
+                await fetchApi(`/campaigns/${cache.campaign.id}/cancel-activation`, { method: 'POST' });
+              } catch { /* best-effort — proceed even if network fails */ }
+              try {
+                const existing: Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }> =
+                  JSON.parse(localStorage.getItem('pending_offers') || '[]');
+                if (!existing.some(o => o.campaign_id === cache.campaign.id)) {
+                  existing.push({
+                    campaign_id: cache.campaign.id,
+                    merchant_name: cache.merchant.business_name,
+                    title: cache.campaign.title,
+                    qr_code: localStorage.getItem('pending_qr') || '',
+                  });
+                  localStorage.setItem('pending_offers', JSON.stringify(existing));
+                }
+              } catch { /* ignore */ }
+            }
+            localStorage.removeItem('pending_cancel');
+            router.push('/');
+          }}
+          style={{ width: '100%', padding: '0.875rem', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', cursor: 'pointer' }}
+        >
+          Done / Cancel
+        </button>
       </div>
-
-      <button
-        onClick={async () => {
-          // If expired, just go home — the expire API was already called
-          // If not redeemed and not expired, revert status back to 'created'
-          if (!redeemSuccess && !expired && cache) {
-            // 1. Tell the backend to revert status: pending → created
-            try {
-              await fetchApi(
-                `/campaigns/${cache.campaign.id}/cancel-activation`,
-                { method: 'POST' }
-              );
-            } catch { /* best-effort — proceed even if network fails */ }
-
-            // 2. Restore offer to pending_offers so it reappears on home page
-            try {
-              const existing: Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }> =
-                JSON.parse(localStorage.getItem('pending_offers') || '[]');
-              const alreadyThere = existing.some(o => o.campaign_id === cache.campaign.id);
-              if (!alreadyThere) {
-                existing.push({
-                  campaign_id: cache.campaign.id,
-                  merchant_name: cache.merchant.business_name,
-                  title: cache.campaign.title,
-                  qr_code: localStorage.getItem('pending_qr') || '',
-                });
-                localStorage.setItem('pending_offers', JSON.stringify(existing));
-              }
-            } catch { /* ignore */ }
-          }
-          localStorage.removeItem('pending_cancel'); // explicit cancel already handled above
-          router.push('/');
-        }}
-        style={{
-          width: '100%',
-          padding: '1rem',
-          color: 'rgba(255,255,255,0.4)',
-          background: 'none',
-          border: 'none',
-          marginBottom: '2rem'
-        }}
-      >
-        Done / Cancel
-      </button>
     </div>
   );
 }
 
-// Required: useSearchParams() in RedeemContent needs a Suspense boundary (Next.js 14 requirement)
+// Required: Next.js 14 requires a Suspense boundary for components using useRouter in static pages
 export default function RedeemPage() {
   return (
     <Suspense fallback={

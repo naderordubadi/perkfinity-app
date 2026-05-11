@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'out',
   bundledWebRuntime: false,
   server: {
+    // 'https' scheme = secure context → getUserMedia (camera) works on Android.
+    // In dev, setMixedContentMode in MainActivity allows HTTP API calls from this HTTPS context.
     hostname: 'perkfinity.net',
     androidScheme: 'https',
   },

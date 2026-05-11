@@ -15,15 +15,23 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [platform, setPlatform] = useState<string>("ios");
+  const [platformLoaded, setPlatformLoaded] = useState(false);
   const [hasSavedCred, setHasSavedCred] = useState<{u:string;p:string}|null>(null);
   const router = useRouter();
 
-  // Detect platform on mount (ios / android / web)
+  // Detect platform on mount — redirect web visitors to download page
   useEffect(() => {
     import("@capacitor/core").then(({ Capacitor }) => {
-      setPlatform(Capacitor.getPlatform());
+      const p = Capacitor.getPlatform();
+      setPlatform(p);
+      if (p === "web") {
+        router.replace("/download");
+      } else {
+        setPlatformLoaded(true);
+      }
     }).catch(() => {
-      setPlatform("web");
+      // Can't load Capacitor — must be web
+      router.replace("/download");
     });
   }, []);
 
@@ -87,7 +95,8 @@ export default function AuthPage() {
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
         const dest = await getPostLoginRoute(res.data.user, pendingQr);
-        router.push(dest);
+        const returnPath = new URLSearchParams(window.location.search).get('return');
+        router.push(returnPath && dest === '/' ? returnPath : dest);
       } else {
         setError(res.error || "Apple Sign-In failed");
       }
@@ -124,7 +133,8 @@ export default function AuthPage() {
         if (res.data.user) setUserData(res.data.user);
         const pendingQr = localStorage.getItem("pending_qr");
         const dest = await getPostLoginRoute(res.data.user, pendingQr);
-        router.push(dest);
+        const returnPath = new URLSearchParams(window.location.search).get('return');
+        router.push(returnPath && dest === '/' ? returnPath : dest);
       } else {
         setError(res.error || "Google Sign-In failed");
       }
@@ -180,7 +190,8 @@ export default function AuthPage() {
 
         const pqr = localStorage.getItem('pending_qr');
         const navTarget = await getPostLoginRoute(res.data.user, pqr);
-        router.push(navTarget);
+        const returnPath = new URLSearchParams(window.location.search).get('return');
+        router.push(returnPath && navTarget === '/' ? returnPath : navTarget);
 
       } else {
         setError(res.error || "Authentication failed");
@@ -223,6 +234,9 @@ export default function AuthPage() {
   const hasNum = /[0-9]/.test(password);
   const hasLength = password.length >= 8;
 
+  // Don't render anything until we know the platform (prevents flash on web)
+  if (!platformLoaded) return null;
+
   return (
     <div style={{
       height: '100vh',
@@ -251,8 +265,8 @@ export default function AuthPage() {
 
         {method === "choice" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Apple Sign-In — iOS only */}
-            {platform !== 'android' && (
+            {/* Apple Sign-In — native iOS only */}
+            {platform === 'ios' && (
               <button
                 onClick={handleAppleSignIn}
                 disabled={loading}

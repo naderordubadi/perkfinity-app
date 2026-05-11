@@ -18,6 +18,7 @@ interface Campaign {
   terms: string;
   discount_percentage: number;
   status: string;
+  campaign_type?: string;
   end_at?: string;
 }
 
@@ -65,10 +66,11 @@ export default function ActivatePage() {
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [redeemedModal, setRedeemedModal] = useState<{ title: string; message: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    import('@capacitor/core').then(({ Capacitor }) => setIsAndroid(Capacitor.getPlatform() === 'android')).catch(() => {});
+    import('@capacitor/core').then(({ Capacitor }) => setIsAndroid(Capacitor.getPlatform() === 'android')).catch(() => { });
     // Read pending offers from localStorage
     const raw = localStorage.getItem('pending_offers');
     if (!raw) {
@@ -138,7 +140,32 @@ export default function ActivatePage() {
 
       router.push('/redeem');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to activate offer');
+      const msg = err instanceof Error ? err.message : 'Failed to activate offer';
+      if (msg === 'You have already redeemed this offer.') {
+        // Remove redeemed campaign from active list
+        const updatedOffers = offers.filter(o => o.campaign_id !== campaignId);
+        const updatedDetails = campaignDetails.filter(c => c.id !== campaignId);
+        setOffers(updatedOffers);
+        setCampaignDetails(updatedDetails);
+        try {
+          const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+          localStorage.setItem('pending_offers', JSON.stringify(
+            existing.filter((o: PendingOffer) => o.campaign_id !== campaignId)
+          ));
+        } catch { /* ignore */ }
+        if (updatedOffers.length > 0) {
+          // Other campaigns still available — go home so they appear there
+          router.push('/');
+        } else {
+          // No campaigns left — show the encouraging modal
+          setRedeemedModal({
+            title: "You've Already Claimed This Perk! 🎉",
+            message: `This perk is already saved in your History — you're all set! Keep an eye on your Daily Digest for fresh exclusive offers from ${merchantName}. More great perks from this store are on the way!`,
+          });
+        }
+      } else {
+        setError(msg);
+      }
       setActivating(null);
     }
   };
@@ -155,7 +182,24 @@ export default function ActivatePage() {
   if (offers.length === 0) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', flexDirection: 'column', padding: '2rem', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
+    <>
+      {/* Already Redeemed Modal */}
+      {redeemedModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>✅</div>
+            <h2 style={{ color: '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>{redeemedModal.title}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>{redeemedModal.message}</p>
+            <button
+              onClick={() => router.push('/')}
+              style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(139,92,246,0.3)', letterSpacing: '0.01em' }}
+            >
+              Go to Home
+            </button>
+          </div>
+        </div>
+      )}
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', flexDirection: 'column', padding: '2rem', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', paddingTop: '1rem' }}>
         <img src={isAndroid ? "/icon-android.png" : "/assets/logo.png"} alt="Perkfinity" style={{ height: isAndroid ? '64px' : '32px', objectFit: 'contain', borderRadius: isAndroid ? '12px' : '0' }} />
       </div>
@@ -201,10 +245,7 @@ export default function ActivatePage() {
                   <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.5 }}>{campaign.terms}</p>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.25rem', color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>
-                <span style={{ fontSize: '1rem' }}>📱</span>
-                <span>Scan the Perkfinity QR in store <strong style={{ color: 'rgba(255,255,255,0.8)' }}>before you order</strong></span>
-              </div>
+
             </div>
 
             {/* Expiry Line */}
@@ -241,10 +282,11 @@ export default function ActivatePage() {
           )}
 
           <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', margin: '0.5rem 0 0' }}>
-            ⏳ Valid for <strong>5 minutes</strong> once activated
+            ⏳ Valid for <strong>3 minutes</strong> once activated
           </p>
         </div>
       </div>
     </div>
+    </>
   );
 }
