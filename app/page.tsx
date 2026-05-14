@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchApi } from "@/lib/api";
+import { getUserData } from "@/lib/user";
+import { getPostLoginRoute } from "@/lib/postLoginRoute";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,7 @@ interface Merchant {
   store_address?: string;
   website?: string;
   business_presence?: string;
+  business_category?: string | null;
   latest_offer_title?: string;
   latest_offer_condition?: string;
   latest_offer_at?: string | null;
@@ -65,6 +68,7 @@ export default function Home() {
   const [revealingId, setRevealingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const toggleFilter = (key: string) => {
     if (key === 'all') { setActiveFilters(new Set()); return; }
@@ -82,62 +86,81 @@ export default function Home() {
 
 
   useEffect(() => {
-    setMounted(true);
-    import('@capacitor/core').then(({ Capacitor }) => {
-      setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
-    }).catch(() => setPlatform('web'));
-    const token = localStorage.getItem('pf_user_token');
-    const hasAccount = localStorage.getItem('pf_has_account');
-    if (!token && !hasAccount) { router.push('/onboarding'); return; }
-    const qr = localStorage.getItem('pending_qr');
-    if (qr) setPendingQr(qr);
-    setIsLoggedIn(!!token);
+    const init = async () => {
+      setMounted(true);
+      import('@capacitor/core').then(({ Capacitor }) => {
+        setPlatform(Capacitor.getPlatform() as 'ios' | 'android' | 'web');
+      }).catch(() => setPlatform('web'));
+      const token = localStorage.getItem('pf_user_token');
+      const hasAccount = localStorage.getItem('pf_has_account');
+      if (!token && !hasAccount) { router.push('/onboarding'); return; }
 
-    const pendingCancelRaw = localStorage.getItem('pending_cancel');
-    if (pendingCancelRaw) {
-      try {
-        const pc = JSON.parse(pendingCancelRaw);
-        const userToken = localStorage.getItem('pf_user_token');
-        if (pc.campaign_id && userToken) {
-          fetchApi(`/campaigns/${pc.campaign_id}/cancel-activation`, { method: 'POST' }).catch(() => {});
-          const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-          if (!offers.some((o: { campaign_id: string }) => o.campaign_id === pc.campaign_id)) {
-            offers.push({ campaign_id: pc.campaign_id, merchant_name: pc.merchant_name, title: pc.title, qr_code: pc.qr_code });
-            localStorage.setItem('pending_offers', JSON.stringify(offers));
+      // ── Setup resume gate ─────────────────────────────────────────────
+      // If the user closed the app mid-onboarding (after sign-in but before
+      // completing profile + permissions), resume exactly where they left off.
+      if (token && !localStorage.getItem('pf_setup_complete')) {
+        const userObj = getUserData();
+        const dest = await getPostLoginRoute(userObj, null);
+        if (dest !== '/') {
+          router.push(dest);
+          return;
+        }
+        // All gates pass — mark complete so future reopens skip this check.
+        localStorage.setItem('pf_setup_complete', 'true');
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      const qr = localStorage.getItem('pending_qr');
+      if (qr) setPendingQr(qr);
+      setIsLoggedIn(!!token);
+
+      const pendingCancelRaw = localStorage.getItem('pending_cancel');
+      if (pendingCancelRaw) {
+        try {
+          const pc = JSON.parse(pendingCancelRaw);
+          const userToken = localStorage.getItem('pf_user_token');
+          if (pc.campaign_id && userToken) {
+            fetchApi(`/campaigns/${pc.campaign_id}/cancel-activation`, { method: 'POST' }).catch(() => {});
+            const offers = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+            if (!offers.some((o: { campaign_id: string }) => o.campaign_id === pc.campaign_id)) {
+              offers.push({ campaign_id: pc.campaign_id, merchant_name: pc.merchant_name, title: pc.title, qr_code: pc.qr_code });
+              localStorage.setItem('pending_offers', JSON.stringify(offers));
+            }
           }
-        }
-      } catch { /* ignore */ }
-      localStorage.removeItem('pending_cancel');
-    }
+        } catch { /* ignore */ }
+        localStorage.removeItem('pending_cancel');
+      }
 
-    try {
-      const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-      setPendingOffers(stored);
-    } catch { setPendingOffers([]); }
+      try {
+        const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+        setPendingOffers(stored);
+      } catch { setPendingOffers([]); }
 
-    const pendingQrCode = localStorage.getItem('pending_qr');
-    const userData = localStorage.getItem('pf_user_data');
-    const userZip = userData ? JSON.parse(userData).zip_code || null : null;
+      const pendingQrCode = localStorage.getItem('pending_qr');
+      const userData = localStorage.getItem('pf_user_data');
+      const userZip = userData ? JSON.parse(userData).zip_code || null : null;
 
-    fetchApi('/consumers/campaigns')
-      .then(json => {
-        if (json.success && json.data) {
-          const data: Merchant[] = json.data;
-          const sorted = [...data].sort((a, b) => {
-            const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
-            const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
-            if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
-            const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
-            const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
-            if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
-            const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
-            const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
-            return bZipMatch - aZipMatch;
-          });
-          setMerchants(sorted);
-        }
-      })
-      .catch(e => console.error("Failed to load merchants", e));
+      fetchApi('/consumers/campaigns')
+        .then(json => {
+          if (json.success && json.data) {
+            const data: Merchant[] = json.data;
+            const sorted = [...data].sort((a, b) => {
+              const aIsScanned = a.qr_code === pendingQrCode ? 1 : 0;
+              const bIsScanned = b.qr_code === pendingQrCode ? 1 : 0;
+              if (aIsScanned !== bIsScanned) return bIsScanned - aIsScanned;
+              const aHasOffer = (a.offer_count ?? 0) > 0 ? 1 : 0;
+              const bHasOffer = (b.offer_count ?? 0) > 0 ? 1 : 0;
+              if (aHasOffer !== bHasOffer) return bHasOffer - aHasOffer;
+              const aZipMatch = userZip && a.zip_code === userZip ? 1 : 0;
+              const bZipMatch = userZip && b.zip_code === userZip ? 1 : 0;
+              return bZipMatch - aZipMatch;
+            });
+            setMerchants(sorted);
+          }
+        })
+        .catch(e => console.error("Failed to load merchants", e));
+    };
+    init();
   }, []);
 
   const handleSignOut = () => {
@@ -258,13 +281,23 @@ export default function Home() {
       {/* Merchants Section */}
       <div style={{ padding: '0 1.5rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
-        {/* Filter chips */}
-        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem' }}>
+        {/* Filter chips — Presence / Membership */}
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
           {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
             const labels: Record<string, string> = { all: 'All', nearby: 'Near Me', online: 'Online', mobile: 'Mobile', joined: 'Joined', notjoined: 'Not Joined' };
             const isActive = key === 'all' ? activeFilters.size === 0 : activeFilters.has(key);
             return (
               <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
+            );
+          })}
+        </div>
+        {/* Filter chips — Category */}
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
+          {(['all', 'Cafe & Juice Bars', 'Restaurants', 'Bakery & Desserts', 'Bars & Nightlife', 'Grocery & Market', 'Fitness & Gym', 'Yoga & Pilates', 'Beauty & Nail', 'Hair Salon', 'Barber Shop', 'Spa & Wellness', 'Retail & Boutique', 'Books & Hobbies', 'Pet Services', 'Services & Repair', 'Photography', 'Entertainment', 'Health & Medical', 'Other'] as const).map((cat) => {
+            const catLabels: Record<string, string> = { all: 'All Categories', 'Cafe & Juice Bars': '☕ Cafe & Juice Bars', 'Restaurants': '🍽️ Restaurants', 'Bakery & Desserts': '🥐 Bakery & Desserts', 'Bars & Nightlife': '🍹 Bars & Nightlife', 'Grocery & Market': '🛒 Grocery & Market', 'Fitness & Gym': '💪 Fitness & Gym', 'Yoga & Pilates': '🧘 Yoga & Pilates', 'Beauty & Nail': '💅 Beauty & Nail', 'Hair Salon': '💇 Hair Salon', 'Barber Shop': '✂️ Barber Shop', 'Spa & Wellness': '🧖 Spa & Wellness', 'Retail & Boutique': '🛍️ Retail & Boutique', 'Books & Hobbies': '📚 Books & Hobbies', 'Pet Services': '🐾 Pet Services', 'Services & Repair': '🔧 Services & Repair', 'Photography': '📸 Photography', 'Entertainment': '🎮 Entertainment', 'Health & Medical': '🏥 Health & Medical', 'Other': '🔖 Other' };
+            const isActive = activeCategory === cat;
+            return (
+              <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat]}</button>
             );
           })}
         </div>
@@ -313,11 +346,15 @@ export default function Home() {
               }
               return true;
             });
+            // 1b. Category filter
+            const catFiltered = activeCategory === 'all'
+              ? filtered
+              : filtered.filter(m => m.business_category === activeCategory);
             // 2. Search
             const query = searchQuery.trim().toLowerCase();
             const searched = query
-              ? filtered.filter(m => m.merchant_name.toLowerCase().includes(query))
-              : filtered;
+              ? catFiltered.filter(m => m.merchant_name.toLowerCase().includes(query))
+              : catFiltered;
             // 3. Sort
             let sorted: Merchant[];
             if (activeFilters.size === 0 && !query) {

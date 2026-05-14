@@ -163,11 +163,20 @@ export default function PermissionsPage() {
       const current = getUserData() || {};
       setUserData({ ...current, location_sharing_enabled: geoEnabled, push_notifications_enabled: pushEnabled });
 
-      const pendingQr = localStorage.getItem('pending_qr');
-      if (pendingQr) {
-        router.push(`/qr/_/?code=${encodeURIComponent(pendingQr)}`);
+      // Determine first-time vs returning BEFORE setting the flag
+      const isFirstTime = !localStorage.getItem('pf_setup_complete');
+
+      // Mark setup complete so home page resume gate is satisfied
+      localStorage.setItem('pf_setup_complete', 'true');
+
+      // Clear any stale pending_qr — first-time users will scan the
+      // physical QR again on the Scan page (required for camera disclaimer).
+      localStorage.removeItem('pending_qr');
+
+      if (isFirstTime) {
+        router.push('/scan'); // New user → camera disclaimer → scan QR
       } else {
-        router.push('/scan');
+        router.push('/');    // Returning user → go home
       }
     } catch (err) {
       console.error(err);
