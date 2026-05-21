@@ -85,10 +85,7 @@ export default function DeleteAccountPage() {
         lineHeight: 1.7,
       }}>
         <span style={{ color: '#C4B5FD', fontWeight: 700 }}>📱 Delete from the app:</span><br />
-        Open <strong>Perkfinity</strong> → <strong>Profile</strong> → <strong>Delete Account</strong><br />
-        <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
-          Or complete the form below if you are signed in on this device.
-        </span>
+        Open <strong>Perkfinity</strong> → <strong>Profile</strong> → <strong>Delete Account</strong>
       </div>
 
       {/* Warning icon */}
