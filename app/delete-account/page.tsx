@@ -71,6 +71,26 @@ export default function DeleteAccountPage() {
         </a>
       </div>
 
+      {/* In-app deletion instructions banner — satisfies Google Play delete account URL requirement */}
+      <div style={{
+        padding: '14px 18px',
+        background: 'rgba(139,92,246,0.10)',
+        border: '1px solid rgba(139,92,246,0.30)',
+        borderRadius: '14px',
+        maxWidth: '340px',
+        width: '100%',
+        textAlign: 'center',
+        fontSize: '0.84rem',
+        color: 'rgba(255,255,255,0.80)',
+        lineHeight: 1.7,
+      }}>
+        <span style={{ color: '#C4B5FD', fontWeight: 700 }}>📱 Delete from the app:</span><br />
+        Open <strong>Perkfinity</strong> → <strong>Profile</strong> → <strong>Delete Account</strong><br />
+        <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>
+          Or complete the form below if you are signed in on this device.
+        </span>
+      </div>
+
       {/* Warning icon */}
       <div style={{
         width: '100px', height: '100px', borderRadius: '28px',
