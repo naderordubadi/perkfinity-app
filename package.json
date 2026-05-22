@@ -12,11 +12,11 @@
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^6.0.0",
     "@capacitor-firebase/messaging": "^6.3.1",
-    "@capacitor/android": "^6.2.1",
-    "@capacitor/app": "^6.0.3",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/geolocation": "^6.1.1",
-    "@capacitor/ios": "^6.0.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/geolocation": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
     "@capawesome/capacitor-badge": "^6.0.0",
     "@capgo/capacitor-autofill-save-password": "^6.0.2",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
@@ -30,7 +30,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^7.0.0",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
