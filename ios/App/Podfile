@@ -11,13 +11,12 @@ install! 'cocoapods', :disable_input_output_paths => true
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorCommunityAppleSignIn', :path => '../../node_modules/@capacitor-community/apple-sign-in'
   pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/@capacitor-firebase/messaging'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'CapacitorGeolocation', :path => '../../node_modules/@capacitor/geolocation'
   pod 'CapawesomeCapacitorBadge', :path => '../../node_modules/@capawesome/capacitor-badge'
   pod 'CapgoCapacitorAutofillSavePassword', :path => '../../node_modules/@capgo/capacitor-autofill-save-password'
-  pod 'CodetrixStudioCapacitorGoogleAuth', :path => '../../node_modules/@codetrix-studio/capacitor-google-auth'
+  pod 'CapgoCapacitorSocialLogin', :path => '../../node_modules/@capgo/capacitor-social-login'
 end
 
 target 'App' do
@@ -32,8 +31,6 @@ post_install do |installer|
   # (AppAuth, Google Auth, Apple Sign-In) — we can't change their source code
   noisy_pods = %w[
     AppAuth
-    CodetrixStudioCapacitorGoogleAuth
-    CapacitorCommunityAppleSignIn
     CDVWebViewProcessPoolFactory
     Capacitor
     CapacitorCordova

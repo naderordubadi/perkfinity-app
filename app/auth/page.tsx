@@ -66,42 +66,52 @@ export default function AuthPage() {
     checkSaved();
   }, [method]);
 
-  // ── Apple Sign-In (native Capacitor) ────────────────────────────
+  // ── Apple Sign-In (native Capacitor via @capgo/capacitor-social-login) ─
   const handleAppleSignIn = async () => {
     try {
       setLoading(true);
       setError("");
-      const { SignInWithApple } = await import("@capacitor-community/apple-sign-in");
-      const result = await SignInWithApple.authorize({
-        clientId: "net.perkfinity.app",
-        redirectURI: "",
-        scopes: "email name",
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      await SocialLogin.initialize({
+        apple: {
+          clientId: 'net.perkfinity.app',
+          redirectUrl: '',  // empty string = no redirect on iOS (required)
+        },
       });
-      const credential = result.response;
-      const fullName = [credential.givenName, credential.familyName].filter(Boolean).join(" ");
+      const response = await SocialLogin.login({
+        provider: 'apple',
+        options: { scopes: ['name', 'email'] },
+      });
+      const credential = response.result;
+      const identityToken = credential.idToken;
+      if (!identityToken) throw new Error("No identity token returned from Apple");
+      const fullName = [credential.profile?.givenName, credential.profile?.familyName]
+        .filter(Boolean)
+        .join(" ");
       const pendingQr = localStorage.getItem("pending_qr");
       const res = await fetchApi("/consumers/apple-signin", {
         method: "POST",
         body: JSON.stringify({
-          identityToken: credential.identityToken,
+          identityToken,
           authorizationCode: credential.authorizationCode,
           fullName,
-          qrCode: pendingQr || undefined
+          qrCode: pendingQr || undefined,
         }),
       });
       if (res.success && res.data?.accessToken) {
         setUserToken(res.data.accessToken);
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
-        const pendingQr = localStorage.getItem("pending_qr");
-        const dest = await getPostLoginRoute(res.data.user, pendingQr);
+        const pqr = localStorage.getItem("pending_qr");
+        const dest = await getPostLoginRoute(res.data.user, pqr);
         const returnPath = new URLSearchParams(window.location.search).get('return');
         router.push(returnPath && dest === '/' ? returnPath : dest);
       } else {
         setError(res.error || "Apple Sign-In failed");
       }
     } catch (err: any) {
-      if (err?.message !== "The operation couldn't be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)") {
+      // USER_CANCELLED = user dismissed the Apple sheet — silent, no error shown.
+      if (err?.code !== 'USER_CANCELLED') {
         setError("Apple Sign-In failed. Please try email instead.");
       }
     } finally {
@@ -109,18 +119,27 @@ export default function AuthPage() {
     }
   };
 
-  // ── Google Sign-In (native Capacitor) ───────────────────────────
+  // ── Google Sign-In (native Capacitor via @capgo/capacitor-social-login) ─
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError("");
-      const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
-      await GoogleAuth.initialize({
-        scopes: ["profile", "email"],
-        grantOfflineAccess: true,
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      await SocialLogin.initialize({
+        google: {
+          // iOSClientId: the iOS OAuth client ID from Google Cloud Console
+          iOSClientId: '694850202109-s20crmd2atktq14hr6ji0uh11utuf4bj.apps.googleusercontent.com',
+          // webClientId: web/Android OAuth client ID — required for Android idToken return
+          webClientId: '694850202109-2t65brhnd8ce819s1rosqjvcc53ik1jn.apps.googleusercontent.com',
+        },
       });
-      const googleUser = await GoogleAuth.signIn();
-      const idToken = googleUser.authentication?.idToken;
+      const response = await SocialLogin.login({ provider: 'google', options: {} });
+      const googleResult = response.result;
+      // Narrow to online mode response (we don't use offline mode)
+      if (googleResult.responseType !== 'online') {
+        throw new Error("Unexpected Google response type: " + googleResult.responseType);
+      }
+      const idToken = googleResult.idToken;
       if (!idToken) throw new Error("No ID token returned from Google");
       const pendingQr = localStorage.getItem("pending_qr");
       const res = await fetchApi("/consumers/google-signin", {
@@ -131,15 +150,16 @@ export default function AuthPage() {
         setUserToken(res.data.accessToken);
         localStorage.setItem("pf_has_account", "true");
         if (res.data.user) setUserData(res.data.user);
-        const pendingQr = localStorage.getItem("pending_qr");
-        const dest = await getPostLoginRoute(res.data.user, pendingQr);
+        const pqr = localStorage.getItem("pending_qr");
+        const dest = await getPostLoginRoute(res.data.user, pqr);
         const returnPath = new URLSearchParams(window.location.search).get('return');
         router.push(returnPath && dest === '/' ? returnPath : dest);
       } else {
         setError(res.error || "Google Sign-In failed");
       }
     } catch (err: any) {
-      if (err?.message && !err.message.includes("cancelled")) {
+      // USER_CANCELLED = user dismissed the Google picker — silent, no error shown.
+      if (err?.code !== 'USER_CANCELLED') {
         setError("Google Sign-In failed. Please try email instead.");
       }
     } finally {

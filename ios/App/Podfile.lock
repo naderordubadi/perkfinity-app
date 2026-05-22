@@ -1,4 +1,5 @@
 PODS:
+  - Alamofire (5.10.2)
   - AppAuth (2.0.0):
     - AppAuth/Core (= 2.0.0)
     - AppAuth/ExternalUserAgent (= 2.0.0)
@@ -11,39 +12,38 @@ PODS:
     - PromisesObjC (~> 2.4)
   - Capacitor (8.3.4):
     - CapacitorCordova
-  - CapacitorApp (7.1.2):
-    - Capacitor
-  - CapacitorCommunityAppleSignIn (6.0.0):
+  - CapacitorApp (8.1.0):
     - Capacitor
   - CapacitorCordova (8.3.4)
-  - CapacitorFirebaseMessaging (6.3.1):
+  - CapacitorFirebaseMessaging (8.2.0):
     - Capacitor
-    - FirebaseMessaging (~> 11.0)
-  - CapacitorGeolocation (7.1.8):
+    - FirebaseMessaging (~> 12.7.0)
+  - CapacitorGeolocation (8.2.0):
     - Capacitor
-    - IONGeolocationLib (= 1.0.1)
-  - CapawesomeCapacitorBadge (6.0.0):
+    - IONGeolocationLib (= 2.1.0)
+  - CapawesomeCapacitorBadge (8.0.2):
     - Capacitor
-  - CapgoCapacitorAutofillSavePassword (6.0.2):
+  - CapgoCapacitorAutofillSavePassword (8.0.28):
     - Capacitor
-  - CodetrixStudioCapacitorGoogleAuth (0.0.1):
+  - CapgoCapacitorSocialLogin (8.3.22):
+    - Alamofire (~> 5.10.2)
     - Capacitor
-    - GoogleSignIn (>= 7.0.0)
-  - FirebaseCore (11.15.0):
-    - FirebaseCoreInternal (~> 11.15.0)
+    - GoogleSignIn (~> 9.0.0)
+  - FirebaseCore (12.7.0):
+    - FirebaseCoreInternal (~> 12.7.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Logger (~> 8.1)
-  - FirebaseCoreInternal (11.15.0):
+  - FirebaseCoreInternal (12.7.0):
     - "GoogleUtilities/NSData+zlib (~> 8.1)"
-  - FirebaseInstallations (11.15.0):
-    - FirebaseCore (~> 11.15.0)
+  - FirebaseInstallations (12.7.0):
+    - FirebaseCore (~> 12.7.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (11.15.0):
-    - FirebaseCore (~> 11.15.0)
-    - FirebaseInstallations (~> 11.0)
-    - GoogleDataTransport (~> 10.0)
+  - FirebaseMessaging (12.7.0):
+    - FirebaseCore (~> 12.7.0)
+    - FirebaseInstallations (~> 12.7.0)
+    - GoogleDataTransport (~> 10.1)
     - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Reachability (~> 8.1)
@@ -52,7 +52,7 @@ PODS:
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
-  - GoogleSignIn (9.1.0):
+  - GoogleSignIn (9.0.0):
     - AppAuth (~> 2.0)
     - AppCheckCore (~> 11.0)
     - GTMAppAuth (~> 5.0)
@@ -85,7 +85,7 @@ PODS:
     - AppAuth/Core (~> 2.0)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3)
   - GTMSessionFetcher/Core (3.5.0)
-  - IONGeolocationLib (1.0.1)
+  - IONGeolocationLib (2.1.0)
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -96,16 +96,16 @@ PODS:
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
-  - "CapacitorCommunityAppleSignIn (from `../../node_modules/@capacitor-community/apple-sign-in`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFirebaseMessaging (from `../../node_modules/@capacitor-firebase/messaging`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapawesomeCapacitorBadge (from `../../node_modules/@capawesome/capacitor-badge`)"
   - "CapgoCapacitorAutofillSavePassword (from `../../node_modules/@capgo/capacitor-autofill-save-password`)"
-  - "CodetrixStudioCapacitorGoogleAuth (from `../../node_modules/@codetrix-studio/capacitor-google-auth`)"
+  - "CapgoCapacitorSocialLogin (from `../../node_modules/@capgo/capacitor-social-login`)"
 
 SPEC REPOS:
   trunk:
+    - Alamofire
     - AppAuth
     - AppCheckCore
     - FirebaseCore
@@ -126,8 +126,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorApp:
     :path: "../../node_modules/@capacitor/app"
-  CapacitorCommunityAppleSignIn:
-    :path: "../../node_modules/@capacitor-community/apple-sign-in"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorFirebaseMessaging:
@@ -138,34 +136,34 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capawesome/capacitor-badge"
   CapgoCapacitorAutofillSavePassword:
     :path: "../../node_modules/@capgo/capacitor-autofill-save-password"
-  CodetrixStudioCapacitorGoogleAuth:
-    :path: "../../node_modules/@codetrix-studio/capacitor-google-auth"
+  CapgoCapacitorSocialLogin:
+    :path: "../../node_modules/@capgo/capacitor-social-login"
 
 SPEC CHECKSUMS:
+  Alamofire: 7193b3b92c74a07f85569e1a6c4f4237291e7496
   AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   Capacitor: d13cad5fa09155679672808cc4ca9fbc2997e1b4
-  CapacitorApp: f01a913211780e0718dae9750442c3e23f96e106
-  CapacitorCommunityAppleSignIn: c9c2541ee7580618055a91b3516c3f0313fe2544
+  CapacitorApp: 449ffe26375e96f8aaaee625ac6e01e5c57c8650
   CapacitorCordova: c07921bdcfec6f691bae22274446b4d606ebf6a4
-  CapacitorFirebaseMessaging: 05bf93285c8ae5aeaaddaa938ba1db4fda7305ad
-  CapacitorGeolocation: ab54d708e2fcf99a7bafe0219eaa6f7a932f001a
-  CapawesomeCapacitorBadge: 4df4bd752f7fcf0cedfc0748bca1cbe8a0e29794
-  CapgoCapacitorAutofillSavePassword: db2dc9ac21babc1ee2bd13500bfd53d18fdd836b
-  CodetrixStudioCapacitorGoogleAuth: dfab199b051b78171639fb201690d8f5c6ee2823
-  FirebaseCore: efb3893e5b94f32b86e331e3bd6dadf18b66568e
-  FirebaseCoreInternal: 9afa45b1159304c963da48addb78275ef701c6b4
-  FirebaseInstallations: 317270fec08a5d418fdbc8429282238cab3ac843
-  FirebaseMessaging: 3b26e2cee503815e01c3701236b020aa9b576f09
+  CapacitorFirebaseMessaging: 09f9402613a755af4ef37c6ce2fd7b4c02250246
+  CapacitorGeolocation: b36f6287bfc9f2eefa04dc900496f2c8ae666136
+  CapawesomeCapacitorBadge: 0d9dca1ab1e770a4524c5a6c35d3c1ee91b296f8
+  CapgoCapacitorAutofillSavePassword: 527b2c74d8488c2a2c32199045eb958a1a409969
+  CapgoCapacitorSocialLogin: e43c447873f2a9bab61431abfab206d7ec53ce57
+  FirebaseCore: c7b57863ce0859281a66d16ca36d665c45d332b5
+  FirebaseCoreInternal: 571a2dd8c975410966199623351db3a3265c874d
+  FirebaseInstallations: 6d05424a046b68ca146b4de4376f05b4e9262fc3
+  FirebaseMessaging: b5f7bdc62b91b6102015991fb7bc6fa75f643908
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
-  GoogleSignIn: fcee2257188d5eda57a5e2b6a715550ffff9206d
+  GoogleSignIn: c7f09cfbc85a1abf69187be091997c317cc33b77
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  IONGeolocationLib: 20f9d0248a0b5264511fb57a37e25dd2badf797a
+  IONGeolocationLib: 6a7b6f76063fb1b01cfb14fae7d0f526e3c9b271
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: f43d8d3315be3dfbbbd1e71fbb5c93551d397c70
+PODFILE CHECKSUM: 299f6295790469b4988b763f71aef8556d6939f8
 
 COCOAPODS: 1.16.2
