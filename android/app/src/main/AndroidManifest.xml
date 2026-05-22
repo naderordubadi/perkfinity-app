@@ -34,14 +34,14 @@
                     android:pathPrefix="/qr/" />
             </intent-filter>
 
-            <!-- Android App Links — opens app directly when scanning https://perkfinity.net/qr/* -->
+            <!-- Android App Links — opens app directly when scanning https://www.perkfinity.net/qr/* -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="perkfinity.net"
+                    android:host="www.perkfinity.net"
                     android:pathPrefix="/qr/" />
             </intent-filter>
 
