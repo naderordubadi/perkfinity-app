@@ -201,7 +201,7 @@ export default function ActivatePage() {
       )}
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', flexDirection: 'column', padding: '2rem', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', paddingTop: '1rem' }}>
-        <img src={isAndroid ? "/icon-android.png" : "/assets/logo.png"} alt="Perkfinity" style={{ height: isAndroid ? '64px' : '32px', objectFit: 'contain', borderRadius: isAndroid ? '12px' : '0' }} />
+        <img src={isAndroid ? "/app-icon.png" : "/assets/logo.png"} alt="Perkfinity" style={{ height: isAndroid ? '64px' : '32px', objectFit: 'contain', borderRadius: isAndroid ? '12px' : '0' }} />
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>

@@ -249,7 +249,7 @@ export default function AuthPage() {
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <img
-          src={platform === 'android' ? "/icon-android.png" : "/assets/logo.png"}
+          src={platform === 'android' ? "/app-icon.png" : "/assets/logo.png"}
           alt="Perkfinity Logo"
           style={{ width: '100%', maxWidth: platform === 'android' ? '64px' : '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain', borderRadius: platform === 'android' ? '12px' : '0' }}
         />

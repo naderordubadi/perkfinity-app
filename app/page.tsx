@@ -208,7 +208,7 @@ export default function Home() {
 
       {/* Header */}
       <div style={{ padding: 'var(--safe-top, 44px) 1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <img src={platform === 'android' ? "/icon-android.png" : "/logo.png"} alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain', borderRadius: platform === 'android' ? '8px' : '0' }} />
+        <img src={platform === 'android' ? "/app-icon.png" : "/logo.png"} alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain', borderRadius: platform === 'android' ? '8px' : '0' }} />
         {isLoggedIn ? (
           <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Sign Out</button>
         ) : (

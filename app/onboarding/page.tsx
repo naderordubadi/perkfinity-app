@@ -201,7 +201,7 @@ const getSteps = (platform: string) => [
             <rect x="108" y="83" width="44" height="44" rx="10" />
           </clipPath>
         </defs>
-        <image x="104" y="79" width="52" height="52" href={platform === 'android' ? "/icon-android.png" : "/app-icon.png"} clipPath="url(#centerIconClip)"/>
+        <image x="104" y="79" width="52" height="52" href={platform === 'android' ? "/app-icon.png" : "/app-icon.png"} clipPath="url(#centerIconClip)"/>
 
         {/* Store: Flower Shop — top left */}
         <g transform="translate(27, 23)">
@@ -304,7 +304,7 @@ export default function OnboardingPage() {
         alignItems: 'center',
         padding: 'var(--safe-top, 44px) 1.5rem 0'
       }}>
-        <img src={platform === 'android' ? "/icon-android.png" : "/app-icon.png"} alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
+        <img src={platform === 'android' ? "/app-icon.png" : "/app-icon.png"} alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
         <div style={{ display: 'flex', gap: '6px' }}>
           {steps.map((_, i) => (
             <div key={i} style={{

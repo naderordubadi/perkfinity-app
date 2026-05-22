@@ -51,7 +51,7 @@ export default function DownloadPage() {
       textAlign: "center",
     }}>
       <img
-        src={isAndroid ? "/icon-android.png" : "/logo.png"}
+        src={isAndroid ? "/app-icon.png" : "/logo.png"}
         alt="Perkfinity"
         style={{ height: "48px", width: isAndroid ? "48px" : "auto", objectFit: "contain", marginBottom: "0.5rem", borderRadius: isAndroid ? "12px" : "0" }}
       />
