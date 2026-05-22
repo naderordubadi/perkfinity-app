@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 const APP_STORE_URL = "https://apps.apple.com/us/app/perkfinity-privacy-first-perks/id6759945540";
+const PLAY_STORE_BASE = "https://play.google.com/store/apps/details?id=net.perkfinity.app";
 const APP_SCHEME = "perkfinity://open";
 
 export default function DownloadPage() {
@@ -14,7 +15,13 @@ export default function DownloadPage() {
     setIsAndroid(android);
 
     if (android) {
-      // Android: app not yet on Play Store — don't redirect anywhere automatically
+      // Android: redirect to Play Store, preserving QR code context via referrer param
+      const pendingCode = localStorage.getItem('pending_qr') || '';
+      const referrerValue = pendingCode
+        ? `utm_source=qr&utm_medium=scan&utm_content=${pendingCode}`
+        : 'utm_source=qr&utm_medium=scan';
+      const playStoreUrl = `${PLAY_STORE_BASE}&referrer=${encodeURIComponent(referrerValue)}`;
+      window.location.href = playStoreUrl;
       return;
     }
 
@@ -67,11 +74,11 @@ export default function DownloadPage() {
 
       {isAndroid ? (
         <div style={{ textAlign: "center", maxWidth: "280px" }}>
-          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 0.5rem" }}>
-            Android app is coming soon to Google Play!
+          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "1rem", lineHeight: 1.6, margin: "0 0 0.5rem", fontWeight: 600 }}>
+            Taking you to Google Play…
           </p>
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.75rem", margin: 0 }}>
-            Check back shortly — it's on its way.
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem", margin: 0 }}>
+            Download Perkfinity to unlock your offer.
           </p>
         </div>
       ) : (
