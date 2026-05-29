@@ -1,27 +1,23 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
+import { getUserData } from '@/lib/user';
+import { getPostLoginRoute } from '@/lib/postLoginRoute';
 
 /**
  * NavigationGuard — mounted in the root layout, always present.
  *
- * Single responsibility: Redemption cancel guard.
- *
- * When a user activates an offer and gets to /redeem, we set a
- * `pending_cancel` flag in localStorage. If the user leaves /redeem
- * without completing the redemption (by tapping any nav tab), we
- * need to call cancel-activation to revert the DB status to 'created'.
- *
- * NOTE: Profile + permission gating is handled exclusively in auth/page.tsx
- * via getPostLoginRoute(). Per product spec, already-logged-in users who
- * simply reopen the app are NOT re-checked. The gate only fires on sign-in
- * and sign-up flows.
+ * Responsibilities:
+ * 1. Redemption cancel guard (reverts pending_cancel offers).
+ * 2. Profile + Permission gating (ensures users can't bypass setup by restarting the app).
  */
 export default function NavigationGuard() {
   const pathname = usePathname();
+  const router = useRouter();
 
+  // 1. Redemption cancel guard
   useEffect(() => {
     // We're on the redeem page — don't cancel anything
     if (pathname === '/redeem') return;
@@ -62,6 +58,39 @@ export default function NavigationGuard() {
       console.error('Failed to parse pending_cancel:', err);
     }
   }, [pathname]);
+
+  // 2. Profile & Permission Guard (checks on every navigation)
+  useEffect(() => {
+    const publicRoutes = ['/onboarding', '/auth', '/download', '/privacy', '/terms'];
+    // Allow public routes without a gate
+    if (publicRoutes.includes(pathname)) return;
+
+    const userToken = localStorage.getItem('pf_user_token');
+    // If they have no token on a protected route, boot them to auth.
+    // (There is likely another mechanism doing this, but safe to enforce here too).
+    if (!userToken) {
+      router.replace('/auth');
+      return;
+    }
+
+    const checkGate = async () => {
+      const user = getUserData();
+      const pendingQr = localStorage.getItem('pending_qr');
+      
+      const targetRoute = await getPostLoginRoute(user, pendingQr);
+
+      // If the gate determines they belong on /profile or /permissions,
+      // and they are trying to access a core app route (like /scan), force them back.
+      if (
+        (targetRoute === '/profile' || targetRoute === '/permissions') &&
+        pathname !== targetRoute
+      ) {
+        router.replace(targetRoute);
+      }
+    };
+
+    checkGate();
+  }, [pathname, router]);
 
   return null;
 }
