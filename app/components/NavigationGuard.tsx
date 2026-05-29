@@ -61,9 +61,17 @@ export default function NavigationGuard() {
 
   // 2. Profile & Permission Guard (checks on every navigation)
   useEffect(() => {
-    const publicRoutes = ['/', '/onboarding', '/auth', '/download', '/privacy', '/terms'];
+    const isPublic = 
+      pathname === '/' ||
+      pathname === '/index.html' ||
+      pathname.startsWith('/onboarding') ||
+      pathname.startsWith('/auth') ||
+      pathname.startsWith('/download') ||
+      pathname.startsWith('/privacy') ||
+      pathname.startsWith('/terms');
+
     // Allow public routes without a gate
-    if (publicRoutes.includes(pathname)) return;
+    if (isPublic) return;
 
     const userToken = localStorage.getItem('pf_user_token');
     // If they have no token on a protected route, boot them to auth.
