@@ -61,7 +61,7 @@ export default function NavigationGuard() {
 
   // 2. Profile & Permission Guard (checks on every navigation)
   useEffect(() => {
-    const publicRoutes = ['/onboarding', '/auth', '/download', '/privacy', '/terms'];
+    const publicRoutes = ['/', '/onboarding', '/auth', '/download', '/privacy', '/terms'];
     // Allow public routes without a gate
     if (publicRoutes.includes(pathname)) return;
 
