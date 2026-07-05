@@ -339,7 +339,7 @@ export default function Home() {
               if (activeFilters.size === 0) return true;
               for (const f of activeFilters) {
                 if (f === 'nearby' && (m.business_presence === 'online' || (userZip && m.zip_code !== userZip))) return false;
-                if (f === 'online' && m.business_presence !== 'online') return false;
+                if (f === 'online' && !['online', 'hybrid'].includes(m.business_presence || '')) return false;
                 if (f === 'mobile' && m.business_presence !== 'mobile') return false;
                 if (f === 'joined' && !m.is_member) return false;
                 if (f === 'notjoined' && !!m.is_member) return false;
@@ -382,12 +382,25 @@ export default function Home() {
             return sorted.map((m, i) => {
               const isOnline = m.business_presence === 'online';
               const isMobile = m.business_presence === 'mobile';
+              const isHybrid = m.business_presence === 'hybrid';
               const hasOffer = (m.offer_count ?? 0) > 0;
-              const subtitle = isOnline
-                ? (m.website ? m.website.replace(/^https?:\/\//, '') : 'Online Store')
-                : isMobile
-                  ? (m.website ? m.website.replace(/^https?:\/\//, '') : (m.store_address || 'Mobile Business'))
-                  : (m.store_address || 'Location TBD');
+              const cleanWebsite = m.website ? m.website.replace(/^https?:\/\//, '') : null;
+              let displayWebsite = null;
+              let displayAddress = null;
+
+              if (isOnline) {
+                displayWebsite = cleanWebsite || 'Online Store';
+              } else {
+                displayWebsite = cleanWebsite;
+                if (isMobile) {
+                  displayAddress = m.store_address || (cleanWebsite ? null : 'Mobile Business');
+                } else if (isHybrid) {
+                  displayAddress = m.store_address || (cleanWebsite ? null : 'Location TBD');
+                } else {
+                  displayAddress = m.store_address || 'Location TBD';
+                }
+              }
+
               return (
                 <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: hasOffer ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.03)', borderRadius: '16px', border: `1px solid ${hasOffer ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
                   {hasOffer && <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: 'linear-gradient(180deg,#8B5CF6,#6BC17A)', borderRadius: '3px 0 0 3px' }} />}
@@ -396,7 +409,8 @@ export default function Home() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{m.merchant_name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>{subtitle}</div>
+                    {displayWebsite && <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayWebsite}</div>}
+                    {displayAddress && <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayAddress}</div>}
                     {hasOffer && m.latest_offer_title && <div style={{ fontSize: '0.75rem', color: '#86EFAC', fontWeight: 600, marginTop: '3px' }}>{m.latest_offer_title}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
@@ -431,15 +445,16 @@ export default function Home() {
                   <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(139,92,246,0.22)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                     {joinModal.logo_url ? <img src={joinModal.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.5rem' }}>{(isOnline || isHybrid) ? '🌐' : '🏪'}</span>}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>{joinModal.merchant_name}</div>
-                    {(isOnline || isHybrid || isMobile) && joinModal.website
-                      ? <div onClick={() => { const url = joinModal.website!.startsWith('http') ? joinModal.website! : `https://${joinModal.website}`; window.open(url, '_blank'); }} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: 'pointer', textDecoration: 'underline' }}>🌐 {joinModal.website.replace(/^https?:\/\//, '')}</div>
-                      : isMobile && joinModal.store_address
+                    {(isOnline || isHybrid || isMobile) && joinModal.website && (
+                      <div onClick={() => { const url = joinModal.website!.startsWith('http') ? joinModal.website! : `https://${joinModal.website}`; window.open(url, '_blank'); }} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🌐 {joinModal.website.replace(/^https?:\/\//, '')}</div>
+                    )}
+                    {!isOnline && joinModal.store_address && (
+                      isMobile
                         ? <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>📍 {joinModal.store_address}</div>
-                        : joinModal.store_address
-                          ? <div onClick={() => mapsUrl && window.open(mapsUrl, '_blank')} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none' }}>📍 {joinModal.store_address}</div>
-                          : null}
+                        : <div onClick={() => mapsUrl && window.open(mapsUrl, '_blank')} style={{ fontSize: '0.78rem', color: '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none' }}>📍 {joinModal.store_address}</div>
+                    )}
                     {joinModal.discount && <div style={{ fontSize: '0.75rem', color: '#86EFAC', marginTop: '2px' }}>{joinModal.discount}</div>}
                   </div>
                   <button onClick={() => setJoinModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.4rem', cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
