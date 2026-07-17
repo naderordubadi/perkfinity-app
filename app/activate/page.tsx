@@ -32,9 +32,9 @@ interface LocationInfo {
   city?: string;
 }
 
-function formatExpiryLine(end_at?: string): { text: string; color: string; icon: string } {
+function formatExpirationLine(end_at?: string): { text: string; color: string; icon: string } {
   if (!end_at) {
-    return { text: "No expiry date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
   }
   const expires = new Date(end_at);
   const now = new Date();
@@ -42,7 +42,7 @@ function formatExpiryLine(end_at?: string): { text: string; color: string; icon:
 
   // Far future (> 365 days) — treat like no expiry
   if (diffDays > 365) {
-    return { text: "No expiry date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
   }
 
   const formatted = expires.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -248,13 +248,13 @@ export default function ActivatePage() {
 
             </div>
 
-            {/* Expiry Line */}
+             {/* Expiration Line */}
             {(() => {
-              const expiry = formatExpiryLine((campaign as Campaign)?.end_at);
+              const expiration = formatExpirationLine((campaign as Campaign)?.end_at);
               return (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.85rem', fontSize: '0.78rem', color: expiry.color, fontWeight: 600 }}>
-                  <span>{expiry.icon}</span>
-                  <span>{expiry.text}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.85rem', fontSize: '0.78rem', color: expiration.color, fontWeight: 600 }}>
+                  <span>{expiration.icon}</span>
+                  <span>{expiration.text}</span>
                 </div>
               );
             })()}

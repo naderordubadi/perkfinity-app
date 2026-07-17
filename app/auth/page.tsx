@@ -485,14 +485,18 @@ export default function AuthPage() {
           </p>
         </div>
       )}
-
       <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingBottom: '1rem' }}>
         By continuing, you agree to Perkfinity&apos;s <br/>
-        <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Terms of Use</a>
+        <button
+          onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+          style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+        >Terms of Use</button>
         {' '}and{' '}
-        <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Privacy Policy</a>.
+        <button
+          onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+          style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+        >Privacy Policy</button>.
       </p>
-
     </div>
   );
 }

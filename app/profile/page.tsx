@@ -14,6 +14,13 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const handleSignOut = () => {
+    localStorage.removeItem("pf_user_token");
+    localStorage.removeItem("pf_user_data");
+    localStorage.removeItem("pf_setup_complete");
+    router.push("/auth");
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("pf_user_token");
     if (!token) { router.push("/auth"); return; }
@@ -94,7 +101,10 @@ export default function ProfilePage() {
       fontFamily: 'Outfit, sans-serif'
     }}>
       <div style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '4rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Complete Profile</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Profile</h1>
+          <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', background: 'rgba(107,193,122,0.1)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '20px', color: '#86EFAC', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Sign Out</button>
+        </div>
         <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
           Tell us a bit about yourself so we can find local perks near you based on your zip code.
         </p>
@@ -165,9 +175,15 @@ export default function ProfilePage() {
 
         <div style={{ textAlign: 'center', marginTop: '3rem', paddingBottom: '2rem' }}>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
-            <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Terms of Use</a>
+            <button
+              onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+            >Terms of Use</button>
             <span style={{ margin: '0 8px' }}>•</span>
-            <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Privacy Policy</a>
+            <button
+              onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+            >Privacy Policy</button>
           </p>
         </div>
       </div>

@@ -95,8 +95,8 @@ export default function QRResolveClient({ params }: { params: { public_code: str
             localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
           }
         }
-        // Redirect to home — it will show the pending offers banner
-        router.push('/');
+        // Redirect to activate page instead of home page
+        router.push('/activate');
       })
       .catch((err: Error) => {
         // Second layer of defense: even if a technical error slips past the backend

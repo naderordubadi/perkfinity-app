@@ -69,6 +69,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sponsoredMerchants, setSponsoredMerchants] = useState<Merchant[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const toggleFilter = (key: string) => {
     if (key === 'all') { setActiveFilters(new Set()); return; }
@@ -159,9 +162,25 @@ export default function Home() {
           }
         })
         .catch(e => console.error("Failed to load merchants", e));
+
+      fetchApi('/merchants/sponsored?platform=app')
+        .then(json => {
+          if (json.success && json.data) {
+            setSponsoredMerchants(json.data);
+          }
+        })
+        .catch(e => console.error("Failed to load sponsored merchants", e));
     };
     init();
   }, []);
+
+  useEffect(() => {
+    if (sponsoredMerchants.length === 0) return;
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % (sponsoredMerchants.length + 1));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [sponsoredMerchants.length, currentSlide]);
 
   const handleSignOut = () => {
     localStorage.removeItem('pf_user_token');
@@ -203,47 +222,224 @@ export default function Home() {
     }
   };
 
+  const handleJoinSponsored = (m: any) => {
+    const isMember = merchants.find(x => x.id === m.id)?.is_member || false;
+    const mappedMerchant: Merchant = {
+      ...m,
+      merchant_name: m.business_name,
+      qr_code: m.qr_public_code || null,
+      is_member: isMember,
+    };
+    handleJoin(mappedMerchant);
+  };
+
+  const handlePrevSlide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const total = sponsoredMerchants.length + 1;
+    setCurrentSlide(prev => (prev - 1 + total) % total);
+  };
+
+  const handleNextSlide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const total = sponsoredMerchants.length + 1;
+    setCurrentSlide(prev => (prev + 1) % total);
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: '#fff', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: '12rem', overflowY: 'auto' }}>
 
-      {/* Header */}
-      <div style={{ padding: 'var(--safe-top, 44px) 1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <img src={platform === 'android' ? "/app-icon.png" : "/logo.png"} alt="Perkfinity" style={{ height: '38px', width: 'auto', objectFit: 'contain', borderRadius: platform === 'android' ? '8px' : '0' }} />
-        {isLoggedIn ? (
-          <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Sign Out</button>
-        ) : (
-          <Link href="/auth" style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '20px', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>Sign In</Link>
-        )}
-      </div>
+      {/* Header Spacer */}
+      <div style={{ height: 'var(--safe-top, 44px)' }} />
 
-      {/* Info Card — always shown, right under header */}
-      <div style={{ padding: '0.875rem 1.5rem 0' }}>
-        <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', border: '1px solid rgba(107,193,122,0.5)', borderRadius: '18px', padding: '0.9rem 1.1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <span style={{ fontSize: '1rem', lineHeight: 1.5, flexShrink: 0 }}>✨</span>
-            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-              New local, mobile, and online businesses join regularly.
-              <span style={{ display: 'block', marginTop: '0.3rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500, fontSize: '0.83rem' }}>
-                💬 Know a spot you love? Tell them to join at{' '}
+      {/* Unified Carousel / Info Card */}
+      <div style={{ padding: '0.875rem 1.5rem 1.25rem', position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '18px', overflow: 'hidden' }}>
+          
+          {/* Slide 0: Info Card */}
+          {currentSlide === 0 && (
+            <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', border: '1px solid rgba(107,193,122,0.5)', borderRadius: '18px', padding: '1.25rem 1.4rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <span style={{ fontSize: '1.35rem', lineHeight: 1.2, flexShrink: 0 }}>✨</span>
+                <p style={{ margin: 0, fontSize: '0.96rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                  New local, mobile, and online businesses join regularly.
+                  <span style={{ display: 'block', marginTop: '0.4rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500, fontSize: '0.88rem' }}>
+                    💬 Know a spot you love? Tell them to join at{' '}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); window.open('https://www.perkfinity.net/merchants.html', '_system'); }}
+                      style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+                    >perkfinity.net</button>
+                  </span>
+                </p>
+              </div>
+              <div>
+                <div style={{ height: '1px', background: 'rgba(107,193,122,0.35)', margin: '0.5rem 0 0.5rem' }} />
+                <Link href="/onboarding" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#86EFAC', fontSize: '0.84rem', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.9rem' }}>📖</span>
+                  <span style={{ flex: 1 }}>Review App Benefits</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.55 }}>→</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Slide 1+: Sponsored Merchants */}
+          {currentSlide > 0 && sponsoredMerchants[currentSlide - 1] && (() => {
+            const m = sponsoredMerchants[currentSlide - 1];
+            const hasCover = !!m.cover_photo_url;
+            return (
+              <div 
+                onClick={() => handleJoinSponsored(m)}
+                style={{ 
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '18px',
+                  cursor: 'pointer',
+                  border: '1px solid rgba(139,92,246,0.35)',
+                  boxSizing: 'border-box',
+                  backgroundImage: hasCover 
+                    ? `linear-gradient(to bottom, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%), url(${m.cover_photo_url})`
+                    : 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  padding: '1.25rem 1.4rem'
+                }}
+              >
+                {/* Fallback layout if no cover photo */}
+                {!hasCover && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    padding: '1rem',
+                    boxSizing: 'border-box'
+                  }}>
+                    {m.logo_url ? (
+                      <div style={{ width: '100px', height: '100px', borderRadius: '24px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                        <img src={m.logo_url} style={{ width: '85%', height: '85%', objectFit: 'contain' }} alt="" />
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '2.0rem', fontWeight: 900, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.02em', textAlign: 'center', textShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                        {m.business_name}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Card Info Overlay */}
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div>
+                    <span style={{ background: '#FDE68A', color: '#1E1B4B', padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>SPONSORED</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>{m.business_name}</span>
+                    {(m.welcome_offer_text || m.latest_offer_title) && (
+                      <span style={{ background: '#8B5CF6', border: '1px solid rgba(139,92,246,0.5)', color: '#fff', padding: '3px 9px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                        {m.welcome_offer_text || m.latest_offer_title}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Left/Right manual arrows overlay */}
+          {sponsoredMerchants.length > 0 && (
+            <>
+              <button 
+                onClick={handlePrevSlide}
+                style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  width: '30px', 
+                  height: '30px', 
+                  borderRadius: '50%', 
+                  background: 'rgba(15,23,42,0.45)', 
+                  border: '1px solid rgba(255,255,255,0.12)', 
+                  color: '#fff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '0.9rem', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer', 
+                  zIndex: 2, 
+                  outline: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              >
+                ‹
+              </button>
+              <button 
+                onClick={handleNextSlide}
+                style={{ 
+                  position: 'absolute', 
+                  right: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  width: '30px', 
+                  height: '30px', 
+                  borderRadius: '50%', 
+                  background: 'rgba(15,23,42,0.45)', 
+                  border: '1px solid rgba(255,255,255,0.12)', 
+                  color: '#fff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '0.9rem', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer', 
+                  zIndex: 2, 
+                  outline: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          {/* Dots Indicator overlay at the bottom */}
+          {sponsoredMerchants.length > 0 && (
+            <div style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 2 }}>
+              {Array.from({ length: sponsoredMerchants.length + 1 }).map((_, idx) => (
                 <button
-                  onClick={() => window.open('https://www.perkfinity.net/merchants.html', '_system')}
-                  style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 600, fontSize: '0.83rem', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
-                >perkfinity.net</button>
-              </span>
-            </p>
-          </div>
-          <div style={{ height: '1px', background: 'rgba(107,193,122,0.35)', margin: '0.7rem 0 0.55rem' }} />
-          <Link href="/onboarding" style={{ display: 'flex', alignItems: 'center', gap: '7px', textDecoration: 'none', color: '#86EFAC', fontSize: '0.76rem', fontWeight: 600 }}>
-            <span style={{ fontSize: '0.82rem' }}>📖</span>
-            <span style={{ flex: 1 }}>Review App Benefits</span>
-            <span style={{ fontSize: '0.7rem', opacity: 0.55 }}>→</span>
-          </Link>
+                  key={idx}
+                  onClick={(e) => { e.stopPropagation(); setCurrentSlide(idx); }}
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: currentSlide === idx ? '#8B5CF6' : 'rgba(255,255,255,0.4)',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 
       {/* Pending QR Banner */}
       {pendingQr && !isLoggedIn && (
-        <div style={{ padding: '0 1.5rem', marginTop: '1rem' }}>
+        <div style={{ padding: '0 1.5rem', marginTop: '0px' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
             <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '20px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 20px rgba(251,191,36,0.1)' }}>
               <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
@@ -260,7 +456,7 @@ export default function Home() {
 
       {/* Pending Offers Banner */}
       {isLoggedIn && pendingOffers.length > 0 && (
-        <div style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ padding: '0 1.5rem', marginTop: '0px', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
             <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
@@ -280,56 +476,83 @@ export default function Home() {
 
       {/* Merchants Section */}
       <div style={{ padding: '0 1.5rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
-        {/* Filter chips — Presence / Membership */}
-        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
-          {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
-            const labels: Record<string, string> = { all: 'All', nearby: 'Near Me', online: 'Online', mobile: 'Mobile', joined: 'Joined', notjoined: 'Not Joined' };
-            const isActive = key === 'all' ? activeFilters.size === 0 : activeFilters.has(key);
-            return (
-              <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
-            );
-          })}
-        </div>
-        {/* Filter chips — Category */}
-        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
-          {(['all', 'Cafe & Juice Bars', 'Restaurants', 'Bakery & Desserts', 'Bars & Nightlife', 'Grocery & Market', 'Fitness & Gym', 'Yoga & Pilates', 'Beauty & Nail', 'Hair Salon', 'Barber Shop', 'Spa & Wellness', 'Retail & Boutique', 'Books & Hobbies', 'Pet Services', 'Services & Repair', 'Photography', 'Entertainment', 'Health & Medical', 'Other'] as const).map((cat) => {
-            const catLabels: Record<string, string> = { all: 'All Categories', 'Cafe & Juice Bars': '☕ Cafe & Juice Bars', 'Restaurants': '🍽️ Restaurants', 'Bakery & Desserts': '🥐 Bakery & Desserts', 'Bars & Nightlife': '🍹 Bars & Nightlife', 'Grocery & Market': '🛒 Grocery & Market', 'Fitness & Gym': '💪 Fitness & Gym', 'Yoga & Pilates': '🧘 Yoga & Pilates', 'Beauty & Nail': '💅 Beauty & Nail', 'Hair Salon': '💇 Hair Salon', 'Barber Shop': '✂️ Barber Shop', 'Spa & Wellness': '🧖 Spa & Wellness', 'Retail & Boutique': '🛍️ Retail & Boutique', 'Books & Hobbies': '📚 Books & Hobbies', 'Pet Services': '🐾 Pet Services', 'Services & Repair': '🔧 Services & Repair', 'Photography': '📸 Photography', 'Entertainment': '🎮 Entertainment', 'Health & Medical': '🏥 Health & Medical', 'Other': '🔖 Other' };
-            const isActive = activeCategory === cat;
-            return (
-              <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat]}</button>
-            );
-          })}
-        </div>
-        {/* Search bar */}
-        <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.88rem', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none', zIndex: 1 }}>🔍</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            placeholder="Search merchants..."
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
+          <button
+            onClick={() => setShowFilters(prev => !prev)}
             style={{
-              width: '100%',
-              padding: '0.6rem 2.25rem 0.6rem 2.25rem',
-              background: 'rgba(255,255,255,0.05)',
-              border: `1px solid ${searchFocused ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: '14px',
-              color: '#fff',
-              fontSize: '0.875rem',
+              background: showFilters ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${showFilters ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: '20px',
+              padding: '6px 14px',
+              fontSize: '0.78rem',
+              color: showFilters ? '#C4B5FD' : 'rgba(255,255,255,0.7)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               fontFamily: 'Outfit, sans-serif',
-              outline: 'none',
-              boxSizing: 'border-box' as const,
-              transition: 'border-color 0.2s, box-shadow 0.2s',
-              boxShadow: searchFocused ? '0 0 0 3px rgba(139,92,246,0.15)' : 'none',
+              fontWeight: 600,
+              transition: 'all 0.2s'
             }}
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
-          )}
+          >
+            <span>🔍</span> {showFilters ? 'Hide Filters' : 'Search & Filter'}
+          </button>
         </div>
+
+        {showFilters && (
+          <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+            {/* Filter chips — Presence / Membership */}
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
+              {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
+                const labels: Record<string, string> = { all: 'All', nearby: 'Near Me', online: 'Online', mobile: 'Mobile', joined: 'Joined', notjoined: 'Not Joined' };
+                const isActive = key === 'all' ? activeFilters.size === 0 : activeFilters.has(key);
+                return (
+                  <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
+                );
+              })}
+            </div>
+            {/* Filter chips — Category */}
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
+              {(['all', 'Cafe & Juice Bars', 'Restaurants', 'Bakery & Desserts', 'Bars & Nightlife', 'Grocery & Market', 'Fitness & Gym', 'Yoga & Pilates', 'Beauty & Nail', 'Hair Salon', 'Barber Shop', 'Spa & Wellness', 'Retail & Boutique', 'Books & Hobbies', 'Pet Services', 'Services & Repair', 'Photography', 'Entertainment', 'Health & Medical', 'Other'] as const).map((cat) => {
+                const catLabels: Record<string, string> = { all: 'All Categories', 'Cafe & Juice Bars': '☕ Cafe & Juice Bars', 'Restaurants': '🍽️ Restaurants', 'Bakery & Desserts': '🥐 Bakery & Desserts', 'Bars & Nightlife': '🍹 Bars & Nightlife', 'Grocery & Market': '🛒 Grocery & Market', 'Fitness & Gym': '💪 Fitness & Gym', 'Yoga & Pilates': '🧘 Yoga & Pilates', 'Beauty & Nail': '💅 Beauty & Nail', 'Hair Salon': '💇 Hair Salon', 'Barber Shop': '✂️ Barber Shop', 'Spa & Wellness': '🧖 Spa & Wellness', 'Retail & Boutique': '🛍️ Retail & Boutique', 'Books & Hobbies': '📚 Books & Hobbies', 'Pet Services': '🐾 Pet Services', 'Services & Repair': '🔧 Services & Repair', 'Photography': '📸 Photography', 'Entertainment': '🎮 Entertainment', 'Health & Medical': '🏥 Health & Medical', 'Other': '🔖 Other' };
+                const isActive = activeCategory === cat;
+                return (
+                  <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat]}</button>
+                );
+              })}
+            </div>
+            {/* Search bar */}
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.88rem', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none', zIndex: 1 }}>🔍</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="Search merchants..."
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 2.25rem 0.6rem 2.25rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${searchFocused ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: '14px',
+                  color: '#fff',
+                  fontSize: '0.875rem',
+                  fontFamily: 'Outfit, sans-serif',
+                  outline: 'none',
+                  boxSizing: 'border-box' as const,
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxShadow: searchFocused ? '0 0 0 3px rgba(139,92,246,0.15)' : 'none',
+                }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
+              )}
+            </div>
+          </div>
+        )}
         {/* Vertical merchant list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {(() => {
@@ -494,8 +717,14 @@ export default function Home() {
                   <div style={{ padding: '0.875rem 1rem', background: 'rgba(59,154,82,0.1)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '14px', marginBottom: '1.25rem' }}>
                     <p style={{ margin: 0, fontSize: '0.77rem', color: '#fff', lineHeight: 1.65 }}>
                       By joining <strong>{joinModal.merchant_name}</strong>&apos;s member list, you consent to receive promotional emails and notifications.{' '}
-                      <a href="https://perkfinity.net/privacy-policy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#86EFAC', fontWeight: 700 }}>Privacy Policy</a>{' '}&amp;{' '}
-                      <a href="https://perkfinity.net/terms-of-use.html" target="_blank" rel="noopener noreferrer" style={{ color: '#86EFAC', fontWeight: 700 }}>Terms of Use</a>.
+                      <button
+                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 700, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+                      >Privacy Policy</button>{' '}&amp;{' '}
+                      <button
+                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 700, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+                      >Terms of Use</button>.
                     </p>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
