@@ -132,26 +132,27 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
         </div>
 
         {/* Address / Website */}
-        {offer.website ? (
+        {offer.website && (
           <div
             onClick={(e) => {
               e.stopPropagation();
               const url = offer.website!.startsWith('http') ? offer.website! : `https://${offer.website}`;
               window.open(url, '_blank');
             }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             🌐 {offer.website.replace(/^https?:\/\//, '')}
           </div>
-        ) : offer.store_address && offer.store_address !== 'Mobile Business' ? (
+        )}
+        {offer.store_address && offer.store_address !== 'Mobile Business' ? (
           <div
             onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             📍 {offer.store_address}
           </div>
         ) : offer.store_address === 'Mobile Business' ? (
-          <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: "4px" }}>
+          <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             🚐 Mobile Business
           </div>
         ) : null}
