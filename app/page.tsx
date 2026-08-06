@@ -532,11 +532,28 @@ export default function Home() {
             </div>
             {/* Filter chips — Category */}
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
-              {(['all', 'Restaurants & Dining', 'Cafes, Bakery & Desserts', 'Grocery & Gourmet Market', 'Hair & Barber Shops', 'Beauty, Spa & Wellness', 'Fitness & Movement', 'Education & Learning', 'Health & Medical', 'Retail & Boutiques', 'Professional & Financial', 'Home, Auto & Trade', 'Pet Care & Services', 'Entertainment & Recreation', 'Photography & Creative', 'Other'] as const).map((cat) => {
-                const catLabels: Record<string, string> = { all: 'All Categories', 'Restaurants & Dining': '🍽️ Restaurants & Dining', 'Cafes, Bakery & Desserts': '☕ Cafes & Desserts', 'Grocery & Gourmet Market': '🛒 Grocery & Market', 'Hair & Barber Shops': '✂️ Hair & Barber', 'Beauty, Spa & Wellness': '💅 Beauty & Spa', 'Fitness & Movement': '💪 Fitness & Movement', 'Education & Learning': '📚 Education & Learning', 'Health & Medical': '🏥 Health & Medical', 'Retail & Boutiques': '🛍️ Retail & Boutiques', 'Professional & Financial': '💼 Professional & Financial', 'Home, Auto & Trade': '🔧 Home & Auto Services', 'Pet Care & Services': '🐾 Pet Care', 'Entertainment & Recreation': '🎮 Entertainment', 'Photography & Creative': '📸 Photography & Creative', 'Other': '🔖 Other' };
+              {(['all', 'Restaurants (Dining, Food, Catering)', 'Cafe & Coffee (Bakeries, Desserts, Tea)', 'Bars & Nightlife (Pubs, Lounges, Breweries)', 'Beauty & Personal Care (Salons, Nails, Barber)', 'Spa & Wellness (Massages, Skincare, Sauna)', 'Fitness & Recreation (Gyms, Yoga, Sports, Gaming)', 'Retail & Shopping (Boutiques, Clothing, Gifts)', 'Grocery & Specialty Food (Markets, Wine, Gourmet)', 'Automotive (Repair, Car Wash, Detailing)', 'Home & Local Services (Cleaning, Lawn, Handyman)', 'Professional & Financial (Legal, Tax, Insurance, Tech)', 'Health & Medical (Dental, Vision, Therapy, Pharmacy)', 'Pet Care & Services (Grooming, Vet, Boarding)', 'Entertainment & Events (Tickets, Venues, Family Fun)', 'Other'] as const).map((cat) => {
+                const catLabels: Record<string, string> = {
+                  all: 'All Categories',
+                  'Restaurants (Dining, Food, Catering)': '🍽️ Restaurants',
+                  'Cafe & Coffee (Bakeries, Desserts, Tea)': '☕ Cafe & Coffee',
+                  'Bars & Nightlife (Pubs, Lounges, Breweries)': '🍸 Bars & Nightlife',
+                  'Beauty & Personal Care (Salons, Nails, Barber)': '💅 Beauty & Personal Care',
+                  'Spa & Wellness (Massages, Skincare, Sauna)': '💆 Spa & Wellness',
+                  'Fitness & Recreation (Gyms, Yoga, Sports, Gaming)': '🏋️ Fitness & Recreation',
+                  'Retail & Shopping (Boutiques, Clothing, Gifts)': '🛍️ Retail & Shopping',
+                  'Grocery & Specialty Food (Markets, Wine, Gourmet)': '🛒 Grocery & Gourmet',
+                  'Automotive (Repair, Car Wash, Detailing)': '🚗 Automotive',
+                  'Home & Local Services (Cleaning, Lawn, Handyman)': '🧹 Home & Local Services',
+                  'Professional & Financial (Legal, Tax, Insurance, Tech)': '💼 Professional & Financial',
+                  'Health & Medical (Dental, Vision, Therapy, Pharmacy)': '🩺 Health & Medical',
+                  'Pet Care & Services (Grooming, Vet, Boarding)': '🐶 Pet Care',
+                  'Entertainment & Events (Tickets, Venues, Family Fun)': '🎟️ Entertainment & Events',
+                  'Other': '📦 Other'
+                };
                 const isActive = activeCategory === cat;
                 return (
-                  <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat]}</button>
+                  <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat] || cat}</button>
                 );
               })}
             </div>
