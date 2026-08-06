@@ -887,8 +887,14 @@ export default function Home() {
               {bannerUrl ? (
                 <img src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
               ) : (
-                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>
-                  {m.business_name}
+                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                  {m.logo_url ? (
+                    <img src={m.logo_url} style={{ maxHeight: '80px', maxWidth: '80%', objectFit: 'contain' }} alt="" />
+                  ) : (
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', textAlign: 'center' }}>
+                      {m.business_name || m.merchant_name || 'Brand'}
+                    </span>
+                  )}
                 </div>
               )}
               <button 
