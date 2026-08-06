@@ -396,7 +396,7 @@ function RedeemContent() {
             localStorage.removeItem('pending_cancel');
             router.push('/');
           }}
-          style={{ width: '100%', padding: '0.875rem', color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '0.875rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}
         >
           Done / Cancel
         </button>

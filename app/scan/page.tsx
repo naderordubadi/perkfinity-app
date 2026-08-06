@@ -218,7 +218,7 @@ export default function ScanPage() {
         <button onClick={() => setPermissionState("idle")} style={{ ...styles.primaryBtn, background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
           Try Again
         </button>
-        <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)' }}>Go Back</a>
+        <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.7)', fontWeight: 700 }}>Go Back</a>
       </div>
     );
   }
@@ -227,12 +227,12 @@ export default function ScanPage() {
   return (
     <div style={{ position: "relative", height: "100vh", backgroundColor: "#000", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {permissionState === "requesting" && (
-        <div style={{ ...styles.fullPage, position: "absolute", zIndex: 100, inset: 0 }}>
+        <div style={{ ...dynamicFullPage, position: "absolute", zIndex: 100, inset: 0 }}>
           <div style={{ fontSize: "2.5rem" }}>📷</div>
-          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.95rem" }}>
+          <p style={{ color: isLight ? '#0F172A' : 'rgba(255,255,255,0.6)', fontSize: "0.95rem", fontWeight: 600 }}>
             Waiting for camera permission…
           </p>
-          <a href="/" style={styles.cancelLink}>Cancel</a>
+          <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.7)', fontWeight: 700 }}>Cancel</a>
         </div>
       )}
       <canvas ref={canvasRef} style={{ display: "none" }} />
