@@ -865,6 +865,7 @@ export default function Home() {
 
       {/* Full Page VIP Takeover Modal Overlay */}
       {fullPageTakeoverMerchant && (() => {
+        const m = fullPageTakeoverMerchant;
         const bannerUrl = m.promo_banner_url || m.cover_photo_url;
         const ratingPlatform = m.rating_platform || 'Google';
         const ratingCountStr = m.rating_count ? ` (${m.rating_count})` : '';
