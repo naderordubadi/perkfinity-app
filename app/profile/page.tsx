@@ -111,13 +111,56 @@ export default function ProfilePage() {
           Tell us a bit about yourself so we can find local perks near you based on your zip code.
         </p>
 
-        {/* App Appearance / Theme Toggle */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Full Name</label>
+            <input type="text" placeholder="Jane Doe" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} required />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Phone Number</label>
+            <input type="tel" placeholder="123-456-7890" value={phone} onChange={handlePhoneChange} style={inputStyle} required />
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 2 }}>
+              <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>City</label>
+              <input type="text" placeholder="Austin" value={city} onChange={e => setCity(e.target.value)} style={inputStyle} required />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>ZIP Code</label>
+              <input type="text" placeholder="78701" maxLength={5} value={zipCode} onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))} style={inputStyle} required />
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} style={{
+            marginTop: '1rem',
+            width: '100%',
+            padding: '1.25rem',
+            borderRadius: '16px',
+            background: '#8B5CF6',
+            color: '#fff',
+            border: 'none',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
+            opacity: loading ? 0.7 : 1
+          }}>
+            {loading ? "Saving..." : "Continue"}
+          </button>
+        </form>
+
+        {/* App Appearance / Theme Toggle (Below Continue button) */}
         <div style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--border)',
           borderRadius: '20px',
           padding: '1.25rem',
-          marginBottom: '1.75rem',
+          marginTop: '1.75rem',
           backdropFilter: 'blur(12px)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
@@ -191,72 +234,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Full Name</label>
-            <input type="text" placeholder="Jane Doe" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} required />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Phone Number</label>
-            <input type="tel" placeholder="123-456-7890" value={phone} onChange={handlePhoneChange} style={inputStyle} required />
-          </div>
-          
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 2 }}>
-              <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>City</label>
-              <input type="text" placeholder="Austin" value={city} onChange={e => setCity(e.target.value)} style={inputStyle} required />
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-              <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>ZIP Code</label>
-              <input type="text" placeholder="78701" maxLength={5} value={zipCode} onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))} style={inputStyle} required />
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading} style={{
-            marginTop: '1rem',
-            width: '100%',
-            padding: '1.25rem',
-            borderRadius: '16px',
-            background: '#8B5CF6',
-            color: '#fff',
-            border: 'none',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
-            opacity: loading ? 0.7 : 1
-          }}>
-            {loading ? "Saving..." : "Continue"}
-          </button>
-        </form>
-
-        {/* Delete Account link — only shown if user has a token (is logged in) */}
-        {typeof window !== 'undefined' && localStorage.getItem('pf_user_token') && (
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                router.push('/delete-account');
-              }}
-              style={{
-                color: '#EF4444',
-                fontSize: '0.85rem',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
-            >
-              Delete Account
-            </a>
-          </div>
-        )}
-
-        <div style={{ textAlign: 'center', marginTop: '3rem', paddingBottom: '2rem' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+        {/* Bottom Section — Terms of Use, Privacy Policy & Delete Account */}
+        <div style={{ textAlign: 'center', marginTop: '2.5rem', paddingBottom: '2rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
             <button
               onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
@@ -267,6 +247,27 @@ export default function ProfilePage() {
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
             >Privacy Policy</button>
           </p>
+
+          {/* Delete Account link — by Terms of use */}
+          {typeof window !== 'undefined' && localStorage.getItem('pf_user_token') && (
+            <div>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push('/delete-account');
+                }}
+                style={{
+                  color: '#EF4444',
+                  fontSize: '0.8rem',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Delete Account
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
