@@ -23,26 +23,31 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Android App Links — opens app directly when scanning https://app.perkfinity.net/qr/* -->
+            <!-- Android App Links — opens app directly when scanning https://perkfinity.net/join/* or /qr/* -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="app.perkfinity.net"
-                    android:pathPrefix="/qr/" />
+                <data android:scheme="https" android:host="perkfinity.net" android:pathPrefix="/qr/" />
+                <data android:scheme="https" android:host="perkfinity.net" android:pathPrefix="/join/" />
             </intent-filter>
 
-            <!-- Android App Links — opens app directly when scanning https://www.perkfinity.net/qr/* -->
+            <!-- Android App Links — opens app directly when scanning https://www.perkfinity.net/join/* or /qr/* -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="www.perkfinity.net"
-                    android:pathPrefix="/qr/" />
+                <data android:scheme="https" android:host="www.perkfinity.net" android:pathPrefix="/qr/" />
+                <data android:scheme="https" android:host="www.perkfinity.net" android:pathPrefix="/join/" />
+            </intent-filter>
+
+            <!-- Android App Links — opens app directly when scanning https://app.perkfinity.net/join/* or /qr/* -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.perkfinity.net" android:pathPrefix="/qr/" />
+                <data android:scheme="https" android:host="app.perkfinity.net" android:pathPrefix="/join/" />
             </intent-filter>
 
         </activity>
