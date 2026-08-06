@@ -450,7 +450,7 @@ function HistoryContent() {
       )}
 
       <style>{`
-        body { background-color: #0F172A; }
+        body { background-color: var(--bg); }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { display: none; }
       `}</style>
