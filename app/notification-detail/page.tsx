@@ -148,7 +148,7 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
               const url = offer.website!.startsWith('http') ? offer.website! : `https://${offer.website}`;
               window.open(url, '_blank');
             }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: isLight ? "#6D28D9" : "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}
           >
             🌐 {offer.website.replace(/^https?:\/\//, '')}
           </div>
@@ -156,31 +156,31 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
         {offer.store_address && offer.store_address !== 'Mobile Business' ? (
           <div
             onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            style={{ cursor: "pointer", fontSize: "0.75rem", color: isLight ? "#6D28D9" : "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}
           >
             📍 {offer.store_address}
           </div>
         ) : offer.store_address === 'Mobile Business' ? (
-          <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ fontSize: "0.75rem", color: isLight ? "#475569" : "rgba(255,255,255,0.35)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}>
             🚐 Mobile Business
           </div>
         ) : null}
 
         {offer.disclaimer && (
-          <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
+          <div style={{ fontSize: "0.7rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
             {offer.disclaimer}
           </div>
         )}
 
         {/* Revealed code block */}
         {claimState === 'revealed' && revealedCode && (
-          <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.4)", borderRadius: "10px" }}>
-            <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.5)", marginBottom: "4px", fontWeight: 600 }}>YOUR DISCOUNT CODE</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#C4B5FD", fontFamily: "monospace", letterSpacing: "2px" }}>{revealedCode}</div>
-            <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", marginTop: "2px" }}>Auto-copied to clipboard ✓</div>
+          <div style={{ marginTop: "10px", padding: "10px 12px", background: isLight ? "#F3E8FF" : "rgba(139,92,246,0.15)", border: isLight ? "1px solid #D8B4FE" : "1px solid rgba(139,92,246,0.4)", borderRadius: "10px" }}>
+            <div style={{ fontSize: "0.65rem", color: isLight ? "#475569" : "rgba(255,255,255,0.5)", marginBottom: "4px", fontWeight: 700 }}>YOUR DISCOUNT CODE</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: isLight ? "#6D28D9" : "#C4B5FD", fontFamily: "monospace", letterSpacing: "2px" }}>{revealedCode}</div>
+            <div style={{ fontSize: "0.65rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", marginTop: "2px" }}>Auto-copied to clipboard ✓</div>
             <button
               onClick={handleCopyAgain}
-              style={{ marginTop: "8px", padding: "5px 14px", background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", borderRadius: "8px", color: "#C4B5FD", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
+              style={{ marginTop: "8px", padding: "5px 14px", background: isLight ? "#6D28D9" : "rgba(139,92,246,0.3)", border: "none", borderRadius: "8px", color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
             >
               {copyLabel}
             </button>
@@ -188,7 +188,7 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
         )}
 
         {claimState === 'error' && (
-          <div style={{ marginTop: "8px", fontSize: "0.75rem", color: "#FCA5A5" }}>
+          <div style={{ marginTop: "8px", fontSize: "0.75rem", color: "#DC2626" }}>
             Failed to reveal code. Please try again.
           </div>
         )}
@@ -199,9 +199,9 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
         // Online: Reveal Code button (or claimed state)
         claimState === 'revealed' ? (
           <div style={{
-            padding: "8px 10px", background: "rgba(139,92,246,0.15)", borderRadius: "8px",
-            color: "#A78BFA", fontSize: "0.7rem", fontWeight: 700, textAlign: "center",
-            lineHeight: 1.35, flexShrink: 0, maxWidth: "90px",
+            padding: "8px 10px", background: isLight ? "#F3E8FF" : "rgba(139,92,246,0.15)", borderRadius: "8px",
+            color: isLight ? "#6D28D9" : "#A78BFA", fontSize: "0.7rem", fontWeight: 700, textAlign: "center",
+            lineHeight: 1.35, flexShrink: 0, maxWidth: "90px", border: isLight ? "1px solid #D8B4FE" : "none"
           }}>
             ✓ Claimed
           </div>
@@ -211,10 +211,10 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
             disabled={claimState === 'loading'}
             style={{
               padding: "8px 10px",
-              background: claimState === 'loading' ? "rgba(139,92,246,0.1)" : "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(91,63,165,0.5))",
-              border: "1px solid rgba(139,92,246,0.5)",
+              background: claimState === 'loading' ? (isLight ? "#E2E8F0" : "rgba(139,92,246,0.1)") : "linear-gradient(135deg, #6D28D9, #4C1D95)",
+              border: "none",
               borderRadius: "8px",
-              color: "#C4B5FD",
+              color: "#FFFFFF",
               fontSize: "0.7rem",
               fontWeight: 700,
               textAlign: "center",
@@ -234,12 +234,12 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
           onClick={() => router.push('/scan')}
           style={{
             padding: "8px 12px",
-            background: "#E8FAEB",
-            border: "none",
+            background: isLight ? "#DCFCE7" : "#E8FAEB",
+            border: isLight ? "1px solid #86EFAC" : "none",
             borderRadius: "8px",
-            color: "#1E5E34",
+            color: isLight ? "#15803D" : "#1E5E34",
             fontSize: "0.75rem",
-            fontWeight: 600,
+            fontWeight: 700,
             textAlign: "center",
             lineHeight: 1.35,
             flexShrink: 0,

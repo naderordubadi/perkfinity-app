@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { getUserData, setUserData } from "@/lib/user";
+import { useTheme } from "../components/ThemeProvider";
 
 type PermState = 'loading' | 'prompt' | 'granted' | 'denied';
 
@@ -198,19 +199,36 @@ export default function PermissionsPage() {
     return <button style={purpleBtn} onClick={handleAllowNotifications}>Continue</button>;
   };
 
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+
+  const cardStyle: React.CSSProperties = {
+    background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)',
+    border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.08)',
+    padding: '1.5rem',
+    borderRadius: '24px',
+    boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none',
+  };
+
+  const separatorStyle: React.CSSProperties = {
+    height: '1px',
+    background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)',
+    margin: '0 0 1rem 0',
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0F172A',
-      color: '#fff',
+      background: 'var(--bg-gradient)',
+      color: 'var(--text-main)',
       padding: '2rem',
       fontFamily: 'Outfit, sans-serif',
       display: 'flex',
       flexDirection: 'column',
     }}>
       <div style={{ flex: 1, maxWidth: '400px', margin: '0 auto', paddingTop: '4rem', display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Never Miss a Perk</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>Never Miss a Perk</h1>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
           Enable permissions to get the most out of Perkfinity in your local neighborhood.
         </p>
 
@@ -219,8 +237,8 @@ export default function PermissionsPage() {
           {/* Location Card */}
           <div style={cardStyle}>
             <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📍</div>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Location Services</h3>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Location Services</h3>
+            <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
               We use your location solely to notify you when you walk near a participating store offering a targeted discount.
             </p>
             <div style={separatorStyle} />
@@ -230,8 +248,8 @@ export default function PermissionsPage() {
           {/* Push Notifications Card */}
           <div style={cardStyle}>
             <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔔</div>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Push Notifications</h3>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Push Notifications</h3>
+            <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
               Get instantly alerted when businesses you love drop exclusive flash sales and new perks.
             </p>
             <div style={separatorStyle} />
@@ -249,13 +267,13 @@ export default function PermissionsPage() {
                 width: '100%',
                 padding: '1.25rem',
                 borderRadius: '16px',
-                background: '#8B5CF6',
+                background: isLight ? '#6D28D9' : '#8B5CF6',
                 color: '#fff',
                 border: 'none',
                 fontSize: '1.1rem',
                 fontWeight: 700,
                 cursor: isDisabled ? 'default' : 'pointer',
-                boxShadow: bothResponded ? '0 8px 24px rgba(139,92,246,0.3)' : 'none',
+                boxShadow: bothResponded ? (isLight ? '0 8px 24px rgba(109,40,217,0.25)' : '0 8px 24px rgba(139,92,246,0.3)') : 'none',
                 opacity: isDisabled ? 0.4 : 1,
               }}>
                 {loading ? 'Completing setup...' : 'Finish Setup'}

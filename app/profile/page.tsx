@@ -158,13 +158,13 @@ export default function ProfilePage() {
             width: '100%',
             padding: '1.25rem',
             borderRadius: '16px',
-            background: '#8B5CF6',
+            background: isLight ? '#6D28D9' : '#8B5CF6',
             color: '#fff',
             border: 'none',
             fontSize: '1.1rem',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(139,92,246,0.3)',
+            boxShadow: isLight ? '0 8px 24px rgba(109,40,217,0.25)' : '0 8px 24px rgba(139,92,246,0.3)',
             opacity: loading ? 0.7 : 1
           }}>
             {loading ? "Saving..." : "Continue"}

@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
+import { useTheme } from '@/app/components/ThemeProvider';
 
 interface Campaign {
   id: string;
@@ -22,6 +23,8 @@ export default function QRResolveClient({ params }: { params: { public_code: str
   const [redeemedModal, setRedeemedModal] = useState<{ merchantName: string } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   useEffect(() => {
     // ── Browser detection: if opened in Safari (not inside native Capacitor app),
@@ -103,9 +106,6 @@ export default function QRResolveClient({ params }: { params: { public_code: str
         router.push('/activate');
       })
       .catch((err: Error) => {
-        // Second layer of defense: even if a technical error slips past the backend
-        // sanitizer, we never display raw DB schema info (column names, table names,
-        // SQL syntax errors) to the user. Pattern-match and replace with a clean message.
         const msg = err.message || '';
         const isTechnical = /column|relation|table|syntax error|null value|does not exist|violates|HTTP 5|unexpected server/i.test(msg);
         setError(isTechnical ? 'Something went wrong loading this offer. Please try again.' : msg);
@@ -114,20 +114,20 @@ export default function QRResolveClient({ params }: { params: { public_code: str
 
   // ── Already Redeemed Modal ──
   if (redeemedModal) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
-      <div style={{ background: 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ background: isLight ? '#FFFFFF' : 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: isLight ? '0 20px 50px rgba(15,23,42,0.15)' : '0 32px 80px rgba(0,0,0,0.65)' }}>
         <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>✅</div>
-        <h2 style={{ color: '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>
+        <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>
           You've Already Claimed This Perk! 🎉
         </h2>
-        <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>
           This perk is already saved in your History — you're all set! Keep an eye on your{' '}
-          <strong style={{ color: '#A78BFA' }}>Daily Digest</strong> for fresh exclusive offers from{' '}
-          <strong style={{ color: '#fff' }}>{redeemedModal.merchantName}</strong>. More great perks are on the way!
+          <strong style={{ color: isLight ? '#6D28D9' : '#A78BFA' }}>Daily Digest</strong> for fresh exclusive offers from{' '}
+          <strong style={{ color: isLight ? '#0F172A' : '#fff' }}>{redeemedModal.merchantName}</strong>. More great perks are on the way!
         </p>
         <button
           onClick={() => router.push('/')}
-          style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(139,92,246,0.3)', letterSpacing: '0.01em' }}
+          style={{ width: '100%', padding: '1rem', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: isLight ? '0 8px 20px rgba(109,40,217,0.25)' : '0 8px 20px rgba(139,92,246,0.3)', letterSpacing: '0.01em' }}
         >
           Go to Home
         </button>
@@ -136,19 +136,19 @@ export default function QRResolveClient({ params }: { params: { public_code: str
   );
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Outfit, sans-serif', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', padding: '2rem' }}>
       <div style={{ textAlign: 'center' }}>
-        <h2 style={{ color: '#F87171' }}>Offer Unavailable</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)' }}>{error}</p>
+        <h2 style={{ color: isLight ? '#DC2626' : '#F87171', fontWeight: 800 }}>Offer Unavailable</h2>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{error}</p>
       </div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <p style={{ color: 'rgba(255,255,255,0.6)' }}>Loading your offers...</p>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Loading your offers...</p>
       </div>
     </div>
   );

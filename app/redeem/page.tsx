@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { App } from '@capacitor/app';
+import { useTheme } from "@/app/components/ThemeProvider";
 
 // Inner component — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
@@ -201,11 +202,12 @@ function RedeemContent() {
     }
   };
 
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+
   if (!cache) return null;
 
   // Determine the code to display:
-  // If the campaign has a merchant-defined promo code, show it prominently.
-  // Otherwise fall back to the system-generated redemption token formatted as groups of 3.
   const displayCode = cache.campaign?.promo_code
     ? cache.campaign.promo_code.toUpperCase()
     : (cache.redemption?.token?.match(/.{1,3}/g) || []).join('-');
@@ -217,12 +219,12 @@ function RedeemContent() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)',
+      background: 'var(--bg-gradient)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       padding: '1.5rem 1.25rem 7rem',
-      color: '#fff',
+      color: 'var(--text-main)',
       fontFamily: 'Outfit, sans-serif',
       overflowY: 'auto'
     }}>
@@ -234,12 +236,12 @@ function RedeemContent() {
             <img
               src={cache.merchant.logo_url}
               alt=""
-              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'contain', border: '2px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'contain', border: isLight ? '2px solid rgba(15,23,42,0.15)' : '2px solid rgba(255,255,255,0.15)', boxShadow: isLight ? '0 8px 24px rgba(15,23,42,0.08)' : '0 8px 24px rgba(0,0,0,0.4)' }}
             />
           ) : (
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', border: '2px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🏪</div>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)', border: isLight ? '2px solid #D8B4FE' : '2px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🏪</div>
           )}
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#fff', textAlign: 'center' }}>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', textAlign: 'center' }}>
             {cache.merchant?.business_name}
           </h2>
         </div>
@@ -247,10 +249,10 @@ function RedeemContent() {
         {/* ── Countdown Timer (smaller, subtle) ── */}
         {!redeemSuccess && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '1.1rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>⏱ Offer active for</span>
+            <span style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', fontWeight: 600 }}>⏱ Offer active for</span>
             <span style={{
               fontSize: '1.05rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-              color: timeLeft <= 0 ? '#EF4444' : timeLeft < 60 ? '#F59E0B' : '#A78BFA'
+              color: timeLeft <= 0 ? '#DC2626' : timeLeft < 60 ? '#B45309' : (isLight ? '#6D28D9' : '#A78BFA')
             }}>
               {timeLeft <= 0 ? '⏱ Returning home...' : formatTime(timeLeft)}
             </span>
@@ -259,56 +261,56 @@ function RedeemContent() {
 
         {/* ── Offer Card ── */}
         <div style={{
-          background: timeLeft <= 0 ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.15)',
-          border: `1px solid ${timeLeft <= 0 ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.35)'}`,
+          background: timeLeft <= 0 ? (isLight ? '#F1F5F9' : 'rgba(255,255,255,0.04)') : (isLight ? '#F3E8FF' : 'rgba(139,92,246,0.15)'),
+          border: `1px solid ${timeLeft <= 0 ? (isLight ? '#CBD5E1' : 'rgba(255,255,255,0.08)') : (isLight ? '#D8B4FE' : 'rgba(139,92,246,0.35)')}`,
           borderRadius: '20px', padding: '1.25rem 1.5rem',
           marginBottom: '1.25rem', textAlign: 'center',
           opacity: timeLeft <= 0 ? 0.5 : 1, transition: 'all 0.5s ease'
         }}>
-          <h3 style={{ margin: '0 0 0.35rem', fontSize: '2rem', fontWeight: 800, color: timeLeft <= 0 ? '#aaa' : '#A78BFA', lineHeight: 1.1 }}>
+          <h3 style={{ margin: '0 0 0.35rem', fontSize: '2rem', fontWeight: 800, color: timeLeft <= 0 ? '#64748B' : (isLight ? '#6D28D9' : '#A78BFA'), lineHeight: 1.1 }}>
             {cache.campaign?.title}
           </h3>
           {cache.campaign?.terms && (
-            <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: isLight ? '#334155' : 'rgba(255,255,255,0.75)', lineHeight: 1.5, fontWeight: 500 }}>
               {cache.campaign.terms}
             </p>
           )}
         </div>
 
         {/* ── 3-Step Instruction Flow ── */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.25rem 1.25rem 1rem', marginBottom: '1.25rem' }}>
+        <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.25rem 1.25rem 1rem', marginBottom: '1.25rem', boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none' }}>
 
           {/* Step 1 */}
           <div style={{ display: 'flex', gap: '0.875rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.25)', border: '1.5px solid rgba(139,92,246,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#A78BFA' }}>1</div>
-              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.25)', border: isLight ? '1.5px solid #D8B4FE' : '1.5px solid rgba(139,92,246,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#A78BFA' }}>1</div>
+              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
             </div>
             <div style={{ paddingBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>👋 Show this screen to the cashier</div>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>Present your phone at the register</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>👋 Show this screen to the cashier</div>
+              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Present your phone at the register</div>
             </div>
           </div>
 
           {/* Code Box (between Step 1 and Step 2) */}
           <div style={{ display: 'flex', gap: '0.875rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '28px' }}>
-              <div style={{ width: '2px', flex: 1, background: 'rgba(255,255,255,0.1)', margin: '0 0 4px' }} />
+              <div style={{ width: '2px', flex: 1, background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '0 0 4px' }} />
             </div>
             <div style={{ flex: 1, paddingBottom: '0.75rem' }}>
               <div style={{
-                background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.18)',
+                background: isLight ? '#F8FAFC' : 'rgba(0,0,0,0.3)', border: isLight ? '1.5px solid #CBD5E1' : '1.5px solid rgba(255,255,255,0.18)',
                 borderRadius: '14px', padding: '1rem 1.25rem', textAlign: 'center',
                 opacity: timeLeft <= 0 ? 0.3 : 1
               }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>
                   {hasPromoCode ? 'Promo Code' : 'Reference Code'}
                 </div>
-                <div style={{ fontSize: codeFontSize, fontWeight: 800, letterSpacing: codeLetterSpacing, color: '#fff', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: codeFontSize, fontWeight: 800, letterSpacing: codeLetterSpacing, color: isLight ? '#0F172A' : '#fff', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>
                   {displayCode}
                 </div>
                 {hasPromoCode && (
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.4rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', marginTop: '0.4rem', fontWeight: 500 }}>
                     Cashier: enter this code at the register
                   </div>
                 )}
@@ -319,12 +321,12 @@ function RedeemContent() {
           {/* Step 2 */}
           <div style={{ display: 'flex', gap: '0.875rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', border: '1.5px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#10B981' }}>2</div>
-              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.2)', border: isLight ? '1.5px solid #86EFAC' : '1.5px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#15803D' : '#10B981' }}>2</div>
+              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
             </div>
             <div style={{ paddingBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>🛒 Cashier: Honor the offer</div>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>🛒 Cashier: Honor the offer</div>
+              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
                 {hasPromoCode ? 'Apply the offer and enter the code at the register' : 'Apply the offer at checkout'}
               </div>
             </div>
@@ -333,11 +335,11 @@ function RedeemContent() {
           {/* Step 3 */}
           <div style={{ display: 'flex', gap: '0.875rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(251,191,36,0.2)', border: '1.5px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: '#FDE68A' }}>3</div>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#FEF3C7' : 'rgba(251,191,36,0.2)', border: isLight ? '1.5px solid #FDE68A' : '1.5px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#B45309' : '#FDE68A' }}>3</div>
             </div>
             <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '0.15rem' }}>✅ Tap "Mark as Redeemed"</div>
-              <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)' }}>Records this perk in your history and the merchant's dashboard</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>✅ Tap "Mark as Redeemed"</div>
+              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Records this perk in your history and the merchant's dashboard</div>
             </div>
           </div>
         </div>
@@ -349,11 +351,11 @@ function RedeemContent() {
             disabled={redeeming || timeLeft <= 0}
             style={{
               width: '100%', padding: '1.1rem',
-              background: (redeeming || timeLeft <= 0) ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-              color: (redeeming || timeLeft <= 0) ? 'rgba(255,255,255,0.3)' : '#fff',
+              background: (redeeming || timeLeft <= 0) ? (isLight ? '#E2E8F0' : 'rgba(255,255,255,0.06)') : (isLight ? '#15803D' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)'),
+              color: (redeeming || timeLeft <= 0) ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : '#fff',
               border: 'none', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
               cursor: (redeeming || timeLeft <= 0) ? 'not-allowed' : 'pointer',
-              boxShadow: (redeeming || timeLeft <= 0) ? 'none' : '0 8px 20px rgba(16,185,129,0.3)',
+              boxShadow: (redeeming || timeLeft <= 0) ? 'none' : (isLight ? '0 8px 20px rgba(21,128,61,0.25)' : '0 8px 20px rgba(16,185,129,0.3)'),
               transition: 'all 0.2s ease', marginBottom: '0.75rem'
             }}
           >
@@ -362,8 +364,8 @@ function RedeemContent() {
         ) : (
           <div style={{
             width: '100%', padding: '1.1rem',
-            background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
-            color: '#10B981', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
+            background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(16,185,129,0.4)',
+            color: isLight ? '#15803D' : '#10B981', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
             textAlign: 'center', marginBottom: '0.75rem'
           }}>
             ✅ Offer Redeemed — Enjoy your perk!

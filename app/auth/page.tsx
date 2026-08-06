@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
 import { getPostLoginRoute } from "@/lib/postLoginRoute";
+import { useTheme } from "@/app/components/ThemeProvider";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup" | "forgot">("choice");
@@ -254,26 +255,43 @@ export default function AuthPage() {
   const hasNum = /[0-9]/.test(password);
   const hasLength = password.length >= 8;
 
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+
+  // Dynamic style helpers for Light/Dark mode
+  const dynamicInputStyle = {
+    ...inputStyle,
+    background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
+    border: isLight ? '1px solid rgba(15,23,42,0.18)' : '1px solid rgba(255,255,255,0.1)',
+    color: isLight ? '#0F172A' : '#fff',
+    boxShadow: isLight ? '0 2px 6px rgba(15,23,42,0.04)' : 'none',
+  };
+
+  const dynamicLineStyle = {
+    ...lineStyle,
+    background: isLight ? 'rgba(15,23,42,0.12)' : 'rgba(255,255,255,0.1)',
+  };
+
   // Don't render anything until we know the platform (prevents flash on web)
   if (!platformLoaded) return null;
 
   return (
     <div style={{
-      height: '100vh',
-      background: '#0F172A',
+      minHeight: '100vh',
+      background: 'var(--bg-gradient)',
       display: 'flex',
       flexDirection: 'column',
       padding: '2rem',
-      color: '#fff',
+      color: 'var(--text-main)',
       fontFamily: 'Outfit, sans-serif'
     }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
         <img
           src={platform === 'android' ? "/app-icon.png" : "/assets/logo.png"}
           alt="Perkfinity Logo"
           style={{ width: '100%', maxWidth: platform === 'android' ? '64px' : '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain', borderRadius: platform === 'android' ? '12px' : '0' }}
         />
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center' }}>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center', fontWeight: 600 }}>
           {method === "choice"
             ? "Choose how you'd like to sign in."
             : method === "login"
@@ -290,7 +308,7 @@ export default function AuthPage() {
               <button
                 onClick={handleAppleSignIn}
                 disabled={loading}
-                style={btnStyle("#fff", "#000")}
+                style={btnStyle(isLight ? "#0F172A" : "#fff", isLight ? "#fff" : "#000")}
               >
                 <span style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
                   <svg viewBox="0 0 384 512" width="18" height="18" fill="currentColor" style={{ flexShrink: 0, minWidth: '18px', display: 'block' }}>
@@ -305,21 +323,21 @@ export default function AuthPage() {
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
-              style={btnStyle("#fff", "#1a1a1a")}
+              style={btnStyle(isLight ? "#FFFFFF" : "#fff", isLight ? "#0F172A" : "#1a1a1a", isLight ? "1px solid rgba(15,23,42,0.18)" : "none")}
             >
-              <span style={{ marginRight: '12px' }}>G</span>
+              <span style={{ marginRight: '12px', fontWeight: 800, color: '#4285F4' }}>G</span>
               {loading ? "Signing in..." : "Sign in with Google"}
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
-              <div style={lineStyle} />
-              <span style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>OR</span>
-              <div style={lineStyle} />
+              <div style={dynamicLineStyle} />
+              <span style={{ padding: '0 1rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.3)', fontSize: '0.875rem', fontWeight: 700 }}>OR</span>
+              <div style={dynamicLineStyle} />
             </div>
-            <button onClick={() => setMethod("signup")} style={btnStyle("rgba(255,255,255,0.1)", "#fff", "1px solid rgba(255,255,255,0.1)")}>
+            <button onClick={() => setMethod("signup")} style={btnStyle(isLight ? "#6D28D9" : "rgba(255,255,255,0.1)", "#fff", "none")}>
               Sign Up with Email
             </button>
-            <button onClick={() => setMethod("login")} style={{ ...btnStyle("transparent", "rgba(255,255,255,0.7)"), padding: '0.5rem' }}>
+            <button onClick={() => setMethod("login")} style={{ ...btnStyle("transparent", isLight ? "#6D28D9" : "rgba(255,255,255,0.7)"), padding: '0.5rem', fontWeight: 700 }}>
               Already registered? Sign in
             </button>
           </div>
@@ -330,21 +348,21 @@ export default function AuthPage() {
             {forgotSuccess ? (
               <>
                 <div style={{
-                  background: 'rgba(107,193,122,0.12)',
-                  border: '1px solid rgba(107,193,122,0.35)',
+                  background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.12)',
+                  border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.35)',
                   borderRadius: '16px',
                   padding: '1.25rem',
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✉️</div>
-                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, color: '#86EFAC' }}>Check Your Email</h3>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                    If an account exists for <strong style={{ color: '#fff' }}>{email}</strong>, we&apos;ve sent a password reset link. Check your inbox and spam folder.
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC' }}>Check Your Email</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: isLight ? '#15803D' : 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                    If an account exists for <strong style={{ color: isLight ? '#0F172A' : '#fff' }}>{email}</strong>, we&apos;ve sent a password reset link. Check your inbox and spam folder.
                   </p>
                 </div>
                 <button
                   onClick={() => { setMethod("login"); setError(""); setForgotSuccess(false); }}
-                  style={btnStyle("#8B5CF6", "#fff")}
+                  style={btnStyle(isLight ? "#6D28D9" : "#8B5CF6", "#fff")}
                 >
                   Back to Sign In
                 </button>
@@ -352,30 +370,30 @@ export default function AuthPage() {
             ) : (
               <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 700, fontSize: '1.25rem' }}>Reset Password</h3>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1.25rem', color: isLight ? '#0F172A' : '#fff' }}>Reset Password</h3>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
                     Enter your email address and we&apos;ll send you a link to reset your password.
                   </p>
                 </div>
-                {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
+                {error && <div style={{ color: isLight ? '#DC2626' : '#FCA5A5', fontSize: '0.875rem', background: isLight ? '#FEE2E2' : 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px', fontWeight: 600 }}>{error}</div>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
+                  <label style={{ fontSize: '0.875rem', color: isLight ? '#0F172A' : 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Email Address</label>
                   <input
                     type="email"
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    style={inputStyle}
+                    style={dynamicInputStyle}
                     required
                   />
                 </div>
-                <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
+                <button type="submit" disabled={loading} style={btnStyle(isLight ? "#6D28D9" : "#8B5CF6", "#fff")}>
                   {loading ? "Sending..." : "Send Reset Link"}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMethod("login"); setError(""); }}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}
                 >
                   Back to Sign In
                 </button>
@@ -386,7 +404,7 @@ export default function AuthPage() {
         ) : (
           // ── Login / Sign-Up ────────────────────────────────────
           <form onSubmit={handleAuthSubmit} action="#" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
+            {error && <div style={{ color: isLight ? '#DC2626' : '#FCA5A5', fontSize: '0.875rem', background: isLight ? '#FEE2E2' : 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px', fontWeight: 600 }}>{error}</div>}
 
             {/* Saved credentials chip */}
             {method === 'login' && hasSavedCred && (
@@ -399,41 +417,41 @@ export default function AuthPage() {
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
-                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.4)',
-                  borderRadius: '12px', padding: '12px 16px', color: '#C4B5FD',
+                  background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.12)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.4)',
+                  borderRadius: '12px', padding: '12px 16px', color: isLight ? '#6D28D9' : '#C4B5FD',
                   fontSize: '0.875rem', cursor: 'pointer', width: '100%', textAlign: 'left'
                 }}
               >
                 <span style={{ fontSize: '1.25rem' }}>🔑</span>
                 <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.875rem' }}>Use saved credentials</div>
-                  <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{hasSavedCred.u}</div>
+                  <div style={{ fontWeight: 700, color: isLight ? '#0F172A' : '#fff', fontSize: '0.875rem' }}>Use saved credentials</div>
+                  <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.7)' }}>{hasSavedCred.u}</div>
                 </div>
               </button>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Email Address</label>
+              <label style={{ fontSize: '0.875rem', color: isLight ? '#0F172A' : 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Email Address</label>
               <input
                 type="email"
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={inputStyle}
+                style={dynamicInputStyle}
                 required
                 autoComplete="email"
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-              <label style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Password</label>
+              <label style={{ fontSize: '0.875rem', color: isLight ? '#0F172A' : 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ ...inputStyle, paddingRight: '46px' }}
+                  style={{ ...dynamicInputStyle, paddingRight: '46px' }}
                   required
                   autoComplete="current-password"
                 />
@@ -442,7 +460,7 @@ export default function AuthPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute', right: '14px', top: '16px',
-                    background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', opacity: 0.7
+                    background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', opacity: 0.8
                   }}
                 >
                   {showPassword ? "🙈" : "👁️"}
@@ -451,27 +469,27 @@ export default function AuthPage() {
             </div>
 
             {method === "signup" && password.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', marginTop: '-0.5rem' }}>
-                <span style={{ color: hasUpper ? '#6BC17A' : '#FCA5A5' }}>{hasUpper ? '✓' : '✗'} One uppercase letter</span>
-                <span style={{ color: hasLower ? '#6BC17A' : '#FCA5A5' }}>{hasLower ? '✓' : '✗'} One lowercase letter</span>
-                <span style={{ color: hasNum ? '#6BC17A' : '#FCA5A5' }}>{hasNum ? '✓' : '✗'} One number</span>
-                <span style={{ color: hasLength ? '#6BC17A' : '#FCA5A5' }}>{hasLength ? '✓' : '✗'} At least 8 characters</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', marginTop: '-0.5rem', fontWeight: 600 }}>
+                <span style={{ color: hasUpper ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasUpper ? '✓' : '✗'} One uppercase letter</span>
+                <span style={{ color: hasLower ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasLower ? '✓' : '✗'} One lowercase letter</span>
+                <span style={{ color: hasNum ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasNum ? '✓' : '✗'} One number</span>
+                <span style={{ color: hasLength ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasLength ? '✓' : '✗'} At least 8 characters</span>
               </div>
             )}
 
-            <button type="submit" disabled={loading} style={btnStyle("#8B5CF6", "#fff")}>
+            <button type="submit" disabled={loading} style={btnStyle(isLight ? "#6D28D9" : "#8B5CF6", "#fff")}>
               {loading ? "Please wait..." : method === "login" ? "Sign In" : "Create Account"}
             </button>
             {method === "login" && (
               <button
                 type="button"
                 onClick={() => { setMethod("forgot"); setError(""); setForgotSuccess(false); }}
-                style={{ background: 'none', border: 'none', color: '#8B5CF6', fontSize: '0.875rem', cursor: 'pointer', marginTop: '-0.5rem' }}
+                style={{ background: 'none', border: 'none', color: isLight ? '#6D28D9' : '#8B5CF6', fontSize: '0.875rem', cursor: 'pointer', marginTop: '-0.5rem', fontWeight: 700 }}
               >
                 Forgot Password?
               </button>
             )}
-            <button type="button" onClick={() => setMethod("choice")} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer' }}>
+            <button type="button" onClick={() => setMethod("choice")} style={{ background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}>
               Go Back
             </button>
           </form>
@@ -480,21 +498,21 @@ export default function AuthPage() {
 
       {(method === "choice" || method === "signup") && (
         <div style={{ padding: '0 1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8125rem', lineHeight: '1.4', margin: 0 }}>
-            <strong style={{color:'#FBBF24'}}>Note:</strong> Your account is not active until you finish setup. Incomplete accounts are deleted after 48 hours.
+          <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontSize: '0.8125rem', lineHeight: '1.4', margin: 0, fontWeight: 500 }}>
+            <strong style={{color: isLight ? '#B45309' : '#FBBF24'}}>Note:</strong> Your account is not active until you finish setup. Incomplete accounts are deleted after 48 hours.
           </p>
         </div>
       )}
-      <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', paddingBottom: '1rem' }}>
+      <p style={{ textAlign: 'center', fontSize: '0.75rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', paddingBottom: '1rem', fontWeight: 500 }}>
         By continuing, you agree to Perkfinity&apos;s <br/>
         <button
           onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
-          style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
         >Terms of Use</button>
         {' '}and{' '}
         <button
           onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
-          style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
         >Privacy Policy</button>.
       </p>
     </div>

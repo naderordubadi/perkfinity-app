@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import jsQR from "jsqr";
+import { useTheme } from "@/app/components/ThemeProvider";
 
 export default function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -109,22 +110,39 @@ export default function ScanPage() {
     }
   }
 
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+
+  const dynamicFullPage = {
+    ...styles.fullPage,
+    background: 'var(--bg-gradient)',
+    color: 'var(--text-main)',
+  };
+
+  const dynamicHeading = {
+    ...styles.heading,
+    color: isLight ? '#0F172A' : '#fff',
+  };
+
+  const dynamicBody = {
+    ...styles.body,
+    color: isLight ? '#475569' : 'rgba(255,255,255,0.55)',
+  };
+
   // ── LANDING SCREEN ────────────────────────────────────────────────────────
-  // Always shown first. Tapping the button calls getUserMedia → iOS shows
-  // its native "Allow / Deny" dialog because NSCameraUsageDescription is set.
   if (permissionState === "idle") {
     return (
-      <div style={styles.fullPage}>
-        <div style={styles.iconBox("rgba(139,92,246,0.15)", "rgba(139,92,246,0.3)", "0 0 40px rgba(139,92,246,0.2)")}>
+      <div style={dynamicFullPage}>
+        <div style={styles.iconBox(isLight ? '#F3E8FF' : "rgba(139,92,246,0.15)", isLight ? '#D8B4FE' : "rgba(139,92,246,0.3)", isLight ? "0 4px 16px rgba(109,40,217,0.1)" : "0 0 40px rgba(139,92,246,0.2)")}>
           📷
         </div>
         <div style={{ textAlign: "center" }}>
-          <h2 style={styles.heading}>Camera Access Needed</h2>
-          <p style={styles.body}>
+          <h2 style={dynamicHeading}>Camera Access Needed</h2>
+          <p style={dynamicBody}>
             Perkfinity needs your camera to scan QR codes and unlock discounts at local merchant stores.
           </p>
         </div>
-        <button onClick={startCamera} style={styles.primaryBtn}>
+        <button onClick={startCamera} style={{ ...styles.primaryBtn, background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
           Continue
         </button>
 
@@ -132,24 +150,24 @@ export default function ScanPage() {
         <div style={{
           marginTop: '1.5rem',
           padding: '14px 18px',
-          background: '#3B9A52',
-          border: '1px solid #6BC17A',
+          background: isLight ? '#DCFCE7' : '#3B9A52',
+          border: isLight ? '1px solid #86EFAC' : '1px solid #6BC17A',
           borderRadius: '14px',
           maxWidth: '300px',
           lineHeight: 1.6,
         }}>
-          <p style={{ margin: 0, fontSize: '0.72rem', color: '#fff' }}>
+          <p style={{ margin: 0, fontSize: '0.72rem', color: isLight ? '#15803D' : '#fff', fontWeight: 600 }}>
             By scanning a merchant's QR code, you agree to join their exclusive local perks member list
             and consent to receive promotional emails and notifications from the merchant and Perkfinity.
             By proceeding, you agree to our{' '}
             <button
               onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
-              style={{ background: 'none', border: 'none', padding: 0, color: '#fff', fontWeight: 700, fontSize: '0.72rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#fff', fontWeight: 800, fontSize: '0.72rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
             >Privacy Policy</button>{' '}
             and{' '}
             <button
               onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
-              style={{ background: 'none', border: 'none', padding: 0, color: '#fff', fontWeight: 700, fontSize: '0.72rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#fff', fontWeight: 800, fontSize: '0.72rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
             >Terms of Use</button>.
           </p>
         </div>
@@ -157,23 +175,17 @@ export default function ScanPage() {
     );
   }
 
-  // ── REQUESTING OVERLAY ─────────────────────────────────────────────────────
-  // We no longer early-return here because the <video ref> must stay mounted
-  // in the DOM so that startCamera() can access it when the promise resolves.
-
   // ── DENIED SCREEN ──────────────────────────────────────────────────────────
-  // Only shown if user explicitly tapped "Don't Allow" in iOS native dialog.
-  // Instructions tell them exactly where to find the setting.
   if (permissionState === "denied") {
     const isAndroid = platform === 'android';
     return (
-      <div style={styles.fullPage}>
-        <div style={styles.iconBox("rgba(239,68,68,0.12)", "rgba(239,68,68,0.3)", "none")}>
+      <div style={dynamicFullPage}>
+        <div style={styles.iconBox(isLight ? '#FEE2E2' : "rgba(239,68,68,0.12)", isLight ? '#FCA5A5' : "rgba(239,68,68,0.3)", "none")}>
           🚫
         </div>
         <div style={{ textAlign: "center" }}>
-          <h2 style={styles.heading}>Camera Access Denied</h2>
-          <p style={styles.body}>
+          <h2 style={dynamicHeading}>Camera Access Denied</h2>
+          <p style={dynamicBody}>
             {isAndroid
               ? 'Perkfinity needs camera access to scan QR codes. Please enable it in your device settings.'
               : 'You tapped "Don\'t Allow" when Perkfinity asked for camera access. To scan QR codes, please re-enable it in your iPhone Settings.'}
@@ -181,11 +193,11 @@ export default function ScanPage() {
         </div>
         <div style={{
           padding: "1rem 1.25rem",
-          background: "rgba(239,68,68,0.08)",
-          border: "1px solid rgba(239,68,68,0.2)",
+          background: isLight ? '#FEE2E2' : "rgba(239,68,68,0.08)",
+          border: isLight ? '1px solid #FCA5A5' : "1px solid rgba(239,68,68,0.2)",
           borderRadius: "16px",
           fontSize: "0.82rem",
-          color: "#FCA5A5",
+          color: isLight ? '#991B1B' : "#FCA5A5",
           lineHeight: 1.7,
           textAlign: "center",
           maxWidth: "280px",
@@ -203,10 +215,10 @@ export default function ScanPage() {
             </>
           )}
         </div>
-        <button onClick={() => setPermissionState("idle")} style={styles.primaryBtn}>
+        <button onClick={() => setPermissionState("idle")} style={{ ...styles.primaryBtn, background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
           Try Again
         </button>
-        <a href="/" style={styles.cancelLink}>Go Back</a>
+        <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)' }}>Go Back</a>
       </div>
     );
   }
