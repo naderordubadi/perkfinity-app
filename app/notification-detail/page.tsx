@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { useTheme } from "../components/ThemeProvider";
 
 interface OfferItem {
   store_name: string;
@@ -57,6 +58,8 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
   const [claimState, setClaimState] = useState<ClaimState>('idle');
   const [revealedCode, setRevealedCode] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState('Copy Again');
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const isOnline = offer.is_online_merchant === true;
   const isMobile = !isOnline && offer.store_address === 'Mobile Business';
 
@@ -76,12 +79,9 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
       const code = json.data?.promo_code || offer.promo_code || '';
       setRevealedCode(code);
       setClaimState('revealed');
-      // Auto-copy
       try {
         await navigator.clipboard.writeText(code);
-      } catch {
-        // clipboard not available (e.g. http), silently skip
-      }
+      } catch { /* ignore */ }
     } catch {
       setClaimState('error');
     }
@@ -96,21 +96,30 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
     } catch { /* ignore */ }
   };
 
+  const cardBg = isLight
+    ? (isOnline ? '#F5F3FF' : '#FFFFFF')
+    : 'rgba(255,255,255,0.04)';
+
+  const cardBorder = isLight
+    ? (isOnline ? '1px solid rgba(109,40,217,0.3)' : '1px solid rgba(15,23,42,0.12)')
+    : (isOnline ? '1px solid rgba(139,92,246,0.35)' : '1px solid rgba(255,255,255,0.1)');
+
   return (
     <div style={{
       padding: "1rem 1.25rem",
-      background: "rgba(255,255,255,0.04)",
-      border: `1px solid ${isOnline ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.1)'}`,
+      background: cardBg,
+      border: cardBorder,
       borderRadius: "18px",
       display: "flex",
       alignItems: "flex-start",
       gap: "0.75rem",
+      boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
     }}>
       {/* Logo */}
       <div style={{
         width: "44px", height: "44px", borderRadius: "50%",
-        background: "rgba(139,92,246,0.2)",
-        border: "1px solid rgba(139,92,246,0.4)",
+        background: isLight ? '#EDE9FE' : 'rgba(139,92,246,0.2)',
+        border: isLight ? '1px solid #DDD6FE' : '1px solid rgba(139,92,246,0.4)',
         display: "flex", alignItems: "center", justifyContent: "center",
         overflow: "hidden", flexShrink: 0,
       }}>
@@ -124,10 +133,10 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#fff", marginBottom: "2px" }}>
+        <div style={{ fontWeight: 800, fontSize: "0.9rem", color: isLight ? "#0F172A" : "#fff", marginBottom: "2px" }}>
           {offer.store_name}
         </div>
-        <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
+        <div style={{ fontSize: "0.8rem", color: isLight ? "#334155" : "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
           {offer.title}
         </div>
 
@@ -287,21 +296,23 @@ function NotificationDetailContent() {
 
   const emoji = notif?.type === "digest" ? "🎉" : "🔔";
   const offers: OfferItem[] = notif?.payload || [];
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)",
+      background: "var(--bg-gradient)",
       fontFamily: "Outfit, sans-serif",
-      color: "#fff",
+      color: "var(--text-main)",
       padding: "var(--safe-top, 44px) 1.5rem 10rem",
     }}>
       {/* Back button */}
       <button
         onClick={() => router.push("/history?tab=notifications")}
         style={{
-          background: "none", border: "none", color: "#8B5CF6",
-          fontSize: "0.9rem", fontWeight: 600, cursor: "pointer",
+          background: "none", border: "none", color: isLight ? "#6D28D9" : "#8B5CF6",
+          fontSize: "0.9rem", fontWeight: 700, cursor: "pointer",
           padding: "0", marginBottom: "1.5rem", display: "flex",
           alignItems: "center", gap: "0.3rem",
         }}

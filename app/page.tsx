@@ -6,6 +6,7 @@ import Link from "next/link";
 import { fetchApi } from "@/lib/api";
 import { getUserData } from "@/lib/user";
 import { getPostLoginRoute } from "@/lib/postLoginRoute";
+import { useTheme } from "./components/ThemeProvider";
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,8 @@ interface CampaignOffer {
 
 export default function Home() {
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const [mounted, setMounted] = useState(false);
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [pendingOffers, setPendingOffers] = useState<Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }>>([]);
@@ -277,26 +280,34 @@ export default function Home() {
           
           {/* Slide 0: Info Card */}
           {currentSlide === 0 && (
-            <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', padding: '1.25rem 1.4rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+            <div style={{
+              background: isLight ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)',
+              padding: '1.25rem 1.4rem',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxSizing: 'border-box'
+            }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <span style={{ fontSize: '1.35rem', lineHeight: 1.2, flexShrink: 0 }}>✨</span>
-                <p style={{ margin: 0, fontSize: '0.96rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                <p style={{ margin: 0, fontSize: '0.96rem', lineHeight: 1.5, color: isLight ? '#0F172A' : 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
                   New local, mobile, and online businesses join regularly.
-                  <span style={{ display: 'block', marginTop: '0.4rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500, fontSize: '0.88rem' }}>
+                  <span style={{ display: 'block', marginTop: '0.4rem', color: isLight ? '#334155' : 'rgba(255,255,255,0.72)', fontWeight: 500, fontSize: '0.88rem' }}>
                     💬 Know a spot you love? Tell them to join at{' '}
                     <button
                       onClick={(e) => { e.stopPropagation(); window.open('https://www.perkfinity.net/merchants.html', '_system'); }}
-                      style={{ background: 'none', border: 'none', padding: 0, color: '#86EFAC', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+                      style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
                     >perkfinity.net</button>
                   </span>
                 </p>
               </div>
               <div>
-                <div style={{ height: '1px', background: 'rgba(107,193,122,0.35)', margin: '0.5rem 0 0.5rem' }} />
-                <Link href="/onboarding" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: '#86EFAC', fontSize: '0.84rem', fontWeight: 600 }}>
+                <div style={{ height: '1px', background: isLight ? 'rgba(22,163,74,0.25)' : 'rgba(107,193,122,0.35)', margin: '0.5rem 0 0.5rem' }} />
+                <Link href="/onboarding" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: isLight ? '#15803D' : '#86EFAC', fontSize: '0.84rem', fontWeight: 700 }}>
                   <span style={{ fontSize: '0.9rem' }}>📖</span>
                   <span style={{ flex: 1 }}>Review App Benefits</span>
-                  <span style={{ fontSize: '0.75rem', opacity: 0.55 }}>→</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>→</span>
                 </Link>
               </div>
             </div>
@@ -476,17 +487,26 @@ export default function Home() {
       {isLoggedIn && pendingOffers.length > 0 && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Available Perks</h3>
-            <span style={{ fontSize: '0.78rem', color: '#FDE68A', fontWeight: 600 }}>{pendingOffers.length} Pending</span>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: isLight ? '#0F172A' : 'var(--text-main)' }}>Available Perks</h3>
+            <span style={{ fontSize: '0.78rem', color: isLight ? '#B45309' : '#FDE68A', fontWeight: 700 }}>{pendingOffers.length} Pending</span>
           </div>
           <div onClick={() => router.push('/activate/')} style={{ cursor: 'pointer' }}>
-            <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '20px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 4px 20px rgba(251,191,36,0.1)' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🎁</div>
+            <div style={{
+              background: isLight ? 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)' : 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
+              border: isLight ? '1px solid #F59E0B' : '1px solid rgba(251,191,36,0.35)',
+              borderRadius: '20px',
+              padding: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              boxShadow: isLight ? '0 4px 16px rgba(245,158,11,0.15)' : '0 4px 20px rgba(251,191,36,0.1)'
+            }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: isLight ? '#F59E0B' : 'rgba(251,191,36,0.2)', border: isLight ? '1px solid #D97706' : '1px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🎁</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>{pendingOffers.length === 1 ? pendingOffers[0].title : `${pendingOffers.length} Offers Available`}</div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>{pendingOffers.length === 1 ? 'Tap to activate your pending offer!' : `Tap to view and activate your ${pendingOffers.length} pending offers!`}</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: isLight ? '#78350F' : '#FDE68A', marginBottom: '2px' }}>{pendingOffers.length === 1 ? pendingOffers[0].title : `${pendingOffers.length} Offers Available`}</div>
+                <div style={{ fontSize: '0.75rem', color: isLight ? '#92400E' : 'rgba(253,230,138,0.7)', lineHeight: 1.4, fontWeight: 500 }}>{pendingOffers.length === 1 ? 'Tap to activate your pending offer!' : `Tap to view and activate your ${pendingOffers.length} pending offers!`}</div>
               </div>
-              <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
+              <span style={{ color: isLight ? '#78350F' : '#FDE68A', fontSize: '1.2rem', flexShrink: 0, fontWeight: 'bold' }}>→</span>
             </div>
           </div>
         </div>
@@ -495,23 +515,24 @@ export default function Home() {
       {/* Merchants Section */}
       <div style={{ padding: '0 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Participating Merchants</h3>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: isLight ? '#0F172A' : 'var(--text-main)' }}>Participating Merchants</h3>
           <button
             onClick={() => setShowFilters(prev => !prev)}
             style={{
-              background: showFilters ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${showFilters ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)'}`,
+              background: isLight ? (showFilters ? '#EDE9FE' : '#FFFFFF') : (showFilters ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.06)'),
+              border: `1px solid ${isLight ? (showFilters ? '#6D28D9' : 'rgba(15,23,42,0.18)') : (showFilters ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)')}`,
               borderRadius: '20px',
               padding: '6px 14px',
               fontSize: '0.78rem',
-              color: showFilters ? '#C4B5FD' : 'rgba(255,255,255,0.7)',
+              color: isLight ? (showFilters ? '#6D28D9' : '#0F172A') : (showFilters ? '#C4B5FD' : 'rgba(255,255,255,0.7)'),
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               fontFamily: 'Outfit, sans-serif',
-              fontWeight: 600,
-              transition: 'all 0.2s'
+              fontWeight: 700,
+              transition: 'all 0.2s',
+              boxShadow: isLight ? '0 2px 8px rgba(15,23,42,0.05)' : 'none',
             }}
           >
             <span>🔍</span> {showFilters ? 'Hide Filters' : 'Search & Filter'}
@@ -525,8 +546,17 @@ export default function Home() {
               {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
                 const labels: Record<string, string> = { all: 'All', nearby: 'Near Me', online: 'Online', mobile: 'Mobile', joined: 'Joined', notjoined: 'Not Joined' };
                 const isActive = key === 'all' ? activeFilters.size === 0 : activeFilters.has(key);
+                const chipBg = isLight
+                  ? (isActive ? '#F3E8FF' : '#FFFFFF')
+                  : (isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)');
+                const chipBorder = isLight
+                  ? (isActive ? '#D8B4FE' : 'rgba(15,23,42,0.12)')
+                  : (isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)');
+                const chipColor = isLight
+                  ? (isActive ? '#6D28D9' : '#475569')
+                  : (isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)');
                 return (
-                  <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#8B5CF6' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
+                  <button key={key} onClick={() => toggleFilter(key)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: chipBorder, background: chipBg, color: chipColor, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif' }}>{labels[key]}</button>
                 );
               })}
             </div>
@@ -552,14 +582,23 @@ export default function Home() {
                   'Other': '🔖 Other'
                 };
                 const isActive = activeCategory === cat;
+                const catBg = isLight
+                  ? (isActive ? '#DCFCE7' : '#FFFFFF')
+                  : (isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)');
+                const catBorder = isLight
+                  ? (isActive ? '#86EFAC' : 'rgba(15,23,42,0.12)')
+                  : (isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)');
+                const catColor = isLight
+                  ? (isActive ? '#15803D' : '#475569')
+                  : (isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)');
                 return (
-                  <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat] || cat}</button>
+                  <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: catBorder, background: catBg, color: catColor, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat] || cat}</button>
                 );
               })}
             </div>
             {/* Search bar */}
             <div style={{ position: 'relative', marginBottom: '1rem' }}>
-              <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.88rem', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none', zIndex: 1 }}>🔍</span>
+              <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.88rem', color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)', pointerEvents: 'none', zIndex: 1 }}>🔍</span>
               <input
                 type="text"
                 value={searchQuery}
@@ -570,20 +609,20 @@ export default function Home() {
                 style={{
                   width: '100%',
                   padding: '0.6rem 2.25rem 0.6rem 2.25rem',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${searchFocused ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.1)'}`,
+                  background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${searchFocused ? '#6D28D9' : (isLight ? 'rgba(15,23,42,0.15)' : 'rgba(255,255,255,0.1)')}`,
                   borderRadius: '14px',
-                  color: '#fff',
+                  color: isLight ? '#0F172A' : '#fff',
                   fontSize: '0.875rem',
                   fontFamily: 'Outfit, sans-serif',
                   outline: 'none',
                   boxSizing: 'border-box' as const,
                   transition: 'border-color 0.2s, box-shadow 0.2s',
-                  boxShadow: searchFocused ? '0 0 0 3px rgba(139,92,246,0.15)' : 'none',
+                  boxShadow: searchFocused ? '0 0 0 3px rgba(109,40,217,0.15)' : (isLight ? '0 2px 8px rgba(15,23,42,0.04)' : 'none'),
                 }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
               )}
             </div>
           </div>
@@ -659,22 +698,33 @@ export default function Home() {
                 }
               }
 
+              const cardBg = isLight
+                ? (hasOffer ? '#F5F3FF' : '#FFFFFF')
+                : (hasOffer ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.03)');
+
+              const cardBorder = isLight
+                ? (hasOffer ? '1px solid rgba(109,40,217,0.3)' : '1px solid rgba(15,23,42,0.12)')
+                : (hasOffer ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.08)');
+
+              const logoBg = isLight ? '#EDE9FE' : 'rgba(139,92,246,0.18)';
+              const logoBorder = isLight ? '1px solid #DDD6FE' : '1px solid rgba(139,92,246,0.3)';
+
               return (
-                <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: hasOffer ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.03)', borderRadius: '16px', border: `1px solid ${hasOffer ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: cardBg, borderRadius: '16px', border: cardBorder, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden', boxShadow: isLight ? '0 4px 14px rgba(15,23,42,0.04)' : 'none' }}>
                   {hasOffer && <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: 'linear-gradient(180deg,#8B5CF6,#6BC17A)', borderRadius: '3px 0 0 3px' }} />}
-                  <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139,92,246,0.18)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                  <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: logoBg, border: logoBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                     {m.logo_url ? <img src={m.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <span style={{ fontSize: '1.2rem' }}>{isOnline ? '🌐' : '🏦'}</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{m.merchant_name}</div>
-                    {displayWebsite && <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayWebsite}</div>}
-                    {displayAddress && <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayAddress}</div>}
-                    {hasOffer && m.latest_offer_title && <div style={{ fontSize: '0.75rem', color: '#86EFAC', fontWeight: 600, marginTop: '3px' }}>{m.latest_offer_title}</div>}
+                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#fff' }}>{m.merchant_name}</div>
+                    {displayWebsite && <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayWebsite}</div>}
+                    {displayAddress && <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayAddress}</div>}
+                    {hasOffer && m.latest_offer_title && <div style={{ fontSize: '0.75rem', color: isLight ? '#15803D' : '#86EFAC', fontWeight: 700, marginTop: '3px' }}>{m.latest_offer_title}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                    {m.is_member && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#86EFAC', background: 'rgba(107,193,122,0.15)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '6px', padding: '2px 7px' }}>✓ Member</span>}
-                    {hasOffer && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#C4B5FD', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '2px 7px' }}>{m.offer_count} offer{(m.offer_count ?? 0) > 1 ? 's' : ''}</span>}
-                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>›</span>
+                    {m.is_member && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '6px', padding: '2px 7px' }}>✓ Member</span>}
+                    {hasOffer && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#C4B5FD', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '2px 7px' }}>{m.offer_count} offer{(m.offer_count ?? 0) > 1 ? 's' : ''}</span>}
+                    <span style={{ color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>›</span>
                   </div>
                 </div>
               );

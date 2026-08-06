@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { useTheme } from "../components/ThemeProvider";
 
 interface HistoryItem {
   id: string;
@@ -73,6 +74,8 @@ function HistoryContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "notifications" ? "notifications" : "perks";
   const [activeTab, setActiveTab] = useState<"perks" | "notifications">(initialTab);
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === "light";
 
   // Perk History state
   const [items, setItems] = useState<HistoryItem[]>([]);
@@ -127,7 +130,6 @@ function HistoryContent() {
       await fetchApi('/consumers/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-      // Clear app icon badge on native
       try {
         const { Capacitor } = await import('@capacitor/core');
         if (Capacitor.isNativePlatform()) {
@@ -141,7 +143,6 @@ function HistoryContent() {
   };
 
   const handleNotifTap = (notif: NotificationItem) => {
-    // Mark as read locally
     if (!notif.read) {
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -177,9 +178,9 @@ function HistoryContent() {
             background: "none",
             border: "none",
             borderBottom: activeTab === "perks" ? "2px solid #8B5CF6" : "2px solid transparent",
-            color: activeTab === "perks" ? "var(--text-main)" : "var(--text-muted)",
+            color: activeTab === "perks" ? (isLight ? "#0F172A" : "var(--text-main)") : "var(--text-muted)",
             fontSize: "0.9rem",
-            fontWeight: activeTab === "perks" ? 700 : 500,
+            fontWeight: activeTab === "perks" ? 800 : 500,
             cursor: "pointer",
             transition: "all 0.2s ease",
           }}
@@ -194,9 +195,9 @@ function HistoryContent() {
             background: "none",
             border: "none",
             borderBottom: activeTab === "notifications" ? "2px solid #8B5CF6" : "2px solid transparent",
-            color: activeTab === "notifications" ? "var(--text-main)" : "var(--text-muted)",
+            color: activeTab === "notifications" ? (isLight ? "#0F172A" : "var(--text-main)") : "var(--text-muted)",
             fontSize: "0.9rem",
-            fontWeight: activeTab === "notifications" ? 700 : 500,
+            fontWeight: activeTab === "notifications" ? 800 : 500,
             cursor: "pointer",
             transition: "all 0.2s ease",
             position: "relative",
@@ -229,7 +230,7 @@ function HistoryContent() {
       {activeTab === "perks" && (
         <>
           {histLoading && (
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading...</p>
+            <p style={{ color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading...</p>
           )}
 
           {!histLoading && histError && (
@@ -239,12 +240,13 @@ function HistoryContent() {
           {!histLoading && !histError && items.length === 0 && (
             <div style={{
               padding: "2rem",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: isLight ? "#FFFFFF" : "rgba(255,255,255,0.04)",
+              border: isLight ? "1px solid rgba(15,23,42,0.12)" : "1px solid rgba(255,255,255,0.08)",
               borderRadius: "20px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: isLight ? "#64748B" : "rgba(255,255,255,0.35)",
               fontSize: "0.9rem",
+              boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
             }}>
               Your past perks — redeemed, claimed, or expired — will appear here.
             </div>
@@ -255,36 +257,39 @@ function HistoryContent() {
               const status = getStatus(item);
               const isRedeemed = status === "Redeemed";
               const isClaimed = status === "Claimed";
-              const borderColor = isRedeemed
-                ? "rgba(16,185,129,0.25)"
-                : isClaimed
-                ? "rgba(139,92,246,0.25)"
-                : "rgba(239,68,68,0.2)";
-              const badgeBg = isRedeemed
-                ? "rgba(16,185,129,0.15)"
-                : isClaimed
-                ? "rgba(139,92,246,0.15)"
-                : "rgba(239,68,68,0.15)";
-              const badgeBorder = isRedeemed
-                ? "rgba(16,185,129,0.4)"
-                : isClaimed
-                ? "rgba(139,92,246,0.4)"
-                : "rgba(239,68,68,0.4)";
-              const badgeColor = isRedeemed ? "#10B981" : isClaimed ? "#8B5CF6" : "#EF4444";
+              
+              const borderColor = isLight
+                ? (isRedeemed ? "#86EFAC" : isClaimed ? "#D8B4FE" : "#FCA5A5")
+                : (isRedeemed ? "rgba(16,185,129,0.25)" : isClaimed ? "rgba(139,92,246,0.25)" : "rgba(239,68,68,0.2)");
+
+              const badgeBg = isLight
+                ? (isRedeemed ? "#DCFCE7" : isClaimed ? "#F3E8FF" : "#FEE2E2")
+                : (isRedeemed ? "rgba(16,185,129,0.15)" : isClaimed ? "rgba(139,92,246,0.15)" : "rgba(239,68,68,0.15)");
+
+              const badgeBorder = isLight
+                ? (isRedeemed ? "#86EFAC" : isClaimed ? "#D8B4FE" : "#FCA5A5")
+                : (isRedeemed ? "rgba(16,185,129,0.4)" : isClaimed ? "rgba(139,92,246,0.4)" : "rgba(239,68,68,0.4)");
+
+              const badgeColor = isLight
+                ? (isRedeemed ? "#15803D" : isClaimed ? "#6D28D9" : "#B91C1C")
+                : (isRedeemed ? "#10B981" : isClaimed ? "#8B5CF6" : "#EF4444");
+
               const badgeLabel = isRedeemed ? "✅ Redeemed" : isClaimed ? "🎁 Claimed" : "⏰ Expired";
               const timestampLabel = isRedeemed ? "Redeemed" : isClaimed ? "Claimed" : "Expired";
+
               return (
                 <div key={item.id} style={{
                   padding: "1rem 1.25rem",
-                  background: "rgba(255,255,255,0.04)",
+                  background: isLight ? "#FFFFFF" : "rgba(255,255,255,0.04)",
                   border: `1px solid ${borderColor}`,
                   borderRadius: "18px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.4rem",
+                  boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "#fff" }}>
+                    <span style={{ fontWeight: 800, fontSize: "0.95rem", color: isLight ? "#0F172A" : "#fff" }}>
                       {item.merchant_name}
                     </span>
                     <span style={{
@@ -299,10 +304,10 @@ function HistoryContent() {
                       {badgeLabel}
                     </span>
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.65)" }}>
+                  <div style={{ fontSize: "0.85rem", color: isLight ? "#334155" : "rgba(255,255,255,0.65)" }}>
                     {item.campaign_title}
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.3)" }}>
+                  <div style={{ fontSize: "0.72rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.3)" }}>
                     {timestampLabel}: {getStatusTimestamp(item)}
                   </div>
                 </div>
@@ -323,9 +328,9 @@ function HistoryContent() {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#8B5CF6",
+                  color: isLight ? "#6D28D9" : "#8B5CF6",
                   fontSize: "0.82rem",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
@@ -335,7 +340,7 @@ function HistoryContent() {
           )}
 
           {notifLoading && (
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading...</p>
+            <p style={{ color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", fontSize: "0.9rem" }}>Loading...</p>
           )}
 
           {!notifLoading && notifError && (
@@ -345,12 +350,13 @@ function HistoryContent() {
           {!notifLoading && !notifError && notifications.length === 0 && (
             <div style={{
               padding: "2rem",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: isLight ? "#FFFFFF" : "rgba(255,255,255,0.04)",
+              border: isLight ? "1px solid rgba(15,23,42,0.12)" : "1px solid rgba(255,255,255,0.08)",
               borderRadius: "20px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: isLight ? "#64748B" : "rgba(255,255,255,0.35)",
               fontSize: "0.9rem",
+              boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
             }}>
               <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔔</div>
               No notifications yet. When merchants near you create new offers, you&apos;ll see them here.
@@ -363,20 +369,30 @@ function HistoryContent() {
               const previewText = notif.payload && notif.payload.length > 0
                 ? notif.payload.map(p => p.store_name).join(", ")
                 : notif.body || "";
+
+              const notifBg = isLight
+                ? (notif.read ? "#FFFFFF" : "#F5F3FF")
+                : (notif.read ? "rgba(255,255,255,0.03)" : "rgba(139,92,246,0.06)");
+
+              const notifBorder = isLight
+                ? (notif.read ? "1px solid rgba(15,23,42,0.12)" : "1px solid rgba(109,40,217,0.3)")
+                : (notif.read ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(139,92,246,0.2)");
+
               return (
                 <div
                   key={notif.id}
                   onClick={() => handleNotifTap(notif)}
                   style={{
                     padding: "0.9rem 1rem",
-                    background: notif.read ? "rgba(255,255,255,0.03)" : "rgba(139,92,246,0.06)",
-                    border: notif.read ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(139,92,246,0.2)",
+                    background: notifBg,
+                    border: notifBorder,
                     borderRadius: "16px",
                     display: "flex",
                     alignItems: "center",
                     gap: "0.75rem",
                     cursor: "pointer",
                     transition: "background 0.2s ease",
+                    boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.04)" : "none",
                   }}
                 >
                   {/* Unread dot */}
@@ -384,7 +400,7 @@ function HistoryContent() {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    background: notif.read ? "transparent" : "#3B82F6",
+                    background: notif.read ? "transparent" : "#2563EB",
                     flexShrink: 0,
                   }} />
 
@@ -393,8 +409,8 @@ function HistoryContent() {
                     width: "40px",
                     height: "40px",
                     borderRadius: "50%",
-                    background: "rgba(139,92,246,0.15)",
-                    border: "1px solid rgba(139,92,246,0.3)",
+                    background: isLight ? "#EDE9FE" : "rgba(139,92,246,0.15)",
+                    border: isLight ? "1px solid #DDD6FE" : "1px solid rgba(139,92,246,0.3)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -412,9 +428,9 @@ function HistoryContent() {
                   {/* Text content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontWeight: notif.read ? 600 : 700,
+                      fontWeight: notif.read ? 600 : 800,
                       fontSize: "0.88rem",
-                      color: "#fff",
+                      color: isLight ? "#0F172A" : "#fff",
                       marginBottom: "2px",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -424,7 +440,7 @@ function HistoryContent() {
                     </div>
                     <div style={{
                       fontSize: "0.78rem",
-                      color: "rgba(255,255,255,0.45)",
+                      color: isLight ? "#334155" : "rgba(255,255,255,0.45)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -436,7 +452,7 @@ function HistoryContent() {
                   {/* Timestamp */}
                   <div style={{
                     fontSize: "0.7rem",
-                    color: "rgba(255,255,255,0.3)",
+                    color: isLight ? "#64748B" : "rgba(255,255,255,0.3)",
                     flexShrink: 0,
                     whiteSpace: "nowrap",
                   }}>
