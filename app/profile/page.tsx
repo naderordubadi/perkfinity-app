@@ -14,7 +14,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   const handleSignOut = () => {
     localStorage.removeItem("pf_user_token");
@@ -105,7 +106,23 @@ export default function ProfilePage() {
       <div style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Profile</h1>
-          <button onClick={handleSignOut} style={{ padding: '0.5rem 1rem', background: 'rgba(107,193,122,0.1)', border: '1px solid rgba(107,193,122,0.3)', borderRadius: '20px', color: '#86EFAC', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>Sign Out</button>
+          <button
+            onClick={handleSignOut}
+            style={{
+              padding: '0.55rem 1.1rem',
+              background: isLight ? 'rgba(21, 128, 61, 0.12)' : 'rgba(107, 193, 122, 0.1)',
+              border: `1.5px solid ${isLight ? '#15803D' : 'rgba(107, 193, 122, 0.3)'}`,
+              borderRadius: '20px',
+              color: isLight ? '#15803D' : '#86EFAC',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: 'Outfit, sans-serif',
+              transition: 'all 0.2s'
+            }}
+          >
+            Sign Out
+          </button>
         </div>
         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
           Tell us a bit about yourself so we can find local perks near you based on your zip code.
