@@ -136,7 +136,11 @@ export default function Home() {
 
       try {
         const stored = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-        setPendingOffers(stored);
+        const validStored = stored.filter((o: any) => !o.end_at || new Date(o.end_at) > new Date());
+        if (validStored.length !== stored.length) {
+          localStorage.setItem('pending_offers', JSON.stringify(validStored));
+        }
+        setPendingOffers(validStored);
       } catch { setPendingOffers([]); }
 
       const pendingQrCode = localStorage.getItem('pending_qr');
@@ -188,8 +192,16 @@ export default function Home() {
     setIsLoggedIn(false);
   };
 
+  const [fullPageTakeoverMerchant, setFullPageTakeoverMerchant] = useState<Merchant | null>(null);
+
   const handleJoin = async (merchant: Merchant) => {
     if (!isLoggedIn) { router.push('/auth?return=/'); return; }
+
+    if (merchant.is_fullpage_sponsored && (!merchant.fullpage_sponsored_until || new Date(merchant.fullpage_sponsored_until) >= new Date())) {
+      setFullPageTakeoverMerchant(merchant);
+      return;
+    }
+
     setJoinModal(merchant);
     setJoinState('confirm');
     setJoinError('');
@@ -246,18 +258,18 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: '#fff', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: '12rem', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: 'var(--text-main)', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: '12rem', overflowY: 'auto' }}>
 
       {/* Header Spacer */}
       <div style={{ height: 'var(--safe-top, 44px)' }} />
 
       {/* Unified Carousel / Info Card */}
       <div style={{ padding: '0.875rem 1.5rem 1.25rem', position: 'relative' }}>
-        <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '18px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box' }}>
           
           {/* Slide 0: Info Card */}
           {currentSlide === 0 && (
-            <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', border: '1px solid rgba(107,193,122,0.5)', borderRadius: '18px', padding: '1.25rem 1.4rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)', padding: '1.25rem 1.4rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <span style={{ fontSize: '1.35rem', lineHeight: 1.2, flexShrink: 0 }}>✨</span>
                 <p style={{ margin: 0, fontSize: '0.96rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
@@ -285,7 +297,8 @@ export default function Home() {
           {/* Slide 1+: Sponsored Merchants */}
           {currentSlide > 0 && sponsoredMerchants[currentSlide - 1] && (() => {
             const m = sponsoredMerchants[currentSlide - 1];
-            const hasCover = !!m.cover_photo_url;
+            const bannerUrl = m.promo_banner_url || m.cover_photo_url;
+            const hasCover = !!bannerUrl;
             return (
               <div 
                 onClick={() => handleJoinSponsored(m)}
@@ -293,12 +306,9 @@ export default function Home() {
                   position: 'relative',
                   width: '100%',
                   height: '100%',
-                  borderRadius: '18px',
                   cursor: 'pointer',
-                  border: '1px solid rgba(139,92,246,0.35)',
-                  boxSizing: 'border-box',
                   backgroundImage: hasCover 
-                    ? `linear-gradient(to bottom, rgba(15,23,42,0.3) 0%, rgba(15,23,42,0.85) 100%), url(${m.cover_photo_url})`
+                    ? `linear-gradient(to bottom, rgba(15,23,42,0.15) 0%, rgba(15,23,42,0.65) 100%), url('${bannerUrl}')`
                     : 'linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -514,8 +524,8 @@ export default function Home() {
             </div>
             {/* Filter chips — Category */}
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
-              {(['all', 'Cafe & Juice Bars', 'Restaurants', 'Bakery & Desserts', 'Bars & Nightlife', 'Grocery & Market', 'Fitness & Gym', 'Yoga & Pilates', 'Beauty & Nail', 'Hair Salon', 'Barber Shop', 'Spa & Wellness', 'Retail & Boutique', 'Books & Hobbies', 'Pet Services', 'Services & Repair', 'Photography', 'Entertainment', 'Health & Medical', 'Other'] as const).map((cat) => {
-                const catLabels: Record<string, string> = { all: 'All Categories', 'Cafe & Juice Bars': '☕ Cafe & Juice Bars', 'Restaurants': '🍽️ Restaurants', 'Bakery & Desserts': '🥐 Bakery & Desserts', 'Bars & Nightlife': '🍹 Bars & Nightlife', 'Grocery & Market': '🛒 Grocery & Market', 'Fitness & Gym': '💪 Fitness & Gym', 'Yoga & Pilates': '🧘 Yoga & Pilates', 'Beauty & Nail': '💅 Beauty & Nail', 'Hair Salon': '💇 Hair Salon', 'Barber Shop': '✂️ Barber Shop', 'Spa & Wellness': '🧖 Spa & Wellness', 'Retail & Boutique': '🛍️ Retail & Boutique', 'Books & Hobbies': '📚 Books & Hobbies', 'Pet Services': '🐾 Pet Services', 'Services & Repair': '🔧 Services & Repair', 'Photography': '📸 Photography', 'Entertainment': '🎮 Entertainment', 'Health & Medical': '🏥 Health & Medical', 'Other': '🔖 Other' };
+              {(['all', 'Restaurants & Dining', 'Cafes, Bakery & Desserts', 'Grocery & Gourmet Market', 'Hair & Barber Shops', 'Beauty, Spa & Wellness', 'Fitness & Movement', 'Education & Learning', 'Health & Medical', 'Retail & Boutiques', 'Professional & Financial', 'Home, Auto & Trade', 'Pet Care & Services', 'Entertainment & Recreation', 'Photography & Creative', 'Other'] as const).map((cat) => {
+                const catLabels: Record<string, string> = { all: 'All Categories', 'Restaurants & Dining': '🍽️ Restaurants & Dining', 'Cafes, Bakery & Desserts': '☕ Cafes & Desserts', 'Grocery & Gourmet Market': '🛒 Grocery & Market', 'Hair & Barber Shops': '✂️ Hair & Barber', 'Beauty, Spa & Wellness': '💅 Beauty & Spa', 'Fitness & Movement': '💪 Fitness & Movement', 'Education & Learning': '📚 Education & Learning', 'Health & Medical': '🏥 Health & Medical', 'Retail & Boutiques': '🛍️ Retail & Boutiques', 'Professional & Financial': '💼 Professional & Financial', 'Home, Auto & Trade': '🔧 Home & Auto Services', 'Pet Care & Services': '🐾 Pet Care', 'Entertainment & Recreation': '🎮 Entertainment', 'Photography & Creative': '📸 Photography & Creative', 'Other': '🔖 Other' };
                 const isActive = activeCategory === cat;
                 return (
                   <button key={cat} onClick={() => setActiveCategory(prev => prev === cat ? 'all' : cat)} style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid', borderColor: isActive ? '#6BC17A' : 'rgba(255,255,255,0.15)', background: isActive ? 'rgba(107,193,122,0.25)' : 'rgba(255,255,255,0.04)', color: isActive ? '#86EFAC' : 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: 'Outfit, sans-serif', whiteSpace: 'nowrap' }}>{catLabels[cat]}</button>
@@ -840,6 +850,100 @@ export default function Home() {
                 );
               })()}
 
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Full Page VIP Takeover Modal Overlay */}
+      {fullPageTakeoverMerchant && (() => {
+        const m = fullPageTakeoverMerchant;
+        const bannerUrl = m.promo_banner_url || m.cover_photo_url;
+        const ratingScore = m.rating_score || '4.9';
+        const ratingCount = m.rating_count || '46+ reviews';
+        const ratingPlatform = m.rating_platform || 'Google';
+        const fullAddr = [m.address_line1 || m.address, m.city, m.state, m.zip_code].filter(Boolean).join(', ');
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: '#F8FAFC' }}>
+            {/* Header Image & Back Button */}
+            <div style={{ position: 'relative', width: '100%', height: '240px', backgroundColor: '#1E293B' }}>
+              {bannerUrl ? (
+                <img src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>
+                  {m.business_name}
+                </div>
+              )}
+              <button 
+                onClick={() => setFullPageTakeoverMerchant(null)} 
+                style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(15,23,42,0.75)', border: 'none', color: '#fff', width: '38px', height: '38px', borderRadius: '50%', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Title & Star Rating */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF' }}>{m.business_name}</h1>
+                  <span style={{ background: '#8B5CF6', color: '#FFF', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>VIP</span>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, marginTop: '4px' }}>
+                  ⭐ {ratingScore} on {ratingPlatform} ({ratingCount})
+                </div>
+              </div>
+
+              {/* Business Promotional Description */}
+              {m.promo_description && (
+                <div style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '4px solid #8B5CF6', borderRadius: '12px', padding: '1rem', fontSize: '0.9rem', color: '#E2E8F0', lineHeight: 1.6, maxHeight: '300px', overflowY: 'auto' }}>
+                  <strong style={{ color: '#C4B5FD', display: 'block', marginBottom: '4px' }}>📝 About this Store & Offer:</strong>
+                  {m.promo_description}
+                </div>
+              )}
+
+              {/* Offer Highlight */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(49,28,135,0.25))', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '16px', padding: '1.25rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#C4B5FD', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>🏷️ Exclusive Perk</div>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 800, color: '#FFF' }}>{m.welcome_offer_text || m.latest_offer_title || 'Exclusive Member Offer'}</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94A3B8' }}>Show your Perkfinity QR code at checkout to claim.</p>
+              </div>
+
+              {/* Direct Action Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {m.order_url && (
+                  <a href={m.order_url} target="_blank" rel="noopener noreferrer" style={{ background: '#16A34A', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                    🛒 Order / Shop Now
+                  </a>
+                )}
+                {m.review_url && (
+                  <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ background: '#2563EB', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                    ⭐ View {ratingPlatform} Reviews
+                  </a>
+                )}
+                {m.website && (
+                  <a href={m.website.startsWith('http') ? m.website : 'https://' + m.website} target="_blank" rel="noopener noreferrer" style={{ background: '#475569', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                    🌐 Official Website
+                  </a>
+                )}
+              </div>
+
+              {/* Where to Redeem Map Embed / Card */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '1rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#F1F5F9', marginBottom: '8px' }}>📍 Where To Redeem</div>
+                {fullAddr ? (
+                  <>
+                    <div style={{ borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', height: '160px' }}>
+                      <iframe width="100%" height="160" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} allowFullScreen />
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '6px' }}>📍 {fullAddr}</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center', padding: '1rem' }}>🌐 Online Store — Available Nationwide</div>
+                )}
+              </div>
             </div>
           </div>
         );

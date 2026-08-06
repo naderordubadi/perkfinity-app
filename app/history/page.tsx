@@ -152,13 +152,13 @@ function HistoryContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%)",
+      background: "var(--bg-gradient)",
       fontFamily: "Outfit, sans-serif",
-      color: "#fff",
+      color: "var(--text-main)",
       padding: "var(--safe-top, 44px) 1.5rem 10rem",
     }}>
-      <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "0.25rem" }}>History</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.85rem", marginTop: 0, marginBottom: "1.25rem" }}>
+      <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "0.25rem", color: "var(--text-main)" }}>History</h2>
+      <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: 0, marginBottom: "1.25rem" }}>
         Your past redeemed or expired perks and notifications.
       </p>
 
@@ -167,7 +167,7 @@ function HistoryContent() {
         display: "flex",
         gap: "0",
         marginBottom: "1.25rem",
-        borderBottom: "1px solid rgba(255,255,255,0.1)",
+        borderBottom: "1px solid var(--border)",
       }}>
         <button
           onClick={() => setActiveTab("perks")}
@@ -177,7 +177,7 @@ function HistoryContent() {
             background: "none",
             border: "none",
             borderBottom: activeTab === "perks" ? "2px solid #8B5CF6" : "2px solid transparent",
-            color: activeTab === "perks" ? "#fff" : "rgba(255,255,255,0.4)",
+            color: activeTab === "perks" ? "var(--text-main)" : "var(--text-muted)",
             fontSize: "0.9rem",
             fontWeight: activeTab === "perks" ? 700 : 500,
             cursor: "pointer",
@@ -194,7 +194,7 @@ function HistoryContent() {
             background: "none",
             border: "none",
             borderBottom: activeTab === "notifications" ? "2px solid #8B5CF6" : "2px solid transparent",
-            color: activeTab === "notifications" ? "#fff" : "rgba(255,255,255,0.4)",
+            color: activeTab === "notifications" ? "var(--text-main)" : "var(--text-muted)",
             fontSize: "0.9rem",
             fontWeight: activeTab === "notifications" ? 700 : 500,
             cursor: "pointer",

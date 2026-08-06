@@ -3,6 +3,7 @@ import NavigationGuard from "./components/NavigationGuard";
 import BottomNav from "./components/BottomNav";
 import PushHandler from "./components/PushHandler";
 import SafeAreaProvider from "./components/SafeAreaProvider";
+import ThemeProvider from "./components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Perkfinity | Rewards & Experiences",
@@ -36,17 +37,37 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
         <style>{`
-          :root {
+          :root, :root[data-theme="dark"] {
             --primary: #6D28D9;
             --primary-light: #8B5CF6;
             --secondary: #EC4899;
             --bg: #0F172A;
+            --bg-gradient: linear-gradient(160deg, #0F172A 0%, #1E1B4B 60%, #0F2318 100%);
             --card-bg: rgba(30, 41, 59, 0.7);
+            --card-solid: #1E293B;
             --border: rgba(255, 255, 255, 0.1);
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
-            /* Safe-area top inset — overridden at runtime by SafeAreaProvider.
-               Default: iOS-style env() so the layout never flashes on first paint. */
+            --nav-bg: rgba(15, 23, 42, 0.85);
+            --nav-border: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --safe-top: env(safe-area-inset-top, 44px);
+          }
+
+          :root[data-theme="light"] {
+            --primary: #6D28D9;
+            --primary-light: #7C3AED;
+            --secondary: #DB2777;
+            --bg: #F8FAFC;
+            --bg-gradient: linear-gradient(160deg, #F8FAFC 0%, #EEF2FF 60%, #F0FDF4 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-solid: #FFFFFF;
+            --border: rgba(0, 0, 0, 0.08);
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --nav-border: rgba(0, 0, 0, 0.08);
+            --input-bg: #FFFFFF;
             --safe-top: env(safe-area-inset-top, 44px);
           }
           
@@ -58,6 +79,7 @@ export default function RootLayout({
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
           }
 
           * {
@@ -72,15 +94,16 @@ export default function RootLayout({
             width: calc(100% - 48px);
             max-width: 400px;
             height: 72px;
-            background: rgba(15, 23, 42, 0.8);
+            background: var(--nav-bg);
             backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
+            border: 1px solid var(--nav-border);
             border-radius: 24px;
             display: flex;
             justify-content: space-around;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+            transition: background 0.3s ease, border-color 0.3s ease;
           }
 
           .nav-item {
@@ -127,16 +150,18 @@ export default function RootLayout({
         `}</style>
       </head>
       <body>
-        <SafeAreaProvider />
-        <NavigationGuard />
-        <PushHandler />
+        <ThemeProvider>
+          <SafeAreaProvider />
+          <NavigationGuard />
+          <PushHandler />
 
-        <div className="mesh-bg" />
-        <main>
-          {children}
-        </main>
-        
-        <BottomNav />
+          <div className="mesh-bg" />
+          <main>
+            {children}
+          </main>
+          
+          <BottomNav />
+        </ThemeProvider>
       </body>
     </html>
   )

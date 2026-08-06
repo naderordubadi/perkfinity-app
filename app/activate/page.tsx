@@ -81,14 +81,18 @@ export default function ActivatePage() {
     let parsed: PendingOffer[] = [];
     try { parsed = JSON.parse(raw); } catch { router.push('/'); return; }
 
+    // Filter out offers whose end_at timestamp has passed
+    parsed = parsed.filter(o => !o.end_at || new Date(o.end_at) > new Date());
+
     if (parsed.length === 0) {
+      localStorage.removeItem('pending_offers');
       router.push('/');
       return;
     }
 
     setOffers(parsed);
 
-    // Fetch full campaign details for richer display
+    // Fetch full campaign details for richer display & fresh active campaign sync
     const qrCode = parsed[0]?.qr_code || localStorage.getItem('pending_qr') || '';
     if (qrCode) {
       fetchApi(`/qr/resolve/${qrCode}`)
@@ -96,11 +100,24 @@ export default function ActivatePage() {
           const qrData = res.data;
           if (qrData?.merchant) setMerchantInfo(qrData.merchant);
           if (qrData?.location) setLocationInfo(qrData.location);
-          if (qrData?.campaigns) {
-            // Only keep campaigns that match our pending offers
-            const pendingIds = new Set(parsed.map(o => o.campaign_id));
-            const matched = qrData.campaigns.filter((c: Campaign) => pendingIds.has(c.id));
-            if (matched.length > 0) setCampaignDetails(matched);
+          if (qrData?.campaigns && qrData.campaigns.length > 0) {
+            // Keep fresh active campaigns from backend
+            const activeCampaigns = qrData.campaigns.filter((c: Campaign) => 
+              (c.status === 'created' || c.status === 'active') && 
+              (!c.end_at || new Date(c.end_at) > new Date())
+            );
+            setCampaignDetails(activeCampaigns);
+            if (activeCampaigns.length > 0) {
+              const freshOffers: PendingOffer[] = activeCampaigns.map((c: Campaign) => ({
+                campaign_id: c.id,
+                merchant_name: qrData.merchant.business_name,
+                title: c.title,
+                qr_code: qrCode,
+                end_at: c.end_at || null,
+              }));
+              setOffers(freshOffers);
+              localStorage.setItem('pending_offers', JSON.stringify(freshOffers));
+            }
           }
         })
         .catch(() => { /* Use basic info from localStorage if API fails */ })
@@ -131,17 +148,16 @@ export default function ActivatePage() {
         location: locationInfo,
       }));
 
-      // Remove activated offer from pending list
-      try {
-        const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-        const updated = existing.filter((o: PendingOffer) => o.campaign_id !== campaignId);
-        localStorage.setItem('pending_offers', JSON.stringify(updated));
-      } catch { /* ignore */ }
+      // Remove this activated offer from pending offers so it doesn't linger
+      const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
+      const updated = existing.filter((o: PendingOffer) => o.campaign_id !== campaignId);
+      localStorage.setItem('pending_offers', JSON.stringify(updated));
 
+      // Redirect to redemption screen
       router.push('/redeem');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to activate offer';
-      if (msg === 'You have already redeemed this offer.') {
+    } catch (err: any) {
+      const errMsg = err.message || 'Failed to activate offer';
+      if (errMsg === 'You have already redeemed this offer.') {
         // Remove redeemed campaign from active list
         const updatedOffers = offers.filter(o => o.campaign_id !== campaignId);
         const updatedDetails = campaignDetails.filter(c => c.id !== campaignId);
@@ -199,7 +215,7 @@ export default function ActivatePage() {
           </div>
         </div>
       )}
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%)', display: 'flex', flexDirection: 'column', padding: '2rem', color: '#fff', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', padding: '2rem', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', paddingTop: '1rem' }}>
         <img src={isAndroid ? "/app-icon.png" : "/assets/logo.png"} alt="Perkfinity" style={{ height: isAndroid ? '64px' : '32px', objectFit: 'contain', borderRadius: isAndroid ? '12px' : '0' }} />
       </div>

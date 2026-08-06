@@ -83,7 +83,8 @@ export default function QRResolveClient({ params }: { params: { public_code: str
           const createdCampaigns = qrData.campaigns.filter(
             (c: Campaign) =>
               (c.status === 'created' || c.status === 'active') &&
-              (c.discount_percentage === undefined || c.discount_percentage >= 0)
+              (c.discount_percentage === undefined || c.discount_percentage >= 0) &&
+              (!c.end_at || new Date(c.end_at) > new Date())
           );
           if (createdCampaigns.length > 0) {
             const pendingOffers = createdCampaigns.map((c: Campaign) => ({
@@ -91,8 +92,11 @@ export default function QRResolveClient({ params }: { params: { public_code: str
               merchant_name: qrData.merchant.business_name,
               title: c.title,
               qr_code: qrCode,
+              end_at: c.end_at || null,
             }));
             localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
+          } else {
+            localStorage.removeItem('pending_offers');
           }
         }
         // Redirect to activate page instead of home page
