@@ -32,9 +32,12 @@ interface Merchant {
   order_url?: string | null;
   is_fullpage_sponsored?: boolean;
   fullpage_sponsored_until?: string | null;
-  fullpage_image_url?: string | null;
-  fullpage_headline?: string | null;
-  fullpage_body?: string | null;
+  cover_photo_url?: string | null;
+  promo_banner_url?: string | null;
+  promo_description?: string | null;
+  rating_score?: string | null;
+  rating_count?: string | null;
+  rating_platform?: string | null;
 }
 
 interface CampaignOffer {
@@ -862,12 +865,19 @@ export default function Home() {
 
       {/* Full Page VIP Takeover Modal Overlay */}
       {fullPageTakeoverMerchant && (() => {
-        const m = fullPageTakeoverMerchant;
         const bannerUrl = m.promo_banner_url || m.cover_photo_url;
-        const ratingScore = m.rating_score || '4.9';
-        const ratingCount = m.rating_count || '46+ reviews';
         const ratingPlatform = m.rating_platform || 'Google';
+        const ratingCountStr = m.rating_count ? ` (${m.rating_count})` : '';
         const fullAddr = [m.address_line1 || m.address, m.city, m.state, m.zip_code].filter(Boolean).join(', ');
+
+        let reviewBtnLabel = '⭐ View Customer Reviews';
+        if (m.rating_platform) {
+          reviewBtnLabel = `⭐ View ${m.rating_platform} Reviews`;
+        } else if (m.review_url) {
+          const rLower = m.review_url.toLowerCase();
+          if (rLower.includes('yelp')) reviewBtnLabel = '⭐ View Yelp Reviews';
+          else if (rLower.includes('google') || rLower.includes('g.page') || rLower.includes('maps.app.goo.gl')) reviewBtnLabel = '⭐ View Google Reviews';
+        }
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: '#F8FAFC' }}>
@@ -896,9 +906,17 @@ export default function Home() {
                   <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF' }}>{m.business_name}</h1>
                   <span style={{ background: '#8B5CF6', color: '#FFF', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>VIP</span>
                 </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, marginTop: '4px' }}>
-                  ⭐ {ratingScore} on {ratingPlatform} ({ratingCount})
-                </div>
+                {m.rating_score && (
+                  m.review_url ? (
+                    <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, marginTop: '4px', textDecoration: 'none' }}>
+                      ⭐ {m.rating_score} on {ratingPlatform}{ratingCountStr} ↗
+                    </a>
+                  ) : (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, marginTop: '4px' }}>
+                      ⭐ {m.rating_score} on {ratingPlatform}{ratingCountStr}
+                    </div>
+                  )
+                )}
               </div>
 
               {/* Business Promotional Description */}
@@ -925,7 +943,7 @@ export default function Home() {
                 )}
                 {m.review_url && (
                   <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ background: '#2563EB', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
-                    ⭐ View {ratingPlatform} Reviews
+                    {reviewBtnLabel}
                   </a>
                 )}
                 {m.website && (
