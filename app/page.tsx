@@ -30,6 +30,11 @@ interface Merchant {
   promo_code?: string | null;
   review_url?: string | null;
   order_url?: string | null;
+  is_fullpage_sponsored?: boolean;
+  fullpage_sponsored_until?: string | null;
+  fullpage_image_url?: string | null;
+  fullpage_headline?: string | null;
+  fullpage_body?: string | null;
 }
 
 interface CampaignOffer {
