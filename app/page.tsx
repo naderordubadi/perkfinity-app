@@ -966,7 +966,7 @@ export default function Home() {
         const bannerUrl = m.promo_banner_url || m.cover_photo_url;
         const ratingPlatform = m.rating_platform || 'Google';
         const ratingCountStr = m.rating_count ? ` (${m.rating_count})` : '';
-        const fullAddr = [m.address_line1 || m.address, m.city, m.state, m.zip_code].filter(Boolean).join(', ');
+        const fullAddr = m.store_address || [m.address_line1 || m.address, m.city, m.state, m.zip_code].filter(Boolean).join(', ');
 
         let reviewBtnLabel = '⭐ View Customer Reviews';
         if (m.rating_platform) {
