@@ -332,10 +332,10 @@ function NotificationDetailContent() {
         <>
           {/* Header */}
           <div style={{ marginBottom: "1.5rem" }}>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.3rem", lineHeight: 1.2 }}>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.3rem", lineHeight: 1.2, color: isLight ? "#0F172A" : "#fff" }}>
               {emoji} {notif.title}
             </h1>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.85rem" }}>
+            <div style={{ color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", fontSize: "0.85rem", fontWeight: 600 }}>
               {formatDate(notif.created_at)}
             </div>
           </div>
@@ -343,13 +343,13 @@ function NotificationDetailContent() {
           {/* Divider */}
           <div style={{
             height: "1px",
-            background: "rgba(255,255,255,0.08)",
+            background: isLight ? "rgba(15,23,42,0.1)" : "rgba(255,255,255,0.08)",
             marginBottom: "1.25rem",
           }} />
 
           {/* Body text */}
           {offers.length > 1 && (
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem", marginTop: 0, marginBottom: "1.25rem" }}>
+            <p style={{ color: isLight ? "#475569" : "rgba(255,255,255,0.7)", fontSize: "0.9rem", marginTop: 0, marginBottom: "1.25rem", fontWeight: 500 }}>
               {offers.length} new perks from your local stores
             </p>
           )}
@@ -365,12 +365,13 @@ function NotificationDetailContent() {
           {offers.length === 0 && notif.body && (
             <div style={{
               padding: "1.5rem",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: isLight ? "#FFFFFF" : "rgba(255,255,255,0.04)",
+              border: isLight ? "1px solid rgba(15,23,42,0.12)" : "1px solid rgba(255,255,255,0.1)",
               borderRadius: "18px",
               fontSize: "0.9rem",
-              color: "rgba(255,255,255,0.7)",
+              color: isLight ? "#0F172A" : "rgba(255,255,255,0.7)",
               lineHeight: 1.5,
+              boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
             }}>
               {notif.body}
             </div>

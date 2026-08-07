@@ -176,14 +176,10 @@ export default function ProfilePage() {
           background: 'var(--card-bg)',
           border: '1px solid var(--border)',
           borderRadius: '20px',
-          padding: '1.25rem',
+          padding: '0.75rem',
           marginTop: '1.75rem',
           backdropFilter: 'blur(12px)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
-            <span style={{ fontSize: '1.15rem' }}>🌓</span>
-            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>App Appearance</span>
-          </div>
           <div style={{
             display: 'flex',
             background: 'var(--input-bg)',

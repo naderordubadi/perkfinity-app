@@ -208,23 +208,31 @@ export default function Home() {
   const handleJoin = async (merchant: Merchant) => {
     if (!isLoggedIn) { router.push('/auth?return=/'); return; }
 
-    if (merchant.is_fullpage_sponsored && (!merchant.fullpage_sponsored_until || new Date(merchant.fullpage_sponsored_until) >= new Date())) {
-      setFullPageTakeoverMerchant(merchant);
-      return;
-    }
+    const fullMerchant = merchants.find(x => x.id === merchant.id) || merchant;
 
-    setJoinModal(merchant);
-    setJoinState('confirm');
     setJoinError('');
     setRevealedCodes({});
     setCopyLabels({});
     setRevealingId(null);
     setMerchantCampaigns([]);
+
+    const isVip = fullMerchant.is_fullpage_sponsored && (!fullMerchant.fullpage_sponsored_until || new Date(fullMerchant.fullpage_sponsored_until) >= new Date());
+
+    if (isVip) {
+      setFullPageTakeoverMerchant(fullMerchant);
+      setJoinModal(null);
+    } else {
+      setJoinModal(fullMerchant);
+      setFullPageTakeoverMerchant(null);
+    }
+
+    setJoinState('confirm');
     setTimeout(() => { if (modalScrollRef.current) modalScrollRef.current.scrollTop = 0; }, 50);
-    if (merchant.is_member) {
+
+    if (fullMerchant.is_member) {
       setCampaignsLoading(true);
       try {
-        const json = await fetchApi(`/consumers/merchants/${merchant.id}/campaigns`);
+        const json = await fetchApi(`/consumers/merchants/${fullMerchant.id}/campaigns`);
         if (json.success) setMerchantCampaigns(json.data || []);
       } catch { /* ignore */ }
       setCampaignsLoading(false);
@@ -232,12 +240,23 @@ export default function Home() {
   };
 
   const confirmJoin = async () => {
-    if (!joinModal) return;
+    const activeModal = joinModal || fullPageTakeoverMerchant;
+    if (!activeModal) return;
+    const qrCode = activeModal.qr_code || (activeModal as any).qr_public_code;
+    if (!qrCode) return;
     setJoinState('loading');
     try {
-      await fetchApi(`/qr/resolve/${joinModal.qr_code}`);
-      setMerchants(prev => prev.map(m => m.id === joinModal.id ? { ...m, is_member: true } : m));
+      await fetchApi(`/qr/resolve/${qrCode}`);
+      setMerchants(prev => prev.map(m => m.id === activeModal.id ? { ...m, is_member: true } : m));
+      if (joinModal) setJoinModal(prev => prev ? { ...prev, is_member: true } : null);
+      if (fullPageTakeoverMerchant) setFullPageTakeoverMerchant(prev => prev ? { ...prev, is_member: true } : null);
       setJoinState('success');
+      setCampaignsLoading(true);
+      try {
+        const json = await fetchApi(`/consumers/merchants/${activeModal.id}/campaigns`);
+        if (json.success) setMerchantCampaigns(json.data || []);
+      } catch { /* ignore */ }
+      setCampaignsLoading(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setJoinError(msg);
@@ -246,12 +265,14 @@ export default function Home() {
   };
 
   const handleJoinSponsored = (m: any) => {
-    const isMember = merchants.find(x => x.id === m.id)?.is_member || false;
+    const fullMerchant = merchants.find(x => x.id === m.id);
     const mappedMerchant: Merchant = {
+      ...(fullMerchant || {}),
       ...m,
-      merchant_name: m.business_name,
-      qr_code: m.qr_public_code || null,
-      is_member: isMember,
+      merchant_name: m.business_name || m.merchant_name || fullMerchant?.merchant_name || 'Brand',
+      qr_code: m.qr_public_code || m.qr_code || fullMerchant?.qr_code || null,
+      is_member: fullMerchant ? fullMerchant.is_member : (m.is_member || false),
+      is_fullpage_sponsored: true,
     };
     handleJoin(mappedMerchant);
   };
@@ -470,13 +491,22 @@ export default function Home() {
       {pendingQr && !isLoggedIn && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
-            <div style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)', border: '1px solid rgba(251,191,36,0.35)', borderRadius: '20px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 20px rgba(251,191,36,0.1)' }}>
+            <div style={{
+              background: isLight ? 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)' : 'linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(245,158,11,0.2) 100%)',
+              border: isLight ? '1px solid #F59E0B' : '1px solid rgba(251,191,36,0.35)',
+              borderRadius: '20px',
+              padding: '1rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              boxShadow: isLight ? '0 4px 16px rgba(245,158,11,0.15)' : '0 4px 20px rgba(251,191,36,0.1)'
+            }}>
               <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>🎁</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FDE68A', marginBottom: '2px' }}>You Have a Pending Offer!</div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(253,230,138,0.7)', lineHeight: 1.4 }}>You scanned a merchant QR. Sign up in seconds to claim your discount.</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isLight ? '#78350F' : '#FDE68A', marginBottom: '2px' }}>You Have a Pending Offer!</div>
+                <div style={{ fontSize: '0.75rem', color: isLight ? '#92400E' : 'rgba(253,230,138,0.7)', lineHeight: 1.4, fontWeight: 500 }}>You scanned a merchant QR. Sign up in seconds to claim your discount.</div>
               </div>
-              <span style={{ color: '#FDE68A', fontSize: '1.2rem', flexShrink: 0 }}>→</span>
+              <span style={{ color: isLight ? '#78350F' : '#FDE68A', fontSize: '1.2rem', flexShrink: 0, fontWeight: 'bold' }}>→</span>
             </div>
           </Link>
         </div>
@@ -949,7 +979,7 @@ export default function Home() {
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: isLight ? '#F8FAFC' : '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: isLight ? '#0F172A' : '#F8FAFC' }}>
-            {/* Header Image & Back Button */}
+            {/* Header Image & Top Close Button */}
             <div style={{ position: 'relative', width: '100%', height: '240px', backgroundColor: isLight ? '#E2E8F0' : '#1E293B' }}>
               {bannerUrl ? (
                 <img src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
@@ -966,7 +996,7 @@ export default function Home() {
               )}
               <button 
                 onClick={() => setFullPageTakeoverMerchant(null)} 
-                style={{ position: 'absolute', top: '16px', right: '16px', background: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.75)', border: 'none', color: isLight ? '#0F172A' : '#fff', width: '38px', height: '38px', borderRadius: '50%', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', fontWeight: 700 }}
+                style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 44px))', right: '16px', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(15,23,42,0.85)', border: isLight ? '1px solid rgba(15,23,42,0.1)' : '1px solid rgba(255,255,255,0.2)', color: isLight ? '#0F172A' : '#fff', width: '44px', height: '44px', borderRadius: '50%', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontWeight: 800, zIndex: 10 }}
               >
                 ✕
               </button>
@@ -977,7 +1007,7 @@ export default function Home() {
               {/* Title & Star Rating */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF' }}>{m.business_name}</h1>
+                  <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF' }}>{m.merchant_name || m.business_name || 'Brand'}</h1>
                   <span style={{ background: isLight ? '#6D28D9' : '#8B5CF6', color: '#FFF', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>VIP</span>
                 </div>
                 {m.rating_score && (
@@ -1001,12 +1031,104 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Offer Highlight */}
-              <div style={{ background: isLight ? '#F3E8FF' : 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(49,28,135,0.25))', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.3)', borderRadius: '16px', padding: '1.25rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#C4B5FD', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>🏷️ Exclusive Perk</div>
-                <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFF' }}>{m.welcome_offer_text || m.latest_offer_title || 'Exclusive Member Offer'}</h3>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: isLight ? '#475569' : '#94A3B8', fontWeight: 500 }}>Show your Perkfinity QR code at checkout to claim.</p>
-              </div>
+              {/* Offer Highlight — preview for non-members */}
+              {!m.is_member && (
+                <div style={{ background: isLight ? '#F3E8FF' : 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(49,28,135,0.25))', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.3)', borderRadius: '16px', padding: '1.25rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#C4B5FD', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>🏷️ Exclusive Perk</div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFF' }}>{m.welcome_offer_text || m.latest_offer_title || 'Exclusive Member Offer'}</h3>
+                </div>
+              )}
+
+              {/* Member Status & Interactivity (Join List / Reveal Code) */}
+              {!m.is_member ? (
+                <div>
+                  <div style={{ padding: '0.875rem 1rem', background: isLight ? '#DCFCE7' : 'rgba(59,154,82,0.1)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '14px', marginBottom: '0.75rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.77rem', color: isLight ? '#15803D' : '#fff', lineHeight: 1.65, fontWeight: 600 }}>
+                      By joining <strong>{m.merchant_name || m.business_name}</strong>&apos;s member list, you consent to receive promotional emails and notifications.{' '}
+                      <button
+                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+                      >Privacy Policy</button>{' '}&amp;{' '}
+                      <button
+                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
+                      >Terms of Use</button>.
+                    </p>
+                  </div>
+                  <button onClick={confirmJoin} style={{ width: '100%', padding: '1rem', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)', border: 'none', borderRadius: '16px', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>🤝 Join Member List</button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '8px', padding: '4px 10px' }}>✓ Active Member</span>
+                  </div>
+                  {campaignsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0', color: isLight ? '#64748B' : 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>Loading offers...</div>
+                  ) : merchantCampaigns.length === 0 ? (
+                    <div style={{ padding: '0.875rem 1rem', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.08)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.2)', borderRadius: '14px' }}>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: isLight ? '#15803D' : 'rgba(255,255,255,0.6)', lineHeight: 1.5, fontWeight: 600 }}>
+                        ✓ You&apos;re a member! Check back soon for new exclusive offers.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.6rem 0.75rem', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.08)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.2)', borderRadius: '10px' }}>
+                        <span style={{ fontSize: '0.78rem' }}>💡</span>
+                        <p style={{ margin: 0, fontSize: '0.74rem', color: isLight ? '#6D28D9' : 'rgba(210,195,255,0.9)', lineHeight: 1.6, fontWeight: 600 }}>
+                          Tap Reveal &amp; Copy Code for online checkout or in-person use.
+                        </p>
+                      </div>
+                      {merchantCampaigns.map(offer => {
+                        const isRevealed = !!revealedCodes[offer.campaign_id];
+                        const isRevealingThis = revealingId === offer.campaign_id;
+                        const copyLabel = copyLabels[offer.campaign_id] || 'Copy Again';
+                        const isOnlineOrHybrid = m.business_presence === 'online' || m.business_presence === 'hybrid';
+                        return (
+                          <div key={offer.campaign_id} style={{ padding: '0.875rem 1rem', background: isLight ? '#F8FAFC' : 'rgba(139,92,246,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(139,92,246,0.25)', borderRadius: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', flex: 1 }}>{offer.title}</div>
+                              {offer.end_at && (
+                                <div style={{ fontSize: '0.65rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', marginLeft: '0.5rem', flexShrink: 0, fontWeight: 600 }}>
+                                  Exp {new Date(offer.end_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                            {isOnlineOrHybrid ? (
+                              isRevealed ? (
+                                <div style={{ background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.15)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.4)', borderRadius: '10px', padding: '10px' }}>
+                                  <div style={{ fontSize: '0.6rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: '3px' }}>YOUR DISCOUNT CODE</div>
+                                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#C4B5FD', fontFamily: 'monospace', letterSpacing: '2px' }}>{revealedCodes[offer.campaign_id]}</div>
+                                  <div style={{ fontSize: '0.6rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Auto-copied ✓</div>
+                                  <button onClick={async () => { try { await navigator.clipboard.writeText(revealedCodes[offer.campaign_id]); setCopyLabels(prev => ({ ...prev, [offer.campaign_id]: 'Copied! ✓' })); setTimeout(() => setCopyLabels(prev => ({ ...prev, [offer.campaign_id]: 'Copy Again' })), 2500); } catch { /* ignore */ } }} style={{ marginTop: '6px', padding: '4px 12px', background: isLight ? '#6D28D9' : 'rgba(139,92,246,0.3)', border: 'none', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}>{copyLabel}</button>
+                                </div>
+                              ) : (
+                                <button disabled={isRevealingThis} onClick={async () => {
+                                  setRevealingId(offer.campaign_id);
+                                  try {
+                                    const json = await fetchApi('/redemptions/claim', { method: 'POST', body: JSON.stringify({ campaign_id: offer.campaign_id }) });
+                                    const code = json.data?.promo_code || '';
+                                    setRevealedCodes(prev => ({ ...prev, [offer.campaign_id]: code }));
+                                    try { await navigator.clipboard.writeText(code); } catch { /* ignore */ }
+                                  } catch (err: unknown) {
+                                    const msg = err instanceof Error ? err.message : String(err);
+                                    setJoinError(`Reveal failed: ${msg}`);
+                                    setJoinState('error');
+                                  }
+                                  setRevealingId(null);
+                                }} style={{ width: '100%', padding: '0.75rem', background: isRevealingThis ? (isLight ? '#E2E8F0' : 'rgba(139,92,246,0.3)') : (isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)'), border: 'none', borderRadius: '10px', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: isRevealingThis ? 'default' : 'pointer', fontFamily: 'Outfit, sans-serif' }}>
+                                  {isRevealingThis ? '...' : '🛍️ Reveal & Copy Code'}
+                                </button>
+                              )
+                            ) : (
+                              <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', lineHeight: 1.4, fontWeight: 500 }}>Visit the store to redeem this exclusive member perk.</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Direct Action Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -1041,6 +1163,26 @@ export default function Home() {
                   <div style={{ fontSize: '0.85rem', color: isLight ? '#475569' : '#94A3B8', textAlign: 'center', padding: '1rem', fontWeight: 600 }}>🌐 Online Store — Available Nationwide</div>
                 )}
               </div>
+
+              {/* Option 3: Bottom Dismissal Button */}
+              <button 
+                onClick={() => setFullPageTakeoverMerchant(null)} 
+                style={{
+                  width: '100%',
+                  padding: '0.9rem',
+                  background: 'none',
+                  border: isLight ? '1px solid rgba(15,23,42,0.18)' : '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: '16px',
+                  color: isLight ? '#64748B' : 'rgba(255,255,255,0.65)',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'Outfit, sans-serif',
+                  marginBottom: '1rem'
+                }}
+              >
+                ← Back to Explore More Offers
+              </button>
             </div>
           </div>
         );

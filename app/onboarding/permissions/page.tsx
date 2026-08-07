@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "../../components/ThemeProvider";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.vercel.app/api/v1';
 
@@ -9,6 +10,8 @@ export default function PermissionsPage() {
   const [locStatus, setLocStatus] = useState<"idle" | "granted" | "denied">("idle");
   const [notifStatus, setNotifStatus] = useState<"idle" | "granted" | "denied">("idle");
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   const requestLocation = async () => {
     if (!navigator.geolocation) return;
@@ -20,7 +23,6 @@ export default function PermissionsPage() {
 
   const requestNotifications = async () => {
     try {
-      // Use Firebase FCM (native iOS) — NOT the web Notification API
       const { Capacitor } = await import('@capacitor/core');
       if (Capacitor.isNativePlatform()) {
         const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
@@ -28,7 +30,6 @@ export default function PermissionsPage() {
         if (receive !== 'granted') { setNotifStatus("denied"); return; }
         const { token: fcmToken } = await FirebaseMessaging.getToken();
         if (!fcmToken) { setNotifStatus("denied"); return; }
-        // Save token to backend
         const authToken = localStorage.getItem('pf_user_token');
         if (authToken) {
           await fetch(`${API_BASE}/consumers/push-token`, {
@@ -39,7 +40,6 @@ export default function PermissionsPage() {
         }
         setNotifStatus("granted");
       } else {
-        // Web fallback (for browser testing only)
         if (!("Notification" in window)) return;
         const permission = await Notification.requestPermission();
         setNotifStatus(permission === "granted" ? "granted" : "denied");
@@ -50,47 +50,58 @@ export default function PermissionsPage() {
     }
   };
 
+  const dynamicCardStyle = {
+    ...cardStyle,
+    background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
+    border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.1)',
+    boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none'
+  };
+
+  const dynamicActionBtn = {
+    ...actionBtn,
+    background: isLight ? '#6D28D9' : '#8B5CF6'
+  };
 
   return (
     <div style={{
       height: '100vh',
-      background: '#0F172A',
+      background: 'var(--bg-gradient)',
       display: 'flex',
       flexDirection: 'column',
       padding: '2rem',
-      color: '#fff',
+      color: 'var(--text-main)',
       fontFamily: 'Outfit, sans-serif'
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>One Final Step</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>Help us connect you with local perks.</p>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>One Final Step</h1>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '3rem', fontWeight: 500 }}>Help us connect you with local perks.</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Geolocation Card */}
-          <div style={cardStyle}>
+          <div style={dynamicCardStyle}>
             <div style={{ flex: 1 }}>
-              <h3 style={{ margin: '0 0 0.25rem 0' }}>Location Services</h3>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>To show you the best rewards in your neighborhood.</p>
+              <h3 style={{ margin: '0 0 0.25rem 0', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Location Services</h3>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>To show you the best rewards in your neighborhood.</p>
             </div>
             <button 
               onClick={requestLocation} 
               disabled={locStatus === "granted"}
-              style={locStatus === "granted" ? successBtn : actionBtn}
+              style={locStatus === "granted" ? successBtn : dynamicActionBtn}
             >
               {locStatus === "granted" ? "✓" : "Continue"}
             </button>
           </div>
 
           {/* Notifications Card */}
-          <div style={cardStyle}>
+          <div style={dynamicCardStyle}>
             <div style={{ flex: 1 }}>
-              <h3 style={{ margin: '0 0 0.25rem 0' }}>Push Notifications</h3>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>Get alerted about exclusive, limited-time offers.</p>
+              <h3 style={{ margin: '0 0 0.25rem 0', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Push Notifications</h3>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>Get alerted about exclusive, limited-time offers.</p>
             </div>
             <button 
               onClick={requestNotifications} 
               disabled={notifStatus === "granted"}
-              style={notifStatus === "granted" ? successBtn : actionBtn}
+              style={notifStatus === "granted" ? successBtn : dynamicActionBtn}
             >
               {notifStatus === "granted" ? "✓" : "Continue"}
             </button>
@@ -111,13 +122,14 @@ export default function PermissionsPage() {
           width: '100%',
           padding: '1.25rem',
           borderRadius: '20px',
-          background: 'rgba(255,255,255,0.1)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.1)',
+          color: isLight ? '#0F172A' : '#fff',
+          border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.1)',
           fontSize: '1rem',
-          fontWeight: 600,
+          fontWeight: 700,
           marginBottom: '3rem',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none'
         }}
       >
         Continue to App
@@ -128,8 +140,6 @@ export default function PermissionsPage() {
 
 const cardStyle = {
   padding: '1.5rem',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '24px',
   display: 'flex',
   alignItems: 'center',
@@ -139,11 +149,10 @@ const cardStyle = {
 const actionBtn = {
   padding: '0.75rem 1.5rem',
   borderRadius: '12px',
-  background: '#8B5CF6',
   color: '#fff',
   border: 'none',
   fontSize: '0.875rem',
-  fontWeight: 600,
+  fontWeight: 700,
   cursor: 'pointer'
 };
 
