@@ -1200,7 +1200,7 @@ export default function Home() {
 
       {/* Formal iOS Navigation Map Choice Action Sheet */}
       {mapChoiceAddress && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontFamily: 'Outfit, sans-serif' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontFamily: 'Outfit, sans-serif' }}>
           <div style={{ width: '100%', maxWidth: '500px', background: isLight ? '#FFFFFF' : '#1E1B4B', borderRadius: '24px 24px 0 0', padding: '1.75rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom))', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(139,92,246,0.3)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1.05rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF', marginBottom: '4px' }}>Select Navigation App</div>
