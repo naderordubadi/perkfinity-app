@@ -1162,7 +1162,7 @@ export default function Home() {
               {/* Where to Redeem Map Embed / Card */}
               <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '1rem', boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#F1F5F9', marginBottom: '8px' }}>📍 Where To Redeem</div>
-                {fullAddr ? (
+                {fullAddr && fullAddr !== 'Online Only' && m.business_presence !== 'online' && fullAddr.trim() !== '' ? (
                   <>
                     <div onClick={() => handleMapClick(fullAddr)} style={{ borderRadius: '10px', overflow: 'hidden', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.1)', height: '160px', position: 'relative', cursor: 'pointer' }}>
                       <iframe width="100%" height="160" frameBorder="0" style={{ border: 0, pointerEvents: 'none' }} src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} allowFullScreen />
