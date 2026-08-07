@@ -204,6 +204,16 @@ export default function Home() {
   };
 
   const [fullPageTakeoverMerchant, setFullPageTakeoverMerchant] = useState<Merchant | null>(null);
+  const [mapChoiceAddress, setMapChoiceAddress] = useState<string | null>(null);
+
+  const handleMapClick = (addr: string) => {
+    const isIos = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIos) {
+      setMapChoiceAddress(addr);
+    } else {
+      window.open(`https://maps.google.com/maps?q=${encodeURIComponent(addr)}`, '_blank');
+    }
+  };
 
   const handleJoin = async (merchant: Merchant) => {
     if (!isLoggedIn) { router.push('/auth?return=/'); return; }
@@ -1154,8 +1164,8 @@ export default function Home() {
                 <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#F1F5F9', marginBottom: '8px' }}>📍 Where To Redeem</div>
                 {fullAddr ? (
                   <>
-                    <div style={{ borderRadius: '10px', overflow: 'hidden', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.1)', height: '160px' }}>
-                      <iframe width="100%" height="160" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} allowFullScreen />
+                    <div onClick={() => handleMapClick(fullAddr)} style={{ borderRadius: '10px', overflow: 'hidden', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.1)', height: '160px', position: 'relative', cursor: 'pointer' }}>
+                      <iframe width="100%" height="160" frameBorder="0" style={{ border: 0, pointerEvents: 'none' }} src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddr)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} allowFullScreen />
                     </div>
                     <div style={{ fontSize: '0.8rem', color: isLight ? '#475569' : '#94A3B8', marginTop: '6px', fontWeight: 600 }}>📍 {fullAddr}</div>
                   </>
@@ -1187,6 +1197,44 @@ export default function Home() {
           </div>
         );
       })()}
+
+      {/* Formal iOS Navigation Map Choice Action Sheet */}
+      {mapChoiceAddress && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontFamily: 'Outfit, sans-serif' }}>
+          <div style={{ width: '100%', maxWidth: '500px', background: isLight ? '#FFFFFF' : '#1E1B4B', borderRadius: '24px 24px 0 0', padding: '1.75rem 1.5rem calc(1.75rem + env(safe-area-inset-bottom))', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(139,92,246,0.3)', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF', marginBottom: '4px' }}>Select Navigation App</div>
+              <div style={{ fontSize: '0.8rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{mapChoiceAddress}</div>
+            </div>
+            <button
+              onClick={() => {
+                const url = `https://maps.apple.com/?q=${encodeURIComponent(mapChoiceAddress)}`;
+                setMapChoiceAddress(null);
+                window.open(url, '_blank');
+              }}
+              style={{ width: '100%', padding: '0.9rem', background: isLight ? '#0F172A' : '#8B5CF6', border: 'none', borderRadius: '14px', color: '#FFFFFF', fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+            >
+              Open in Apple Maps
+            </button>
+            <button
+              onClick={() => {
+                const url = `https://maps.google.com/maps?q=${encodeURIComponent(mapChoiceAddress)}`;
+                setMapChoiceAddress(null);
+                window.open(url, '_blank');
+              }}
+              style={{ width: '100%', padding: '0.9rem', background: isLight ? '#F1F5F9' : 'rgba(255,255,255,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', color: isLight ? '#0F172A' : '#FFFFFF', fontSize: '0.92rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+            >
+              Open in Google Maps
+            </button>
+            <button
+              onClick={() => setMapChoiceAddress(null)}
+              style={{ width: '100%', padding: '0.75rem', background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.5)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         body { background-color: #0F172A; }
