@@ -51,6 +51,8 @@
     <string>Microphone access is required alongside camera for video capture on iOS.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>We use your location solely to notify you when you walk near a participating store offering a targeted discount.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>We use your location solely to notify you when you walk near a participating store offering a targeted discount.</string>
     <key>UIBackgroundModes</key>
     <array>
       <string>remote-notification</string>
