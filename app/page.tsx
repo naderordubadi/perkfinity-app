@@ -256,7 +256,7 @@ export default function Home() {
     if (!qrCode) return;
     setJoinState('loading');
     try {
-      await fetchApi(`/qr/resolve/${qrCode}`);
+      await fetchApi(`/qr/resolve/${qrCode}?source=app_discovery`);
       setMerchants(prev => prev.map(m => m.id === activeModal.id ? { ...m, is_member: true } : m));
       if (joinModal) setJoinModal(prev => prev ? { ...prev, is_member: true } : null);
       if (fullPageTakeoverMerchant) setFullPageTakeoverMerchant(prev => prev ? { ...prev, is_member: true } : null);
@@ -990,19 +990,23 @@ export default function Home() {
         return (
           <div style={{ position: 'fixed', inset: 0, background: isLight ? '#F8FAFC' : '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: isLight ? '#0F172A' : '#F8FAFC' }}>
             {/* Header Image & Top Close Button */}
-            <div style={{ position: 'relative', width: '100%', height: '240px', backgroundColor: isLight ? '#E2E8F0' : '#1E293B' }}>
-              {bannerUrl ? (
-                <img src={bannerUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-              ) : (
-                <div style={{ width: '100%', height: '100%', background: isLight ? 'linear-gradient(135deg, #F3E8FF 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                  {m.logo_url ? (
-                    <img src={m.logo_url} style={{ maxHeight: '80px', maxWidth: '80%', objectFit: 'contain' }} alt="" />
-                  ) : (
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF', textAlign: 'center' }}>
-                      {m.business_name || m.merchant_name || 'Brand'}
-                    </span>
-                  )}
-                </div>
+            <div style={{ position: 'relative', width: '100%', height: '240px', backgroundColor: isLight ? '#E2E8F0' : '#1E293B', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: isLight ? 'linear-gradient(135deg, #F3E8FF 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                {m.logo_url ? (
+                  <img src={m.logo_url} style={{ maxHeight: '80px', maxWidth: '80%', objectFit: 'contain' }} alt="" />
+                ) : (
+                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#FFFFFF', textAlign: 'center' }}>
+                    {m.business_name || m.merchant_name || 'Brand'}
+                  </span>
+                )}
+              </div>
+              {bannerUrl && (
+                <img 
+                  src={bannerUrl} 
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                  alt="" 
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
               )}
               <button 
                 onClick={() => setFullPageTakeoverMerchant(null)} 
@@ -1150,6 +1154,16 @@ export default function Home() {
                 {m.review_url && (
                   <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ background: isLight ? '#1D4ED8' : '#2563EB', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
                     {reviewBtnLabel}
+                  </a>
+                )}
+                {m.public_phone && (
+                  <a href={`tel:${m.public_phone.replace(/\D/g, '')}`} style={{ background: isLight ? '#0284C7' : '#0EA5E9', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                    📞 Call Business
+                  </a>
+                )}
+                {m.public_email && (
+                  <a href={`mailto:${m.public_email}`} style={{ background: isLight ? '#7C3AED' : '#8B5CF6', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                    ✉️ Email Business
                   </a>
                 )}
                 {m.website && (
