@@ -831,7 +831,7 @@ export default function Home() {
                       }}
                       style={{ padding: '0.4rem 0.85rem', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.1)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '20px', color: isLight ? '#15803D' : '#86EFAC', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
                     >
-                      🛒 Order Here
+                      🛒 Order / Book Now
                     </button>
                   )}
                 </div>
@@ -1148,7 +1148,7 @@ export default function Home() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {m.order_url && (
                   <a href={m.order_url} target="_blank" rel="noopener noreferrer" style={{ background: isLight ? '#15803D' : '#16A34A', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
-                    🛒 Order / Shop Now
+                    🛒 Order / Book Now
                   </a>
                 )}
                 {m.review_url && (
