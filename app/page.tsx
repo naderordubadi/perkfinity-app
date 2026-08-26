@@ -57,6 +57,27 @@ interface CampaignOffer {
   redeemed_at: string | null;
 }
 
+function getReviewSocialBtnLabel(url?: string | null, ratingPlatform?: string | null, ratingScore?: number | string | null, isCompact = false): string {
+  if (!url && !ratingPlatform) return isCompact ? '⭐ Reviews' : '⭐ View Reviews';
+  const u = (url || '').toLowerCase();
+  if (u.includes('instagram.com') || u.includes('instagr.am')) return '📸 Follow on Instagram';
+  if (u.includes('facebook.com') || u.includes('fb.me') || u.includes('fb.com')) return '👍 Follow on Facebook';
+  if (u.includes('tiktok.com')) return '🎵 Follow on TikTok';
+  if (u.includes('twitter.com') || u.includes('x.com')) return '𝕏 Follow on X';
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return '▶️ Watch on YouTube';
+  if (u.includes('linkedin.com')) return '💼 Connect on LinkedIn';
+  if (u.includes('pinterest.com') || u.includes('pin.it')) return '📌 Follow on Pinterest';
+  if (u.includes('threads.net')) return '🧵 Follow on Threads';
+  if (u.includes('nextdoor.com')) return '🏡 View on Nextdoor';
+  if (u.includes('bbb.org')) return '🛡️ View BBB Profile';
+  if (u.includes('tripadvisor.com')) return isCompact ? '⭐ TripAdvisor Reviews' : '⭐ View TripAdvisor Reviews';
+  if (u.includes('trustpilot.com')) return isCompact ? '⭐ Trustpilot Reviews' : '⭐ View Trustpilot Reviews';
+  if (u.includes('yelp.com') || ratingPlatform === 'Yelp') return isCompact ? '⭐ Yelp Reviews' : '⭐ View Yelp Reviews';
+  if (u.includes('google.com') || u.includes('g.page') || u.includes('maps.app.goo.gl') || ratingPlatform === 'Google') return isCompact ? '⭐ Google Reviews' : '⭐ View Google Reviews';
+  if (ratingPlatform && ratingScore) return `⭐ View ${ratingPlatform} Reviews`;
+  return isCompact ? '🔗 Visit Social Page' : '🔗 View Reviews / Social Page';
+}
+
 export default function Home() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -820,7 +841,7 @@ export default function Home() {
                       }}
                       style={{ padding: '0.4rem 0.85rem', background: isLight ? '#FEF3C7' : 'rgba(250,204,21,0.1)', border: isLight ? '1px solid #FDE68A' : '1px solid rgba(250,204,21,0.3)', borderRadius: '20px', color: isLight ? '#78350F' : '#FDE68A', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
                     >
-                      ⭐ Check our Reviews
+                      {getReviewSocialBtnLabel(joinModal.review_url, joinModal.rating_platform, joinModal.rating_score, true)}
                     </button>
                   )}
                   {joinModal.order_url && (
@@ -978,14 +999,7 @@ export default function Home() {
         const ratingCountStr = m.rating_count ? ` (${m.rating_count})` : '';
         const fullAddr = m.store_address || [m.address_line1 || m.address, m.city, m.state, m.zip_code].filter(Boolean).join(', ');
 
-        let reviewBtnLabel = '⭐ View Customer Reviews';
-        if (m.rating_platform) {
-          reviewBtnLabel = `⭐ View ${m.rating_platform} Reviews`;
-        } else if (m.review_url) {
-          const rLower = m.review_url.toLowerCase();
-          if (rLower.includes('yelp')) reviewBtnLabel = '⭐ View Yelp Reviews';
-          else if (rLower.includes('google') || rLower.includes('g.page') || rLower.includes('maps.app.goo.gl')) reviewBtnLabel = '⭐ View Google Reviews';
-        }
+        const reviewBtnLabel = getReviewSocialBtnLabel(m.review_url, m.rating_platform, m.rating_score, false);
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: isLight ? '#F8FAFC' : '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: isLight ? '#0F172A' : '#F8FAFC' }}>
