@@ -419,7 +419,7 @@ export default function Home() {
                 {/* Card Info Overlay */}
                 <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <div>
-                    <span style={{ background: '#FDE68A', color: '#1E1B4B', padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>SPONSORED</span>
+                    <span style={{ background: 'rgba(0, 0, 0, 0.55)', color: 'rgba(255, 255, 255, 0.92)', border: '1px solid rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.02em', display: 'inline-block' }}>Sponsored</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>{m.business_name}</span>
