@@ -1022,6 +1022,12 @@ export default function Home() {
                   onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                 />
               )}
+              {/* Top Left: Sponsored Pill */}
+              <div style={{ position: 'absolute', top: 'calc(18px + env(safe-area-inset-top, 44px))', left: '16px', zIndex: 10 }}>
+                <span style={{ background: 'rgba(0, 0, 0, 0.55)', color: 'rgba(255, 255, 255, 0.92)', border: '1px solid rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.02em', display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                  Sponsored
+                </span>
+              </div>
               <button 
                 onClick={() => setFullPageTakeoverMerchant(null)} 
                 style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 44px))', right: '16px', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(15,23,42,0.85)', border: isLight ? '1px solid rgba(15,23,42,0.1)' : '1px solid rgba(255,255,255,0.2)', color: isLight ? '#0F172A' : '#fff', width: '44px', height: '44px', borderRadius: '50%', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontWeight: 800, zIndex: 10 }}
