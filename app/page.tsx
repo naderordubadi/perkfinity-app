@@ -39,6 +39,8 @@ interface Merchant {
   rating_score?: string | null;
   rating_count?: string | null;
   rating_platform?: string | null;
+  public_phone?: string | null;
+  public_email?: string | null;
 }
 
 interface CampaignOffer {
@@ -239,7 +241,8 @@ export default function Home() {
   const handleJoin = async (merchant: Merchant) => {
     if (!isLoggedIn) { router.push('/auth?return=/'); return; }
 
-    const fullMerchant = merchants.find(x => x.id === merchant.id) || merchant;
+    const matched = merchants.find(x => x.id === merchant.id);
+    const fullMerchant: Merchant = matched ? { ...matched, ...merchant } : merchant;
 
     setJoinError('');
     setRevealedCodes({});
@@ -825,6 +828,21 @@ export default function Home() {
                         : <div onClick={() => mapsUrl && window.open(mapsUrl, '_blank')} style={{ fontSize: '0.78rem', color: isLight ? '#6D28D9' : '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none', fontWeight: 600 }}>📍 {joinModal.store_address}</div>
                     )}
                     {joinModal.discount && <div style={{ fontSize: '0.75rem', color: isLight ? '#15803D' : '#86EFAC', marginTop: '2px', fontWeight: 700 }}>{joinModal.discount}</div>}
+                    {(joinModal.public_phone || joinModal.public_email) && (
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '3px', fontSize: '0.76rem', fontWeight: 600 }}>
+                        {joinModal.public_phone && (
+                          <a href={`tel:${joinModal.public_phone.replace(/\D/g, '')}`} style={{ color: isLight ? '#0284C7' : '#38BDF8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            📞 {joinModal.public_phone}
+                          </a>
+                        )}
+                        {joinModal.public_phone && joinModal.public_email && <span style={{ color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)' }}>•</span>}
+                        {joinModal.public_email && (
+                          <a href={`mailto:${joinModal.public_email}`} style={{ color: isLight ? '#7C3AED' : '#A78BFA', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            ✉️ {joinModal.public_email}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button onClick={() => setJoinModal(null)} style={{ background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', fontSize: '1.4rem', cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
                 </div>
@@ -1004,7 +1022,7 @@ export default function Home() {
         return (
           <div style={{ position: 'fixed', inset: 0, background: isLight ? '#F8FAFC' : '#0F172A', zIndex: 99999, overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: isLight ? '#0F172A' : '#F8FAFC' }}>
             {/* Header Image & Top Close Button */}
-            <div style={{ position: 'relative', width: '100%', height: '240px', backgroundColor: isLight ? '#E2E8F0' : '#1E293B', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '100%', height: '240px', minHeight: '240px', flexShrink: 0, backgroundColor: isLight ? '#E2E8F0' : '#1E293B', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', inset: 0, background: isLight ? 'linear-gradient(135deg, #F3E8FF 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, #311C87 0%, #1E1B4B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                 {m.logo_url ? (
                   <img src={m.logo_url} style={{ maxHeight: '80px', maxWidth: '80%', objectFit: 'contain' }} alt="" />

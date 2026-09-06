@@ -67,7 +67,7 @@ export default function ActivatePage() {
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [redeemedModal, setRedeemedModal] = useState<{ title: string; message: string } | null>(null);
+  const [modalState, setModalState] = useState<{ title: string; message: string; icon: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function ActivatePage() {
     try { parsed = JSON.parse(raw); } catch { router.push('/'); return; }
 
     // Filter out offers whose end_at timestamp has passed
-    parsed = parsed.filter(o => !o.end_at || new Date(o.end_at) > new Date());
+    parsed = parsed.filter((o: any) => !o.end_at || new Date(o.end_at) > new Date());
 
     if (parsed.length === 0) {
       localStorage.removeItem('pending_offers');
@@ -118,6 +118,14 @@ export default function ActivatePage() {
               }));
               setOffers(freshOffers);
               localStorage.setItem('pending_offers', JSON.stringify(freshOffers));
+            } else {
+              localStorage.removeItem('pending_offers');
+              setOffers([]);
+              setModalState({
+                icon: "⏰",
+                title: "This Offer Has Expired",
+                message: `This limited-time perk from ${qrData?.merchant?.business_name || 'this merchant'} has expired. Keep an eye on your Daily Digest for fresh exclusive offers!`,
+              });
             }
           }
         })
@@ -152,36 +160,56 @@ export default function ActivatePage() {
       // Remove this activated offer from pending offers so it doesn't linger
       const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
       const updated = existing.filter((o: PendingOffer) => o.campaign_id !== campaignId);
-      localStorage.setItem('pending_offers', JSON.stringify(updated));
+      if (updated.length > 0) {
+        localStorage.setItem('pending_offers', JSON.stringify(updated));
+      } else {
+        localStorage.removeItem('pending_offers');
+      }
 
       // Redirect to redemption screen
       router.push('/redeem');
     } catch (err: any) {
       const errMsg = err.message || 'Failed to activate offer';
-      if (errMsg === 'You have already redeemed this offer.') {
-        // Remove redeemed campaign from active list
+      const isExpired = /expired|no longer available/i.test(errMsg);
+      const isAlreadyRedeemed = errMsg === 'You have already redeemed this offer.' || /already redeemed/i.test(errMsg);
+
+      if (isAlreadyRedeemed || isExpired) {
+        // Remove redeemed/expired campaign from active list
         const updatedOffers = offers.filter(o => o.campaign_id !== campaignId);
         const updatedDetails = campaignDetails.filter(c => c.id !== campaignId);
         setOffers(updatedOffers);
         setCampaignDetails(updatedDetails);
         try {
           const existing = JSON.parse(localStorage.getItem('pending_offers') || '[]');
-          localStorage.setItem('pending_offers', JSON.stringify(
-            existing.filter((o: PendingOffer) => o.campaign_id !== campaignId)
-          ));
+          const remaining = existing.filter((o: PendingOffer) => o.campaign_id !== campaignId);
+          if (remaining.length > 0) {
+            localStorage.setItem('pending_offers', JSON.stringify(remaining));
+          } else {
+            localStorage.removeItem('pending_offers');
+          }
         } catch { /* ignore */ }
+
         if (updatedOffers.length > 0) {
           // Other campaigns still available — go home so they appear there
           router.push('/');
         } else {
-          // No campaigns left — show the encouraging modal
-          setRedeemedModal({
-            title: "You've Already Claimed This Perk! 🎉",
-            message: `This perk is already saved in your History — you're all set! Keep an eye on your Daily Digest for fresh exclusive offers from ${merchantName}. More great perks from this store are on the way!`,
-          });
+          // No campaigns left — show the appropriate modal
+          if (isExpired) {
+            setModalState({
+              icon: "⏰",
+              title: "This Offer Has Expired",
+              message: `This limited-time perk from ${merchantName} has expired. Keep an eye on your Daily Digest for fresh exclusive offers from this store!`,
+            });
+          } else {
+            setModalState({
+              icon: "✅",
+              title: "You've Already Claimed This Perk! 🎉",
+              message: `This perk is already saved in your History — you're all set! Keep an eye on your Daily Digest for fresh exclusive offers from ${merchantName}. More great perks from this store are on the way!`,
+            });
+          }
         }
       } else {
-        setError(msg);
+        setError(errMsg);
       }
       setActivating(null);
     }
@@ -199,17 +227,17 @@ export default function ActivatePage() {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
 
-  if (offers.length === 0) return null;
+  if (offers.length === 0 && !modalState) return null;
 
   return (
     <>
-      {/* Already Redeemed Modal */}
-      {redeemedModal && (
+      {/* Status Modal (Already Redeemed or Expired) */}
+      {modalState && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
           <div style={{ background: isLight ? '#FFFFFF' : 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: isLight ? '0 20px 50px rgba(15,23,42,0.15)' : '0 32px 80px rgba(0,0,0,0.65)' }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>✅</div>
-            <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>{redeemedModal.title}</h2>
-            <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>{redeemedModal.message}</p>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>{modalState.icon}</div>
+            <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>{modalState.title}</h2>
+            <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>{modalState.message}</p>
             <button
               onClick={() => router.push('/')}
               style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #6D28D9 0%, #15803D 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(109,40,217,0.25)', letterSpacing: '0.01em' }}
