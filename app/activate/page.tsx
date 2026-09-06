@@ -79,19 +79,26 @@ export default function ActivatePage() {
       return;
     }
 
-    let parsed: PendingOffer[] = [];
+    let parsed: any[] = [];
     try { parsed = JSON.parse(raw); } catch { router.push('/'); return; }
 
     // Filter out offers whose end_at timestamp has passed
-    parsed = parsed.filter((o: any) => !o.end_at || new Date(o.end_at) > new Date());
+    const activeOffers = parsed.filter((o: any) => !o.end_at || new Date(o.end_at) > new Date());
 
-    if (parsed.length === 0) {
+    if (activeOffers.length === 0) {
       localStorage.removeItem('pending_offers');
-      router.push('/');
+      const expiredMerchant = parsed[0]?.merchant_name || 'this merchant';
+      setOffers([]);
+      setModalState({
+        icon: "⏰",
+        title: "This Offer Has Expired",
+        message: `This limited-time perk from ${expiredMerchant} has expired. Keep an eye on your Daily Digest for fresh exclusive offers!`,
+      });
+      setLoading(false);
       return;
     }
 
-    setOffers(parsed);
+    setOffers(activeOffers);
 
     // Fetch full campaign details for richer display & fresh active campaign sync
     const qrCode = parsed[0]?.qr_code || localStorage.getItem('pending_qr') || '';
@@ -190,8 +197,13 @@ export default function ActivatePage() {
         } catch { /* ignore */ }
 
         if (updatedOffers.length > 0) {
-          // Other campaigns still available — go home so they appear there
-          router.push('/');
+          // Other campaigns still available — stay on page, show remaining offer, display clear notice
+          setCurrentIdx(i => Math.min(i, updatedOffers.length - 1));
+          setError(
+            isExpired
+              ? 'That offer has expired ⏰. Showing your remaining available perk below.'
+              : 'You have already claimed that perk ✅. Showing your remaining available perk below.'
+          );
         } else {
           // No campaigns left — show the appropriate modal
           if (isExpired) {

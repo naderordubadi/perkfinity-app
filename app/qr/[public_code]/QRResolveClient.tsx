@@ -21,6 +21,7 @@ interface QRData {
 export default function QRResolveClient({ params }: { params: { public_code: string } }) {
   const [error, setError] = useState('');
   const [redeemedModal, setRedeemedModal] = useState<{ merchantName: string } | null>(null);
+  const [expiredModal, setExpiredModal] = useState<{ merchantName: string } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
@@ -82,28 +83,29 @@ export default function QRResolveClient({ params }: { params: { public_code: str
           return;
         }
 
-        if (qrData.campaigns && qrData.campaigns.length > 0) {
-          const createdCampaigns = qrData.campaigns.filter(
-            (c: Campaign) =>
-              (c.status === 'created' || c.status === 'active') &&
-              (c.discount_percentage === undefined || c.discount_percentage >= 0) &&
-              (!c.end_at || new Date(c.end_at) > new Date())
-          );
-          if (createdCampaigns.length > 0) {
-            const pendingOffers = createdCampaigns.map((c: Campaign) => ({
-              campaign_id: c.id,
-              merchant_name: qrData.merchant.business_name,
-              title: c.title,
-              qr_code: qrCode,
-              end_at: c.end_at || null,
-            }));
-            localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
-          } else {
-            localStorage.removeItem('pending_offers');
-          }
+        const rawCampaigns = qrData.campaigns || [];
+        const createdCampaigns = rawCampaigns.filter(
+          (c: Campaign) =>
+            (c.status === 'created' || c.status === 'active') &&
+            (c.discount_percentage === undefined || c.discount_percentage >= 0) &&
+            (!c.end_at || new Date(c.end_at) > new Date())
+        );
+
+        if (createdCampaigns.length > 0) {
+          const pendingOffers = createdCampaigns.map((c: Campaign) => ({
+            campaign_id: c.id,
+            merchant_name: qrData.merchant.business_name,
+            title: c.title,
+            qr_code: qrCode,
+            end_at: c.end_at || null,
+          }));
+          localStorage.setItem('pending_offers', JSON.stringify(pendingOffers));
+          // Redirect to activate page
+          router.push('/activate');
+        } else {
+          localStorage.removeItem('pending_offers');
+          setExpiredModal({ merchantName: qrData.merchant?.business_name || 'this merchant' });
         }
-        // Redirect to activate page instead of home page
-        router.push('/activate');
       })
       .catch((err: Error) => {
         const msg = err.message || '';
@@ -124,6 +126,27 @@ export default function QRResolveClient({ params }: { params: { public_code: str
           This perk is already saved in your History — you're all set! Keep an eye on your{' '}
           <strong style={{ color: isLight ? '#6D28D9' : '#A78BFA' }}>Daily Digest</strong> for fresh exclusive offers from{' '}
           <strong style={{ color: isLight ? '#0F172A' : '#fff' }}>{redeemedModal.merchantName}</strong>. More great perks are on the way!
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          style={{ width: '100%', padding: '1rem', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: isLight ? '0 8px 20px rgba(109,40,217,0.25)' : '0 8px 20px rgba(139,92,246,0.3)', letterSpacing: '0.01em' }}
+        >
+          Go to Home
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Expired / No Active Offers Modal ──
+  if (expiredModal) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ background: isLight ? '#FFFFFF' : 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: isLight ? '0 20px 50px rgba(15,23,42,0.15)' : '0 32px 80px rgba(0,0,0,0.65)' }}>
+        <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>⏰</div>
+        <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>
+          This Offer Has Expired
+        </h2>
+        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>
+          This limited-time perk from <strong style={{ color: isLight ? '#0F172A' : '#fff' }}>{expiredModal.merchantName}</strong> has expired. Keep an eye on your <strong style={{ color: isLight ? '#6D28D9' : '#A78BFA' }}>Daily Digest</strong> for fresh exclusive offers!
         </p>
         <button
           onClick={() => router.push('/')}
