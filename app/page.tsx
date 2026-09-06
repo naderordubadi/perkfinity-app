@@ -831,13 +831,13 @@ export default function Home() {
                     {(joinModal.public_phone || joinModal.public_email) && (
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '3px', fontSize: '0.76rem', fontWeight: 600 }}>
                         {joinModal.public_phone && (
-                          <a href={`tel:${joinModal.public_phone.replace(/\D/g, '')}`} style={{ color: isLight ? '#0284C7' : '#38BDF8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <a href={`tel:${joinModal.public_phone.replace(/\D/g, '')}`} style={{ color: isLight ? '#0D9488' : '#2DD4BF', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                             📞 {joinModal.public_phone}
                           </a>
                         )}
                         {joinModal.public_phone && joinModal.public_email && <span style={{ color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)' }}>•</span>}
                         {joinModal.public_email && (
-                          <a href={`mailto:${joinModal.public_email}`} style={{ color: isLight ? '#7C3AED' : '#A78BFA', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <a href={`mailto:${joinModal.public_email}`} style={{ color: isLight ? '#4F46E5' : '#818CF8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                             ✉️ {joinModal.public_email}
                           </a>
                         )}
@@ -848,20 +848,9 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Review / Order links */}
+              {/* Order / Review links */}
               {(joinModal.review_url || joinModal.order_url) && joinState !== 'loading' && joinState !== 'success' && joinState !== 'error' && (
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                  {joinModal.review_url && (
-                    <button
-                      onClick={() => {
-                        const url = joinModal.review_url!.startsWith('http') ? joinModal.review_url! : `https://${joinModal.review_url}`;
-                        window.open(url, '_blank');
-                      }}
-                      style={{ padding: '0.4rem 0.85rem', background: isLight ? '#FEF3C7' : 'rgba(250,204,21,0.1)', border: isLight ? '1px solid #FDE68A' : '1px solid rgba(250,204,21,0.3)', borderRadius: '20px', color: isLight ? '#78350F' : '#FDE68A', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-                    >
-                      {getReviewSocialBtnLabel(joinModal.review_url, joinModal.rating_platform, joinModal.rating_score, true)}
-                    </button>
-                  )}
                   {joinModal.order_url && (
                     <button
                       onClick={() => {
@@ -871,6 +860,17 @@ export default function Home() {
                       style={{ padding: '0.4rem 0.85rem', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.1)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '20px', color: isLight ? '#15803D' : '#86EFAC', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
                     >
                       🛒 Order / Book Now
+                    </button>
+                  )}
+                  {joinModal.review_url && (
+                    <button
+                      onClick={() => {
+                        const url = joinModal.review_url!.startsWith('http') ? joinModal.review_url! : `https://${joinModal.review_url}`;
+                        window.open(url, '_blank');
+                      }}
+                      style={{ padding: '0.4rem 0.85rem', background: isLight ? '#FEF3C7' : 'rgba(250,204,21,0.1)', border: isLight ? '1px solid #FDE68A' : '1px solid rgba(250,204,21,0.3)', borderRadius: '20px', color: isLight ? '#78350F' : '#FDE68A', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+                    >
+                      {getReviewSocialBtnLabel(joinModal.review_url, joinModal.rating_platform, joinModal.rating_score, true)}
                     </button>
                   )}
                 </div>
@@ -1185,28 +1185,28 @@ export default function Home() {
               {/* Direct Action Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {m.order_url && (
-                  <a href={m.order_url} target="_blank" rel="noopener noreferrer" style={{ background: isLight ? '#15803D' : '#16A34A', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                  <a href={m.order_url} target="_blank" rel="noopener noreferrer" style={{ background: '#16A34A', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     🛒 Order / Book Now
                   </a>
                 )}
                 {m.review_url && (
-                  <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ background: isLight ? '#1D4ED8' : '#2563EB', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                  <a href={m.review_url} target="_blank" rel="noopener noreferrer" style={{ background: '#3B82F6', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     {reviewBtnLabel}
                   </a>
                 )}
+                {m.website && (
+                  <a href={m.website.startsWith('http') ? m.website : 'https://' + m.website} target="_blank" rel="noopener noreferrer" style={{ background: '#64748B', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    🌐 Official Website
+                  </a>
+                )}
                 {m.public_phone && (
-                  <a href={`tel:${m.public_phone.replace(/\D/g, '')}`} style={{ background: isLight ? '#0284C7' : '#0EA5E9', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                  <a href={`tel:${m.public_phone.replace(/\D/g, '')}`} style={{ background: '#0D9488', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     📞 Call Business
                   </a>
                 )}
                 {m.public_email && (
-                  <a href={`mailto:${m.public_email}`} style={{ background: isLight ? '#7C3AED' : '#8B5CF6', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
+                  <a href={`mailto:${m.public_email}`} style={{ background: '#4F46E5', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     ✉️ Email Business
-                  </a>
-                )}
-                {m.website && (
-                  <a href={m.website.startsWith('http') ? m.website : 'https://' + m.website} target="_blank" rel="noopener noreferrer" style={{ background: isLight ? '#334155' : '#475569', color: '#fff', padding: '0.9rem', borderRadius: '12px', textAlign: 'center', fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem' }}>
-                    🌐 Official Website
                   </a>
                 )}
               </div>
