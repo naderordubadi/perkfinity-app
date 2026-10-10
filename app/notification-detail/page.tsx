@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { useTheme } from "../components/ThemeProvider";
+import { IconGlobe, IconStore, IconMapPin, IconTruck, IconCheckCircle, IconShoppingBag, IconPartyPopper, IconBell, IconChevronLeft } from "../components/Icons";
 
 interface OfferItem {
   store_name: string;
@@ -43,6 +44,33 @@ function formatDate(dateStr: string): string {
   } else {
     return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   }
+}
+
+function buildAttributedUrl(rawUrl?: string | null, medium = 'app_notification', campaign = 'digest_offer'): string {
+  if (!rawUrl) return '';
+  try {
+    const url = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl);
+    url.searchParams.set('utm_source', 'perkfinity');
+    url.searchParams.set('utm_medium', medium);
+    url.searchParams.set('utm_campaign', campaign);
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+function trackOutboundClick(merchantId?: string | null, actionType?: string, targetUrl?: string | null, source = 'app_notification', platform = 'app') {
+  if (!merchantId || !actionType) return;
+  fetchApi('/analytics/outbound-click', {
+    method: 'POST',
+    body: JSON.stringify({
+      merchant_id: merchantId,
+      platform,
+      source,
+      action_type: actionType,
+      target_url: targetUrl || null
+    })
+  }).catch(() => {});
 }
 
 // Per-offer claim state
@@ -91,7 +119,7 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
     if (!revealedCode) return;
     try {
       await navigator.clipboard.writeText(revealedCode);
-      setCopyLabel('Copied! ✓');
+      setCopyLabel('Copied!');
       setTimeout(() => setCopyLabel('Copy Again'), 2500);
     } catch { /* ignore */ }
   };
@@ -114,6 +142,11 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
       alignItems: "flex-start",
       gap: "0.75rem",
       boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      minWidth: 0,
+      overflow: "hidden",
     }}>
       {/* Logo */}
       <div style={{
@@ -127,47 +160,158 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
           <img src={offer.logo_url} alt={offer.store_name}
             style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         ) : (
-          <span style={{ fontSize: "1.2rem" }}>{isOnline ? '🌐' : '🏪'}</span>
+          isOnline ? (
+            <IconGlobe size={22} color={isLight ? '#6D28D9' : '#A78BFA'} />
+          ) : (
+            <IconStore size={22} color={isLight ? '#6D28D9' : '#A78BFA'} />
+          )
         )}
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: "0.9rem", color: isLight ? "#0F172A" : "#fff", marginBottom: "2px" }}>
+      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+        <div style={{
+          fontWeight: 800,
+          fontSize: "0.9rem",
+          color: isLight ? "#0F172A" : "#fff",
+          marginBottom: "2px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}>
           {offer.store_name}
         </div>
-        <div style={{ fontSize: "0.8rem", color: isLight ? "#334155" : "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
+        <div style={{
+          fontSize: "0.8rem",
+          color: isLight ? "#334155" : "rgba(255,255,255,0.55)",
+          lineHeight: 1.3,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}>
           {offer.title}
         </div>
 
         {/* Address / Website */}
-        {offer.website && (
+        {offer.website && (() => {
+          const attributedUrl = buildAttributedUrl(offer.website, 'app_notification', 'digest_offer');
+          return (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                trackOutboundClick(offer.merchant_id, 'website', attributedUrl, 'app_notification', platform);
+                window.open(attributedUrl, '_blank');
+              }}
+              style={{
+                cursor: "pointer",
+                fontSize: "0.75rem",
+                color: isLight ? "#6D28D9" : "#8B5CF6",
+                marginTop: "4px",
+                textDecoration: "underline",
+                textDecorationStyle: "dotted",
+                textUnderlineOffset: "3px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                maxWidth: "100%",
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
+              <span style={{ flexShrink: 0, display: "inline-flex" }}>
+                <IconGlobe size={13} color="currentColor" />
+              </span>
+              <span style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+                flex: 1,
+              }}>
+                {offer.website.replace(/^https?:\/\//, '')}
+              </span>
+            </div>
+          );
+        })()}
+        {offer.store_address && offer.store_address !== 'Mobile Business' ? (
           <div
             onClick={(e) => {
               e.stopPropagation();
-              const url = offer.website!.startsWith('http') ? offer.website! : `https://${offer.website}`;
-              window.open(url, '_blank');
+              if (mapsUrl) {
+                trackOutboundClick(offer.merchant_id, 'map', mapsUrl, 'app_notification', platform);
+                window.open(mapsUrl, '_blank');
+              }
             }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: isLight ? "#6D28D9" : "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}
+            style={{
+              cursor: "pointer",
+              fontSize: "0.75rem",
+              color: isLight ? "#6D28D9" : "#8B5CF6",
+              marginTop: "4px",
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+              textUnderlineOffset: "3px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              maxWidth: "100%",
+              minWidth: 0,
+              overflow: "hidden",
+            }}
           >
-            🌐 {offer.website.replace(/^https?:\/\//, '')}
-          </div>
-        )}
-        {offer.store_address && offer.store_address !== 'Mobile Business' ? (
-          <div
-            onClick={(e) => { e.stopPropagation(); if (mapsUrl) window.open(mapsUrl, '_blank'); }}
-            style={{ cursor: "pointer", fontSize: "0.75rem", color: isLight ? "#6D28D9" : "#8B5CF6", marginTop: "4px", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}
-          >
-            📍 {offer.store_address}
+            <span style={{ flexShrink: 0, display: "inline-flex" }}>
+              <IconMapPin size={13} color="currentColor" />
+            </span>
+            <span style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+              flex: 1,
+            }}>
+              {offer.store_address}
+            </span>
           </div>
         ) : offer.store_address === 'Mobile Business' ? (
-          <div style={{ fontSize: "0.75rem", color: isLight ? "#475569" : "rgba(255,255,255,0.35)", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}>
-            🚐 Mobile Business
+          <div style={{
+            fontSize: "0.75rem",
+            color: isLight ? "#475569" : "rgba(255,255,255,0.35)",
+            marginTop: "4px",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            maxWidth: "100%",
+            minWidth: 0,
+            overflow: "hidden",
+          }}>
+            <span style={{ flexShrink: 0, display: "inline-flex" }}>
+              <IconTruck size={13} color="currentColor" />
+            </span>
+            <span style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+              flex: 1,
+            }}>
+              Mobile Business
+            </span>
           </div>
         ) : null}
 
         {offer.disclaimer && (
-          <div style={{ fontSize: "0.7rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.35)", marginTop: "4px", fontStyle: "italic", lineHeight: 1.3 }}>
+          <div style={{
+            fontSize: "0.7rem",
+            color: isLight ? "#64748B" : "rgba(255,255,255,0.35)",
+            marginTop: "4px",
+            fontStyle: "italic",
+            lineHeight: 1.3,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
             {offer.disclaimer}
           </div>
         )}
@@ -177,7 +321,9 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
           <div style={{ marginTop: "10px", padding: "10px 12px", background: isLight ? "#F3E8FF" : "rgba(139,92,246,0.15)", border: isLight ? "1px solid #D8B4FE" : "1px solid rgba(139,92,246,0.4)", borderRadius: "10px" }}>
             <div style={{ fontSize: "0.65rem", color: isLight ? "#475569" : "rgba(255,255,255,0.5)", marginBottom: "4px", fontWeight: 700 }}>YOUR DISCOUNT CODE</div>
             <div style={{ fontSize: "1.1rem", fontWeight: 800, color: isLight ? "#6D28D9" : "#C4B5FD", fontFamily: "monospace", letterSpacing: "2px" }}>{revealedCode}</div>
-            <div style={{ fontSize: "0.65rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", marginTop: "2px" }}>Auto-copied to clipboard ✓</div>
+            <div style={{ fontSize: "0.65rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", marginTop: "2px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              <IconCheckCircle size={11} color="currentColor" /> Auto-copied to clipboard
+            </div>
             <button
               onClick={handleCopyAgain}
               style={{ marginTop: "8px", padding: "5px 14px", background: isLight ? "#6D28D9" : "rgba(139,92,246,0.3)", border: "none", borderRadius: "8px", color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", fontFamily: "Outfit, sans-serif" }}
@@ -201,9 +347,10 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
           <div style={{
             padding: "8px 10px", background: isLight ? "#F3E8FF" : "rgba(139,92,246,0.15)", borderRadius: "8px",
             color: isLight ? "#6D28D9" : "#A78BFA", fontSize: "0.7rem", fontWeight: 700, textAlign: "center",
-            lineHeight: 1.35, flexShrink: 0, maxWidth: "90px", border: isLight ? "1px solid #D8B4FE" : "none"
+            lineHeight: 1.35, flexShrink: 0, maxWidth: "90px", border: isLight ? "1px solid #D8B4FE" : "none",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "4px"
           }}>
-            ✓ Claimed
+            <IconCheckCircle size={12} color="currentColor" /> Claimed
           </div>
         ) : (
           <button
@@ -223,9 +370,13 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
               maxWidth: "90px",
               cursor: claimState === 'loading' ? "default" : "pointer",
               fontFamily: "Outfit, sans-serif",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "4px"
             }}
           >
-            {claimState === 'loading' ? '...' : '🛍️ Tap to Reveal Code'}
+            {claimState === 'loading' ? '...' : <><IconShoppingBag size={13} color="#fff" /> Reveal Code</>}
           </button>
         )
       ) : (
@@ -294,18 +445,21 @@ function NotificationDetailContent() {
       .finally(() => setLoading(false));
   }, [notifId, router]);
 
-  const emoji = notif?.type === "digest" ? "🎉" : "🔔";
   const offers: OfferItem[] = notif?.payload || [];
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
 
   return (
-    <div style={{
+    <div className="notif-detail-root" style={{
       minHeight: "100vh",
       background: "var(--bg-gradient)",
       fontFamily: "Outfit, sans-serif",
       color: "var(--text-main)",
       padding: "var(--safe-top, 44px) 1.5rem 10rem",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      overflowX: "hidden",
     }}>
       {/* Back button */}
       <button
@@ -317,7 +471,7 @@ function NotificationDetailContent() {
           alignItems: "center", gap: "0.3rem",
         }}
       >
-        ← History
+        <IconChevronLeft size={18} /> History
       </button>
 
       {loading && (
@@ -332,8 +486,9 @@ function NotificationDetailContent() {
         <>
           {/* Header */}
           <div style={{ marginBottom: "1.5rem" }}>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.3rem", lineHeight: 1.2, color: isLight ? "#0F172A" : "#fff" }}>
-              {emoji} {notif.title}
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.3rem", lineHeight: 1.2, color: isLight ? "#0F172A" : "#fff", display: "flex", alignItems: "center", gap: "8px" }}>
+              {notif.type === "digest" ? <IconPartyPopper size={28} color="#FBBF24" /> : <IconBell size={28} color={isLight ? "#6D28D9" : "#A78BFA"} />}
+              <span>{notif.title}</span>
             </h1>
             <div style={{ color: isLight ? "#64748B" : "rgba(255,255,255,0.4)", fontSize: "0.85rem", fontWeight: 600 }}>
               {formatDate(notif.created_at)}
@@ -355,7 +510,7 @@ function NotificationDetailContent() {
           )}
 
           {/* Offer cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div className="duo-feed-grid">
             {offers.map((offer, i) => (
               <OfferCard key={i} offer={offer} platform={platform} router={router} />
             ))}
@@ -379,9 +534,16 @@ function NotificationDetailContent() {
         </>
       )}
 
-      <style>{`
+      <style jsx>{`
         body { background-color: #0F172A; }
         * { box-sizing: border-box; }
+        @media (orientation: landscape) and (max-height: 550px) {
+          .notif-detail-root {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 1rem max(1.5rem, env(safe-area-inset-left)) calc(7rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+          }
+        }
       `}</style>
     </div>
   );
