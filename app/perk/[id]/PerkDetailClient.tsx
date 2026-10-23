@@ -37,16 +37,16 @@ export default function PerkDetailClient({ params }: { params: { id: string } })
   const perkColor = isLight && perk.color === '#8B5CF6' ? '#6D28D9' : perk.color;
 
   return (
-    <div style={{
+    <div className="perk-detail-root" style={{
       minHeight: '100vh',
       background: 'var(--bg-gradient)',
       color: 'var(--text-main)',
       fontFamily: 'Outfit, sans-serif',
-      padding: '2rem',
+      padding: '2rem 1.5rem calc(10rem + env(safe-area-inset-bottom, 0px)) 1.5rem',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <div style={{ flex: 1, marginTop: '12vh' }}>
+      <div className="perk-detail-box" style={{ flex: 1, marginTop: '12vh' }}>
         <div style={{
           padding: '1.5rem',
           background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
@@ -82,7 +82,7 @@ export default function PerkDetailClient({ params }: { params: { id: string } })
         </div>
       </div>
 
-      <div style={{ marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="perk-detail-actions" style={{ marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <button 
           onClick={() => router.push(`/redeem?perk=${params.id}`)}
           style={{
@@ -107,6 +107,34 @@ export default function PerkDetailClient({ params }: { params: { id: string } })
           Not Now
         </button>
       </div>
+
+      <style jsx>{`
+        .perk-detail-root {
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+
+        @media (orientation: landscape), (horizontal-viewport-segments: 2), (min-width: 600px) and (orientation: landscape) {
+          .perk-detail-root {
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(8rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+            justify-content: center !important;
+          }
+          .perk-detail-box {
+            margin-top: 0.5rem !important;
+            max-width: 600px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            width: 100% !important;
+          }
+          .perk-detail-actions {
+            margin-bottom: 0.5rem !important;
+            max-width: 600px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

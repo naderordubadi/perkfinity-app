@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { useTheme } from "@/app/components/ThemeProvider";
+import { IconCheckCircle, IconSmartphone, IconAlertTriangle } from "@/app/components/Icons";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -40,15 +41,15 @@ export default function DeleteAccountPage() {
   // ── SUCCESS STATE ──────────────────────────────────────────────────
   if (state === "done") {
     return (
-      <div style={dynamicPageStyle}>
+      <div className="delete-root-container" style={dynamicPageStyle}>
         {/* Green checkmark */}
         <div style={{
           width: '100px', height: '100px', borderRadius: '28px',
           background: isLight ? '#DCFCE7' : 'rgba(34,197,94,0.12)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(34,197,94,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '3rem', boxShadow: isLight ? '0 4px 16px rgba(21,128,61,0.1)' : '0 0 40px rgba(34,197,94,0.2)',
+          boxShadow: isLight ? '0 4px 16px rgba(21,128,61,0.1)' : '0 0 40px rgba(34,197,94,0.2)',
         }}>
-          ✅
+          <IconCheckCircle size={48} color={isLight ? '#15803D' : '#4ADE80'} />
         </div>
 
         <div style={{ textAlign: 'center' }}>
@@ -61,13 +62,23 @@ export default function DeleteAccountPage() {
         <button onClick={handleReturnHome} style={{ ...styles.primaryBtn, background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
           Return to Home Page
         </button>
+
+        <style jsx>{`
+          @media (orientation: landscape) and (max-height: 550px) {
+            .delete-root-container {
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(2rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+            }
+          }
+        `}</style>
       </div>
     );
   }
 
   // ── CONFIRM / ERROR STATE ────────────────────────────────────────
   return (
-    <div style={dynamicPageStyle}>
+    <div className="delete-root-container" style={dynamicPageStyle}>
       {/* Back link */}
       <div style={{ alignSelf: 'flex-start', width: '100%', maxWidth: '340px' }}>
         <a
@@ -93,7 +104,9 @@ export default function DeleteAccountPage() {
         lineHeight: 1.7,
         fontWeight: 500,
       }}>
-        <span style={{ color: isLight ? '#6D28D9' : '#C4B5FD', fontWeight: 800 }}>📱 Delete from the app:</span><br />
+        <span style={{ color: isLight ? '#6D28D9' : '#C4B5FD', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <IconSmartphone size={14} /> Delete from the app:
+        </span><br />
         Open <strong>Perkfinity</strong> → <strong>Profile</strong> → <strong>Delete Account</strong>
       </div>
 
@@ -102,9 +115,9 @@ export default function DeleteAccountPage() {
         width: '100px', height: '100px', borderRadius: '28px',
         background: isLight ? '#FEE2E2' : 'rgba(239,68,68,0.08)', border: isLight ? '1px solid #FCA5A5' : '1px solid rgba(239,68,68,0.25)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '3rem', boxShadow: isLight ? '0 4px 16px rgba(220,38,38,0.1)' : '0 0 30px rgba(239,68,68,0.1)',
+        boxShadow: isLight ? '0 4px 16px rgba(220,38,38,0.1)' : '0 0 30px rgba(239,68,68,0.1)',
       }}>
-        ⚠️
+        <IconAlertTriangle size={48} color={isLight ? '#DC2626' : '#F87171'} />
       </div>
 
       <div style={{ textAlign: 'center' }}>
@@ -178,6 +191,16 @@ export default function DeleteAccountPage() {
       >
         Cancel
       </a>
+
+      <style jsx>{`
+        @media (orientation: landscape) and (max-height: 550px) {
+          .delete-root-container {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(2rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

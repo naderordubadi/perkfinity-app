@@ -6,6 +6,7 @@ import Link from "next/link";
 import { fetchApi } from "@/lib/api";
 import { getUserData } from "@/lib/user";
 import { getPostLoginRoute } from "@/lib/postLoginRoute";
+import { getMerchantInitials } from "@/lib/utils";
 import { useTheme } from "./components/ThemeProvider";
 import {
   IconSearch,
@@ -79,6 +80,9 @@ interface Merchant {
   rating_platform?: string | null;
   public_phone?: string | null;
   public_email?: string | null;
+  business_name?: string;
+  address_line1?: string;
+  welcome_offer_text?: string | null;
 }
 
 interface CampaignOffer {
@@ -347,6 +351,7 @@ export default function Home() {
       setFullPageTakeoverMerchant(fullMerchant);
       setJoinModal(null);
     } else {
+      trackOutboundClick(fullMerchant.id, 'view', null, 'app_discovery', platform);
       setJoinModal(fullMerchant);
       setFullPageTakeoverMerchant(null);
     }
@@ -390,15 +395,16 @@ export default function Home() {
   };
 
   const handleJoinSponsored = (m: any) => {
-    trackOutboundClick(m.id, 'carousel_click', null, 'app_carousel_sponsored', platform);
+    trackOutboundClick(m.id, 'view', null, 'app_sponsored', platform);
     const fullMerchant = merchants.find(x => x.id === m.id);
+    const isVip = m.is_fullpage_sponsored || fullMerchant?.is_fullpage_sponsored;
     const mappedMerchant: Merchant = {
       ...(fullMerchant || {}),
       ...m,
       merchant_name: m.business_name || m.merchant_name || fullMerchant?.merchant_name || 'Brand',
       qr_code: m.qr_public_code || m.qr_code || fullMerchant?.qr_code || null,
       is_member: fullMerchant ? fullMerchant.is_member : (m.is_member || false),
-      is_fullpage_sponsored: true,
+      is_fullpage_sponsored: !!isVip,
     };
     handleJoin(mappedMerchant);
   };
@@ -797,7 +803,7 @@ export default function Home() {
             // 1. Filter
             const filtered = merchants.filter(m => {
               if (activeFilters.size === 0) return true;
-              for (const f of activeFilters) {
+              for (const f of Array.from(activeFilters)) {
                 if (f === 'nearby' && (m.business_presence === 'online' || (userZip && m.zip_code !== userZip))) return false;
                 if (f === 'online' && !['online', 'hybrid'].includes(m.business_presence || '')) return false;
                 if (f === 'mobile' && m.business_presence !== 'mobile') return false;
@@ -876,7 +882,35 @@ export default function Home() {
                 <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: cardBg, borderRadius: '16px', border: cardBorder, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden', boxShadow: isLight ? '0 4px 14px rgba(15,23,42,0.04)' : 'none' }}>
                   {hasOffer && <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: 'linear-gradient(180deg,#8B5CF6,#6BC17A)', borderRadius: '3px 0 0 3px' }} />}
                   <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: logoBg, border: logoBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {m.logo_url ? <img src={m.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : (isOnline ? <IconGlobe size={22} color="#8B5CF6" /> : <IconBuilding size={22} color="#8B5CF6" />)}
+                    {m.logo_url ? (
+                      <img
+                        src={m.logo_url}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('.initials-fallback') as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className="initials-fallback"
+                      style={{
+                        display: m.logo_url ? 'none' : 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        height: '100%',
+                        fontSize: '15px',
+                        fontWeight: 900,
+                        color: '#8B5CF6',
+                        letterSpacing: '-0.02em',
+                        userSelect: 'none'
+                      }}
+                    >
+                      {getMerchantInitials(m.merchant_name)}
+                    </span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#fff' }}>{m.merchant_name}</div>
@@ -914,7 +948,35 @@ export default function Home() {
               {joinState !== 'loading' && joinState !== 'success' && joinState !== 'error' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.22)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {joinModal.logo_url ? <img src={joinModal.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : ((isOnline || isHybrid) ? <IconGlobe size={26} color="#8B5CF6" /> : <IconStore size={26} color="#8B5CF6" />)}
+                    {joinModal.logo_url ? (
+                      <img
+                        src={joinModal.logo_url}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('.initials-fallback') as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className="initials-fallback"
+                      style={{
+                        display: joinModal.logo_url ? 'none' : 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        height: '100%',
+                        fontSize: '18px',
+                        fontWeight: 900,
+                        color: '#8B5CF6',
+                        letterSpacing: '-0.02em',
+                        userSelect: 'none'
+                      }}
+                    >
+                      {getMerchantInitials(joinModal.merchant_name)}
+                    </span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '1.05rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff' }}>{joinModal.merchant_name}</div>

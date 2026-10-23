@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
-import { getUserData, setUserData } from "@/lib/user";
+import { getUserData, setUserData, clearUserSession } from "@/lib/user";
 import { useTheme } from "../components/ThemeProvider";
+import { IconSmartphone, IconMoon, IconSun } from "@/app/components/Icons";
 
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
@@ -18,9 +19,7 @@ export default function ProfilePage() {
   const isLight = resolvedTheme === 'light';
 
   const handleSignOut = () => {
-    localStorage.removeItem("pf_user_token");
-    localStorage.removeItem("pf_user_data");
-    localStorage.removeItem("pf_setup_complete");
+    clearUserSession();
     router.push("/auth");
   };
 
@@ -96,14 +95,17 @@ export default function ProfilePage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg)',
-      color: 'var(--text-main)',
-      padding: '2rem',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
-      <div style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '4rem' }}>
+    <div
+      className="profile-root-container"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        color: 'var(--text-main)',
+        padding: '2rem 1.5rem calc(10rem + env(safe-area-inset-bottom, 0px)) 1.5rem',
+        fontFamily: 'Outfit, sans-serif'
+      }}
+    >
+      <div className="profile-inner-box" style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '4rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>Profile</h1>
           <button
@@ -201,10 +203,14 @@ export default function ProfilePage() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
               }}
             >
-              📱 System
+              <IconSmartphone size={15} /> System
             </button>
             <button
               type="button"
@@ -220,10 +226,14 @@ export default function ProfilePage() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
               }}
             >
-              🌙 Dark
+              <IconMoon size={15} /> Dark
             </button>
             <button
               type="button"
@@ -239,10 +249,14 @@ export default function ProfilePage() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
               }}
             >
-              ☀️ Light
+              <IconSun size={15} /> Light
             </button>
           </div>
         </div>
@@ -283,6 +297,20 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        @media (orientation: landscape) and (max-height: 550px) {
+          .profile-root-container {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(8rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+          }
+          .profile-inner-box {
+            padding-top: 1rem !important;
+            max-width: 550px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { getMerchantInitials } from "@/lib/utils";
 import { useTheme } from "../components/ThemeProvider";
 import { IconGlobe, IconStore, IconMapPin, IconTruck, IconCheckCircle, IconShoppingBag, IconPartyPopper, IconBell, IconChevronLeft } from "../components/Icons";
 
@@ -157,15 +158,34 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
         overflow: "hidden", flexShrink: 0,
       }}>
         {offer.logo_url ? (
-          <img src={offer.logo_url} alt={offer.store_name}
-            style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-        ) : (
-          isOnline ? (
-            <IconGlobe size={22} color={isLight ? '#6D28D9' : '#A78BFA'} />
-          ) : (
-            <IconStore size={22} color={isLight ? '#6D28D9' : '#A78BFA'} />
-          )
-        )}
+          <img
+            src={offer.logo_url}
+            alt={offer.store_name}
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.parentElement?.querySelector('.initials-fallback') as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <span
+          className="initials-fallback"
+          style={{
+            display: offer.logo_url ? 'none' : 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            fontSize: '15px',
+            fontWeight: 900,
+            color: isLight ? '#6D28D9' : '#A78BFA',
+            letterSpacing: '-0.02em',
+            userSelect: 'none'
+          }}
+        >
+          {getMerchantInitials(offer.store_name)}
+        </span>
       </div>
 
       {/* Content */}

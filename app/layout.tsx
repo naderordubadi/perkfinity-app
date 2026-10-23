@@ -48,10 +48,13 @@ export default function RootLayout({
             --border: rgba(255, 255, 255, 0.1);
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
-            --nav-bg: rgba(15, 23, 42, 0.85);
-            --nav-border: rgba(255, 255, 255, 0.12);
+            --nav-bg: rgba(15, 23, 42, 0.14);
+            --nav-border: rgba(255, 255, 255, 0.30);
             --input-bg: rgba(15, 23, 42, 0.6);
             --safe-top: env(safe-area-inset-top, 44px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
           }
 
           :root[data-theme="light"] {
@@ -65,10 +68,13 @@ export default function RootLayout({
             --border: rgba(15, 23, 42, 0.14);
             --text-main: #0F172A;
             --text-muted: #475569;
-            --nav-bg: rgba(255, 255, 255, 0.95);
-            --nav-border: rgba(15, 23, 42, 0.15);
+            --nav-bg: rgba(255, 255, 255, 0.16);
+            --nav-border: rgba(15, 23, 42, 0.18);
             --input-bg: #F1F5F9;
             --safe-top: env(safe-area-inset-top, 44px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
           }
 
           /* Light Mode contrast & visibility overrides — Dark mode remains 100% untouched */
@@ -78,7 +84,15 @@ export default function RootLayout({
           }
 
           [data-theme="light"] .glass-nav {
-            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12) !important;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95) !important;
+          }
+
+          [data-theme="light"] .nav-item {
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+          }
+
+          [data-theme="light"] .nav-icon {
+            filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8)) !important;
           }
 
           [data-theme="light"] input, 
@@ -127,6 +141,8 @@ export default function RootLayout({
           body {
             margin: 0;
             padding: 0;
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
             font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg);
             color: var(--text-main);
@@ -141,21 +157,22 @@ export default function RootLayout({
 
           .glass-nav {
             position: fixed;
-            bottom: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 48px);
-            max-width: 400px;
+            max-width: 440px;
             height: 72px;
             background: var(--nav-bg);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(6px) saturate(200%);
+            -webkit-backdrop-filter: blur(6px) saturate(200%);
             border: 1px solid var(--nav-border);
             border-radius: 24px;
             display: flex;
             justify-content: space-around;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), inset 0 1px 1px 0 rgba(255, 255, 255, 0.30);
             transition: background 0.3s ease, border-color 0.3s ease;
           }
 
@@ -167,7 +184,8 @@ export default function RootLayout({
             text-decoration: none;
             color: var(--text-muted);
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 700;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
             transition: all 0.2s ease;
           }
 
@@ -179,14 +197,33 @@ export default function RootLayout({
             width: 24px;
             height: 24px;
             fill: currentColor;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
           }
 
           main {
             min-height: 100vh;
-            max-width: 500px;
+            width: 100%;
+            max-width: 900px;
             margin: 0 auto;
             position: relative;
-            padding-bottom: 120px;
+            padding-bottom: 0;
+          }
+
+          /* Responsive Duo & Foldable Adaptive Layout Rules */
+          .duo-feed-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.65rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          @media (min-width: 600px), (horizontal-viewport-segments: 2) {
+            .duo-feed-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 0.85rem;
+            }
           }
 
           .mesh-bg {

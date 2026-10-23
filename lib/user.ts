@@ -28,3 +28,17 @@ export const getUserData = () => {
   }
   return null;
 };
+
+export const clearUserSession = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('pf_user_token');
+    localStorage.removeItem('pf_user_data');
+    localStorage.removeItem('pf_setup_complete');
+    localStorage.removeItem('pending_qr');
+    localStorage.removeItem('pending_offers');
+    localStorage.removeItem('active_token_cache');
+    localStorage.removeItem('pending_cancel');
+  }
+  token = null;
+};
+

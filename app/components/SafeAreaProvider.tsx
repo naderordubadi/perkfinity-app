@@ -45,11 +45,36 @@ export default function SafeAreaProvider() {
           // Web — no status bar; a small padding for visual breathing room.
           document.documentElement.style.setProperty("--safe-top", "16px");
         }
+
+        document.documentElement.style.setProperty(
+          "--safe-left",
+          "env(safe-area-inset-left, 0px)"
+        );
+        document.documentElement.style.setProperty(
+          "--safe-right",
+          "env(safe-area-inset-right, 0px)"
+        );
+        document.documentElement.style.setProperty(
+          "--safe-bottom",
+          "env(safe-area-inset-bottom, 0px)"
+        );
       } catch {
         // Capacitor not available (pure web build) — use CSS env() fallback.
         document.documentElement.style.setProperty(
           "--safe-top",
           "env(safe-area-inset-top, 16px)"
+        );
+        document.documentElement.style.setProperty(
+          "--safe-left",
+          "env(safe-area-inset-left, 0px)"
+        );
+        document.documentElement.style.setProperty(
+          "--safe-right",
+          "env(safe-area-inset-right, 0px)"
+        );
+        document.documentElement.style.setProperty(
+          "--safe-bottom",
+          "env(safe-area-inset-bottom, 0px)"
         );
       }
     };

@@ -6,6 +6,7 @@ import { fetchApi } from "@/lib/api";
 import { setUserToken, setUserData } from "@/lib/user";
 import { getPostLoginRoute } from "@/lib/postLoginRoute";
 import { useTheme } from "@/app/components/ThemeProvider";
+import { IconMail, IconKey, IconEye, IconEyeOff, IconCheckCircle, IconX } from "@/app/components/Icons";
 
 export default function AuthPage() {
   const [method, setMethod] = useState<"choice" | "login" | "signup" | "forgot">("choice");
@@ -276,22 +277,26 @@ export default function AuthPage() {
   if (!platformLoaded) return null;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-gradient)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '2rem',
-      color: 'var(--text-main)',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+    <div
+      className="auth-root-container"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-gradient)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '2rem',
+        color: 'var(--text-main)',
+        fontFamily: 'Outfit, sans-serif'
+      }}
+    >
+      <div className="auth-form-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
         <img
           src={platform === 'android' ? "/app-icon.png" : "/assets/logo.png"}
           alt="Perkfinity Logo"
+          className="auth-logo"
           style={{ width: '100%', maxWidth: platform === 'android' ? '64px' : '280px', margin: '0 auto 1.5rem', display: 'block', objectFit: 'contain', borderRadius: platform === 'android' ? '12px' : '0' }}
         />
-        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center', fontWeight: 600 }}>
+        <p className="auth-subtitle" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', textAlign: 'center', fontWeight: 600 }}>
           {method === "choice"
             ? "Choose how you'd like to sign in."
             : method === "login"
@@ -354,7 +359,9 @@ export default function AuthPage() {
                   padding: '1.25rem',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✉️</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+                    <IconMail size={44} color={isLight ? '#15803D' : '#86EFAC'} />
+                  </div>
                   <h3 style={{ margin: '0 0 0.5rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC' }}>Check Your Email</h3>
                   <p style={{ margin: 0, fontSize: '0.875rem', color: isLight ? '#15803D' : 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
                     If an account exists for <strong style={{ color: isLight ? '#0F172A' : '#fff' }}>{email}</strong>, we&apos;ve sent a password reset link. Check your inbox and spam folder.
@@ -422,7 +429,7 @@ export default function AuthPage() {
                   fontSize: '0.875rem', cursor: 'pointer', width: '100%', textAlign: 'left'
                 }}
               >
-                <span style={{ fontSize: '1.25rem' }}>🔑</span>
+                <IconKey size={20} color={isLight ? '#6D28D9' : '#C4B5FD'} />
                 <div>
                   <div style={{ fontWeight: 700, color: isLight ? '#0F172A' : '#fff', fontSize: '0.875rem' }}>Use saved credentials</div>
                   <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.7)' }}>{hasSavedCred.u}</div>
@@ -445,7 +452,7 @@ export default function AuthPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
               <label style={{ fontSize: '0.875rem', color: isLight ? '#0F172A' : 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Password</label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
@@ -459,21 +466,33 @@ export default function AuthPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
-                    position: 'absolute', right: '14px', top: '16px',
-                    background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', opacity: 0.8
+                    position: 'absolute', right: '14px',
+                    background: 'none', border: 'none', cursor: 'pointer', opacity: 0.8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: isLight ? '#475569' : 'rgba(255,255,255,0.7)',
+                    padding: 0
                   }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? <IconEyeOff size={20} /> : <IconEye size={20} />}
                 </button>
               </div>
             </div>
 
             {method === "signup" && password.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', marginTop: '-0.5rem', fontWeight: 600 }}>
-                <span style={{ color: hasUpper ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasUpper ? '✓' : '✗'} One uppercase letter</span>
-                <span style={{ color: hasLower ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasLower ? '✓' : '✗'} One lowercase letter</span>
-                <span style={{ color: hasNum ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasNum ? '✓' : '✗'} One number</span>
-                <span style={{ color: hasLength ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5') }}>{hasLength ? '✓' : '✗'} At least 8 characters</span>
+                <span style={{ color: hasUpper ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5'), display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {hasUpper ? <IconCheckCircle size={13} color={isLight ? '#15803D' : '#6BC17A'} /> : <IconX size={13} color={isLight ? '#DC2626' : '#FCA5A5'} />} One uppercase letter
+                </span>
+                <span style={{ color: hasLower ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5'), display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {hasLower ? <IconCheckCircle size={13} color={isLight ? '#15803D' : '#6BC17A'} /> : <IconX size={13} color={isLight ? '#DC2626' : '#FCA5A5'} />} One lowercase letter
+                </span>
+                <span style={{ color: hasNum ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5'), display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {hasNum ? <IconCheckCircle size={13} color={isLight ? '#15803D' : '#6BC17A'} /> : <IconX size={13} color={isLight ? '#DC2626' : '#FCA5A5'} />} One number
+                </span>
+                <span style={{ color: hasLength ? (isLight ? '#15803D' : '#6BC17A') : (isLight ? '#DC2626' : '#FCA5A5'), display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {hasLength ? <IconCheckCircle size={13} color={isLight ? '#15803D' : '#6BC17A'} /> : <IconX size={13} color={isLight ? '#DC2626' : '#FCA5A5'} />} At least 8 characters
+                </span>
               </div>
             )}
 
@@ -515,6 +534,27 @@ export default function AuthPage() {
           style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
         >Privacy Policy</button>.
       </p>
+
+      <style jsx>{`
+        @media (orientation: landscape) and (max-height: 550px) {
+          .auth-root-container {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(2rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+          }
+          .auth-logo {
+            max-width: 140px !important;
+            margin-bottom: 0.5rem !important;
+          }
+          .auth-subtitle {
+            margin-bottom: 0.85rem !important;
+            font-size: 0.9rem !important;
+          }
+          .auth-form-card {
+            margin-top: 0.5rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { getUserToken } from './user';
+import { getUserToken, clearUserSession } from './user';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perkfinity-backend.vercel.app/api/v1';
 
@@ -32,6 +32,14 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   } catch {
     // Server returned non-JSON (e.g., Vercel HTML error page)
     throw new Error(`Server error (HTTP ${response.status}). Please try again.`);
+  }
+
+  if (response.status === 401) {
+    clearUserSession();
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+      window.location.href = '/auth';
+    }
+    throw new Error(data?.error || 'Session expired. Please sign in again.');
   }
 
   if (!response.ok || data.success === false) {

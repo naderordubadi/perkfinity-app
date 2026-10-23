@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
+import { getMerchantInitials } from "@/lib/utils";
 import { App } from '@capacitor/app';
 import { useTheme } from "@/app/components/ThemeProvider";
+import { IconStore, IconClock, IconSmartphone, IconCart, IconCheckCircle } from "@/app/components/Icons";
 
 // Inner component — must be wrapped in <Suspense> by the parent
 function RedeemContent() {
@@ -216,191 +218,305 @@ function RedeemContent() {
   const codeFontSize = displayCode.length <= 8 ? '2rem' : displayCode.length <= 13 ? '1.5rem' : '1.1rem';
   const codeLetterSpacing = displayCode.length <= 8 ? '5px' : displayCode.length <= 13 ? '3px' : '2px';
 
+  const handleCancelOrDone = async () => {
+    if (!redeemSuccess && !expired && cache) {
+      try {
+        await fetchApi(`/campaigns/${cache.campaign.id}/cancel-activation`, { method: 'POST' });
+      } catch { /* best-effort — proceed even if network fails */ }
+      try {
+        const existing: Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }> =
+          JSON.parse(localStorage.getItem('pending_offers') || '[]');
+        if (!existing.some(o => o.campaign_id === cache.campaign.id)) {
+          existing.push({
+            campaign_id: cache.campaign.id,
+            merchant_name: cache.merchant.business_name,
+            title: cache.campaign.title,
+            qr_code: localStorage.getItem('pending_qr') || '',
+          });
+          localStorage.setItem('pending_offers', JSON.stringify(existing));
+        }
+      } catch { /* ignore */ }
+    }
+    localStorage.removeItem('pending_cancel');
+    router.push('/');
+  };
+
+  const renderActionButtons = () => (
+    <div style={{ width: '100%' }}>
+      {/* ── Mark as Redeemed / Success ── */}
+      {!redeemSuccess ? (
+        <button
+          onClick={handleManualRedeem}
+          disabled={redeeming || timeLeft <= 0}
+          style={{
+            width: '100%', padding: '1.1rem',
+            background: (redeeming || timeLeft <= 0) ? (isLight ? '#E2E8F0' : 'rgba(255,255,255,0.06)') : (isLight ? '#15803D' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)'),
+            color: (redeeming || timeLeft <= 0) ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : '#fff',
+            border: 'none', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
+            cursor: (redeeming || timeLeft <= 0) ? 'not-allowed' : 'pointer',
+            boxShadow: (redeeming || timeLeft <= 0) ? 'none' : (isLight ? '0 8px 20px rgba(21,128,61,0.25)' : '0 8px 20px rgba(16,185,129,0.3)'),
+            transition: 'all 0.2s ease', marginBottom: '0.75rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+          }}
+        >
+          {redeeming ? 'Marking as Redeemed...' : <><IconCheckCircle size={18} color="#fff" /> Mark as Redeemed</>}
+        </button>
+      ) : (
+        <div style={{
+          width: '100%', padding: '1.1rem',
+          background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(16,185,129,0.4)',
+          color: isLight ? '#15803D' : '#10B981', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
+          textAlign: 'center', marginBottom: '0.75rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+        }}>
+          <IconCheckCircle size={18} color={isLight ? '#15803D' : '#10B981'} /> Offer Redeemed — Enjoy your perk!
+        </div>
+      )}
+
+      {/* ── Done / Cancel ── */}
+      <button
+        onClick={handleCancelOrDone}
+        style={{ width: '100%', padding: '0.875rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}
+      >
+        Done / Cancel
+      </button>
+    </div>
+  );
+
   return (
-    <div style={{
+    <div className="redeem-root-container" style={{
       minHeight: '100vh',
       background: 'var(--bg-gradient)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '1.5rem 1.25rem 7rem',
+      padding: 'calc(var(--safe-top, 44px) + 2rem) 1.25rem calc(10rem + env(safe-area-inset-bottom, 0px))',
       color: 'var(--text-main)',
-      fontFamily: 'Outfit, sans-serif',
-      overflowY: 'auto'
+      fontFamily: 'Outfit, sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: '420px', paddingTop: '1.5rem' }}>
+      <div className="redeem-grid">
 
-        {/* ── Merchant Identity ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', marginBottom: '1.1rem' }}>
-          {cache.merchant?.logo_url ? (
-            <img
-              src={cache.merchant.logo_url}
-              alt=""
-              style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'contain', border: isLight ? '2px solid rgba(15,23,42,0.15)' : '2px solid rgba(255,255,255,0.15)', boxShadow: isLight ? '0 8px 24px rgba(15,23,42,0.08)' : '0 8px 24px rgba(0,0,0,0.4)' }}
-            />
-          ) : (
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)', border: isLight ? '2px solid #D8B4FE' : '2px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🏪</div>
-          )}
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', textAlign: 'center' }}>
-            {cache.merchant?.business_name}
-          </h2>
-        </div>
-
-        {/* ── Countdown Timer (smaller, subtle) ── */}
-        {!redeemSuccess && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '1.1rem' }}>
-            <span style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', fontWeight: 600 }}>⏱ Offer active for</span>
-            <span style={{
-              fontSize: '1.05rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-              color: timeLeft <= 0 ? '#DC2626' : timeLeft < 60 ? '#B45309' : (isLight ? '#6D28D9' : '#A78BFA')
-            }}>
-              {timeLeft <= 0 ? '⏱ Returning home...' : formatTime(timeLeft)}
-            </span>
-          </div>
-        )}
-
-        {/* ── Offer Card ── */}
-        <div style={{
-          background: timeLeft <= 0 ? (isLight ? '#F1F5F9' : 'rgba(255,255,255,0.04)') : (isLight ? '#F3E8FF' : 'rgba(139,92,246,0.15)'),
-          border: `1px solid ${timeLeft <= 0 ? (isLight ? '#CBD5E1' : 'rgba(255,255,255,0.08)') : (isLight ? '#D8B4FE' : 'rgba(139,92,246,0.35)')}`,
-          borderRadius: '20px', padding: '1.25rem 1.5rem',
-          marginBottom: '1.25rem', textAlign: 'center',
-          opacity: timeLeft <= 0 ? 0.5 : 1, transition: 'all 0.5s ease'
-        }}>
-          <h3 style={{ margin: '0 0 0.35rem', fontSize: '2rem', fontWeight: 800, color: timeLeft <= 0 ? '#64748B' : (isLight ? '#6D28D9' : '#A78BFA'), lineHeight: 1.1 }}>
-            {cache.campaign?.title}
-          </h3>
-          {cache.campaign?.terms && (
-            <p style={{ margin: 0, fontSize: '0.88rem', color: isLight ? '#334155' : 'rgba(255,255,255,0.75)', lineHeight: 1.5, fontWeight: 500 }}>
-              {cache.campaign.terms}
-            </p>
-          )}
-        </div>
-
-        {/* ── 3-Step Instruction Flow ── */}
-        <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.25rem 1.25rem 1rem', marginBottom: '1.25rem', boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none' }}>
-
-          {/* Step 1 */}
-          <div style={{ display: 'flex', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.25)', border: isLight ? '1.5px solid #D8B4FE' : '1.5px solid rgba(139,92,246,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#A78BFA' }}>1</div>
-              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+        {/* ── Left Column in Landscape (Top Section in Portrait) ── */}
+        <div className="redeem-left-col">
+          {/* Merchant Identity */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', marginBottom: '1.1rem' }}>
+            {cache.merchant?.logo_url ? (
+              <img
+                src={cache.merchant.logo_url}
+                alt=""
+                style={{ width: '76px', height: '76px', borderRadius: '50%', objectFit: 'contain', border: isLight ? '2px solid rgba(15,23,42,0.15)' : '2px solid rgba(255,255,255,0.15)', boxShadow: isLight ? '0 8px 24px rgba(15,23,42,0.08)' : '0 8px 24px rgba(0,0,0,0.4)' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.parentElement?.querySelector('.initials-fallback') as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div
+              className="initials-fallback"
+              style={{
+                display: cache.merchant?.logo_url ? 'none' : 'flex',
+                width: '76px',
+                height: '76px',
+                borderRadius: '50%',
+                background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)',
+                border: isLight ? '2px solid #D8B4FE' : '2px solid rgba(139,92,246,0.4)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '26px',
+                fontWeight: 900,
+                color: isLight ? '#6D28D9' : '#A78BFA',
+                letterSpacing: '-0.02em',
+                userSelect: 'none'
+              }}
+            >
+              {getMerchantInitials(cache.merchant?.business_name)}
             </div>
-            <div style={{ paddingBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>👋 Show this screen to the cashier</div>
-              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Present your phone at the register</div>
-            </div>
+            <h2 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', textAlign: 'center' }}>
+              {cache.merchant?.business_name}
+            </h2>
           </div>
 
-          {/* Code Box (between Step 1 and Step 2) */}
-          <div style={{ display: 'flex', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '28px' }}>
-              <div style={{ width: '2px', flex: 1, background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '0 0 4px' }} />
-            </div>
-            <div style={{ flex: 1, paddingBottom: '0.75rem' }}>
-              <div style={{
-                background: isLight ? '#F8FAFC' : 'rgba(0,0,0,0.3)', border: isLight ? '1.5px solid #CBD5E1' : '1.5px solid rgba(255,255,255,0.18)',
-                borderRadius: '14px', padding: '1rem 1.25rem', textAlign: 'center',
-                opacity: timeLeft <= 0 ? 0.3 : 1
+          {/* Countdown Timer */}
+          {!redeemSuccess && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '1.1rem' }}>
+              <span style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <IconClock size={14} color="currentColor" /> Offer active for
+              </span>
+              <span style={{
+                fontSize: '1.05rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                color: timeLeft <= 0 ? '#DC2626' : timeLeft < 60 ? '#B45309' : (isLight ? '#6D28D9' : '#A78BFA'),
+                display: 'inline-flex', alignItems: 'center', gap: '4px'
               }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>
-                  {hasPromoCode ? 'Promo Code' : 'Reference Code'}
-                </div>
-                <div style={{ fontSize: codeFontSize, fontWeight: 800, letterSpacing: codeLetterSpacing, color: isLight ? '#0F172A' : '#fff', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>
-                  {displayCode}
-                </div>
-                {hasPromoCode && (
-                  <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', marginTop: '0.4rem', fontWeight: 500 }}>
-                    Cashier: enter this code at the register
-                  </div>
-                )}
-              </div>
+                {timeLeft <= 0 ? <><IconClock size={15} color="currentColor" /> Returning home...</> : formatTime(timeLeft)}
+              </span>
             </div>
+          )}
+
+          {/* Offer Card */}
+          <div style={{
+            background: timeLeft <= 0 ? (isLight ? '#F1F5F9' : 'rgba(255,255,255,0.04)') : (isLight ? '#F3E8FF' : 'rgba(139,92,246,0.15)'),
+            border: `1px solid ${timeLeft <= 0 ? (isLight ? '#CBD5E1' : 'rgba(255,255,255,0.08)') : (isLight ? '#D8B4FE' : 'rgba(139,92,246,0.35)')}`,
+            borderRadius: '20px', padding: '1.25rem 1.5rem',
+            marginBottom: '1.25rem', textAlign: 'center',
+            opacity: timeLeft <= 0 ? 0.5 : 1, transition: 'all 0.5s ease',
+            width: '100%', boxSizing: 'border-box'
+          }}>
+            <h3 style={{ margin: '0 0 0.35rem', fontSize: '1.85rem', fontWeight: 800, color: timeLeft <= 0 ? '#64748B' : (isLight ? '#6D28D9' : '#A78BFA'), lineHeight: 1.1 }}>
+              {cache.campaign?.title}
+            </h3>
+            {cache.campaign?.terms && (
+              <p style={{ margin: 0, fontSize: '0.88rem', color: isLight ? '#334155' : 'rgba(255,255,255,0.75)', lineHeight: 1.5, fontWeight: 500 }}>
+                {cache.campaign.terms}
+              </p>
+            )}
           </div>
 
-          {/* Step 2 */}
-          <div style={{ display: 'flex', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.2)', border: isLight ? '1.5px solid #86EFAC' : '1.5px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#15803D' : '#10B981' }}>2</div>
-              <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-            </div>
-            <div style={{ paddingBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>🛒 Cashier: Honor the offer</div>
-              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
-                {hasPromoCode ? 'Apply the offer and enter the code at the register' : 'Apply the offer at checkout'}
-              </div>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div style={{ display: 'flex', gap: '0.875rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#FEF3C7' : 'rgba(251,191,36,0.2)', border: isLight ? '1.5px solid #FDE68A' : '1.5px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#B45309' : '#FDE68A' }}>3</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem' }}>✅ Tap "Mark as Redeemed"</div>
-              <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Records this perk in your history and the merchant's dashboard</div>
-            </div>
+          {/* Left Column Action Buttons (Visible in Landscape) */}
+          <div className="redeem-actions-left">
+            {renderActionButtons()}
           </div>
         </div>
 
-        {/* ── Mark as Redeemed / Success ── */}
-        {!redeemSuccess ? (
-          <button
-            onClick={handleManualRedeem}
-            disabled={redeeming || timeLeft <= 0}
-            style={{
-              width: '100%', padding: '1.1rem',
-              background: (redeeming || timeLeft <= 0) ? (isLight ? '#E2E8F0' : 'rgba(255,255,255,0.06)') : (isLight ? '#15803D' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)'),
-              color: (redeeming || timeLeft <= 0) ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : '#fff',
-              border: 'none', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
-              cursor: (redeeming || timeLeft <= 0) ? 'not-allowed' : 'pointer',
-              boxShadow: (redeeming || timeLeft <= 0) ? 'none' : (isLight ? '0 8px 20px rgba(21,128,61,0.25)' : '0 8px 20px rgba(16,185,129,0.3)'),
-              transition: 'all 0.2s ease', marginBottom: '0.75rem'
-            }}
-          >
-            {redeeming ? 'Marking as Redeemed...' : '✓ Mark as Redeemed'}
-          </button>
-        ) : (
-          <div style={{
-            width: '100%', padding: '1.1rem',
-            background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(16,185,129,0.4)',
-            color: isLight ? '#15803D' : '#10B981', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 700,
-            textAlign: 'center', marginBottom: '0.75rem'
-          }}>
-            ✅ Offer Redeemed — Enjoy your perk!
-          </div>
-        )}
+        {/* ── Right Column in Landscape (Bottom Section in Portrait) ── */}
+        <div className="redeem-right-col">
+          {/* 3-Step Instruction Flow */}
+          <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '1.25rem 1.25rem 1rem', marginBottom: '1.25rem', boxShadow: isLight ? '0 4px 16px rgba(15,23,42,0.05)' : 'none', width: '100%', boxSizing: 'border-box' }}>
 
-        {/* ── Done / Cancel ── */}
-        <button
-          onClick={async () => {
-            if (!redeemSuccess && !expired && cache) {
-              try {
-                await fetchApi(`/campaigns/${cache.campaign.id}/cancel-activation`, { method: 'POST' });
-              } catch { /* best-effort — proceed even if network fails */ }
-              try {
-                const existing: Array<{ campaign_id: string; merchant_name: string; title: string; qr_code: string }> =
-                  JSON.parse(localStorage.getItem('pending_offers') || '[]');
-                if (!existing.some(o => o.campaign_id === cache.campaign.id)) {
-                  existing.push({
-                    campaign_id: cache.campaign.id,
-                    merchant_name: cache.merchant.business_name,
-                    title: cache.campaign.title,
-                    qr_code: localStorage.getItem('pending_qr') || '',
-                  });
-                  localStorage.setItem('pending_offers', JSON.stringify(existing));
-                }
-              } catch { /* ignore */ }
-            }
-            localStorage.removeItem('pending_cancel');
-            router.push('/');
-          }}
-          style={{ width: '100%', padding: '0.875rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}
-        >
-          Done / Cancel
-        </button>
+            {/* Step 1 */}
+            <div style={{ display: 'flex', gap: '0.875rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.25)', border: isLight ? '1.5px solid #D8B4FE' : '1.5px solid rgba(139,92,246,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#A78BFA' }}>1</div>
+                <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+              </div>
+              <div style={{ paddingBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IconSmartphone size={16} color={isLight ? '#6D28D9' : '#A78BFA'} /> <span>Show this screen to the cashier</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Present your phone at the register</div>
+              </div>
+            </div>
+
+            {/* Code Box (between Step 1 and Step 2) */}
+            <div style={{ display: 'flex', gap: '0.875rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '28px' }}>
+                <div style={{ width: '2px', flex: 1, background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '0 0 4px' }} />
+              </div>
+              <div style={{ flex: 1, paddingBottom: '0.75rem', minWidth: 0 }}>
+                <div style={{
+                  background: isLight ? '#F8FAFC' : 'rgba(0,0,0,0.3)', border: isLight ? '1.5px solid #CBD5E1' : '1.5px solid rgba(255,255,255,0.18)',
+                  borderRadius: '14px', padding: '1rem 1.25rem', textAlign: 'center',
+                  opacity: timeLeft <= 0 ? 0.3 : 1, width: '100%', boxSizing: 'border-box'
+                }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.5rem' }}>
+                    {hasPromoCode ? 'Promo Code' : 'Reference Code'}
+                  </div>
+                  <div style={{ fontSize: codeFontSize, fontWeight: 800, letterSpacing: codeLetterSpacing, color: isLight ? '#0F172A' : '#fff', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>
+                    {displayCode}
+                  </div>
+                  {hasPromoCode && (
+                    <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.4)', marginTop: '0.4rem', fontWeight: 500 }}>
+                      Cashier: enter this code at the register
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div style={{ display: 'flex', gap: '0.875rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#DCFCE7' : 'rgba(16,185,129,0.2)', border: isLight ? '1.5px solid #86EFAC' : '1.5px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#15803D' : '#10B981' }}>2</div>
+                <div style={{ width: '2px', flex: 1, minHeight: '16px', background: isLight ? 'rgba(15,23,42,0.1)' : 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+              </div>
+              <div style={{ paddingBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IconCart size={16} color={isLight ? '#15803D' : '#10B981'} /> <span>Cashier: Honor the offer</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+                  {hasPromoCode ? 'Apply the offer and enter the code at the register' : 'Apply the offer at checkout'}
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div style={{ display: 'flex', gap: '0.875rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isLight ? '#FEF3C7' : 'rgba(251,191,36,0.2)', border: isLight ? '1.5px solid #FDE68A' : '1.5px solid rgba(251,191,36,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: isLight ? '#B45309' : '#FDE68A' }}>3</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: isLight ? '#0F172A' : '#fff', marginBottom: '0.15rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IconCheckCircle size={16} color={isLight ? '#B45309' : '#FDE68A'} /> <span>Tap &quot;Mark as Redeemed&quot;</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Records this perk in your history and the merchant&apos;s dashboard</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column Action Buttons (Visible in Portrait) */}
+          <div className="redeem-actions-right">
+            {renderActionButtons()}
+          </div>
+        </div>
       </div>
+
+      <style jsx>{`
+        .redeem-root-container {
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+
+        .redeem-grid {
+          width: 100%;
+          max-width: 420px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          padding-top: 1rem;
+        }
+
+        .redeem-left-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+        }
+
+        .redeem-right-col {
+          width: 100%;
+        }
+
+        .redeem-actions-left {
+          display: none;
+          width: 100%;
+        }
+
+        .redeem-actions-right {
+          display: block;
+          width: 100%;
+        }
+
+        @media (orientation: landscape), (horizontal-viewport-segments: 2), (min-width: 600px) and (orientation: landscape) {
+          .redeem-root-container {
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(8rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+            justify-content: flex-start !important;
+          }
+          .redeem-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1.15fr !important;
+            gap: 2rem !important;
+            max-width: 820px !important;
+            align-items: start !important;
+            padding-top: 0.5rem !important;
+          }
+          .redeem-actions-left {
+            display: block !important;
+          }
+          .redeem-actions-right {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

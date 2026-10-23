@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
+import { getMerchantInitials } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../components/ThemeProvider';
+import { IconClock, IconCheckCircle, IconGift, IconSparkles, IconFlame, IconAlertTriangle, IconCalendar, IconStore } from '../components/Icons';
 
 interface PendingOffer {
   campaign_id: string;
@@ -33,9 +35,9 @@ interface LocationInfo {
   city?: string;
 }
 
-function formatExpirationLine(end_at?: string): { text: string; color: string; icon: string } {
+function formatExpirationLine(end_at?: string): { text: string; color: string; iconType: 'sparkles' | 'flame' | 'warning' | 'calendar' } {
   if (!end_at) {
-    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', iconType: 'sparkles' };
   }
   const expires = new Date(end_at);
   const now = new Date();
@@ -43,18 +45,18 @@ function formatExpirationLine(end_at?: string): { text: string; color: string; i
 
   // Far future (> 365 days) — treat like no expiry
   if (diffDays > 365) {
-    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', icon: '✨' };
+    return { text: "No expiration date — but don't wait too long!", color: 'rgba(167,139,250,0.9)', iconType: 'sparkles' };
   }
 
   const formatted = expires.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   if (diffDays <= 3) {
-    return { text: `Expires ${formatted} — act fast!`, color: '#F87171', icon: '🔥' };
+    return { text: `Expires ${formatted} — act fast!`, color: '#F87171', iconType: 'flame' };
   }
   if (diffDays <= 7) {
-    return { text: `Expires ${formatted} — offer ending soon`, color: '#FDE68A', icon: '⚠️' };
+    return { text: `Expires ${formatted} — offer ending soon`, color: '#FDE68A', iconType: 'warning' };
   }
-  return { text: `Expires ${formatted}`, color: 'rgba(255,255,255,0.5)', icon: '📅' };
+  return { text: `Expires ${formatted}`, color: 'rgba(255,255,255,0.5)', iconType: 'calendar' };
 }
 
 export default function ActivatePage() {
@@ -67,7 +69,7 @@ export default function ActivatePage() {
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [campaignDetails, setCampaignDetails] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalState, setModalState] = useState<{ title: string; message: string; icon: string } | null>(null);
+  const [modalState, setModalState] = useState<{ title: string; message: string; iconType: 'clock' | 'check' } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function ActivatePage() {
       const expiredMerchant = parsed[0]?.merchant_name || 'this merchant';
       setOffers([]);
       setModalState({
-        icon: "⏰",
+        iconType: "clock",
         title: "This Offer Has Expired",
         message: `This limited-time perk from ${expiredMerchant} has expired. Keep an eye on your Daily Digest for fresh exclusive offers!`,
       });
@@ -129,7 +131,7 @@ export default function ActivatePage() {
               localStorage.removeItem('pending_offers');
               setOffers([]);
               setModalState({
-                icon: "⏰",
+                iconType: "clock",
                 title: "This Offer Has Expired",
                 message: `This limited-time perk from ${qrData?.merchant?.business_name || 'this merchant'} has expired. Keep an eye on your Daily Digest for fresh exclusive offers!`,
               });
@@ -201,21 +203,21 @@ export default function ActivatePage() {
           setCurrentIdx(i => Math.min(i, updatedOffers.length - 1));
           setError(
             isExpired
-              ? 'That offer has expired ⏰. Showing your remaining available perk below.'
-              : 'You have already claimed that perk ✅. Showing your remaining available perk below.'
+              ? 'That offer has expired. Showing your remaining available perk below.'
+              : 'You have already claimed that perk. Showing your remaining available perk below.'
           );
         } else {
           // No campaigns left — show the appropriate modal
           if (isExpired) {
             setModalState({
-              icon: "⏰",
+              iconType: "clock",
               title: "This Offer Has Expired",
               message: `This limited-time perk from ${merchantName} has expired. Keep an eye on your Daily Digest for fresh exclusive offers from this store!`,
             });
           } else {
             setModalState({
-              icon: "✅",
-              title: "You've Already Claimed This Perk! 🎉",
+              iconType: "check",
+              title: "You've Already Claimed This Perk!",
               message: `This perk is already saved in your History — you're all set! Keep an eye on your Daily Digest for fresh exclusive offers from ${merchantName}. More great perks from this store are on the way!`,
             });
           }
@@ -245,109 +247,229 @@ export default function ActivatePage() {
     <>
       {/* Status Modal (Already Redeemed or Expired) */}
       {modalState && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-          <div style={{ background: isLight ? '#FFFFFF' : 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '360px', width: '100%', textAlign: 'center', boxShadow: isLight ? '0 20px 50px rgba(15,23,42,0.15)' : '0 32px 80px rgba(0,0,0,0.65)' }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '1rem', lineHeight: 1 }}>{modalState.icon}</div>
-            <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>{modalState.title}</h2>
-            <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>{modalState.message}</p>
-            <button
-              onClick={() => router.push('/')}
-              style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #6D28D9 0%, #15803D 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(109,40,217,0.25)', letterSpacing: '0.01em' }}
-            >
-              Go to Home
-            </button>
+        <div className="status-modal-root" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
+          <div className="status-modal-card" style={{ background: isLight ? '#FFFFFF' : 'linear-gradient(135deg, #1a1040 0%, #0F172A 100%)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(167,139,250,0.25)', borderRadius: '28px', padding: '2.5rem 2rem', maxWidth: '380px', width: '100%', textAlign: 'center', boxShadow: isLight ? '0 20px 50px rgba(15,23,42,0.15)' : '0 32px 80px rgba(0,0,0,0.65)' }}>
+            <div className="status-modal-left">
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                {modalState.iconType === 'clock' ? (
+                  <IconClock size={56} color="#F87171" />
+                ) : (
+                  <IconCheckCircle size={56} color="#22C55E" />
+                )}
+              </div>
+              <h2 style={{ color: isLight ? '#0F172A' : '#fff', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.85rem', lineHeight: 1.25 }}>{modalState.title}</h2>
+            </div>
+            <div className="status-modal-right">
+              <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.62)', fontSize: '0.88rem', lineHeight: 1.65, margin: '0 0 1.85rem' }}>{modalState.message}</p>
+              <button
+                onClick={() => router.push('/')}
+                style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #6D28D9 0%, #15803D 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(109,40,217,0.25)', letterSpacing: '0.01em' }}
+              >
+                Go to Home
+              </button>
+            </div>
           </div>
         </div>
       )}
-      <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', padding: '2rem', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', paddingTop: '1rem' }}>
-        <img src={isAndroid ? "/app-icon.png" : "/assets/logo.png"} alt="Perkfinity" style={{ height: isAndroid ? '64px' : '32px', objectFit: 'contain', borderRadius: isAndroid ? '12px' : '0' }} />
-      </div>
+      <div className="activate-root-container" style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', padding: 'calc(var(--safe-top, 44px) + 2rem) 1.5rem calc(10rem + env(safe-area-inset-bottom, 0px)) 1.5rem', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif' }}>
+        <div className="activate-grid">
+          {/* Left Column in Landscape (Top in Portrait): Merchant Header, Offer Count, Disclaimer */}
+          <div className="activate-left-col">
+            {/* Merchant Header */}
+            <div className="activate-merchant-header" style={{ textAlign: 'center', marginBottom: '1.25rem', paddingTop: '1rem' }}>
+              {merchantInfo?.logo_url ? (
+                <img
+                  src={merchantInfo.logo_url}
+                  alt=""
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    objectFit: 'contain',
+                    border: isLight ? '2px solid rgba(15,23,42,0.15)' : '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: isLight ? '0 8px 24px rgba(15,23,42,0.08)' : '0 8px 24px rgba(0,0,0,0.4)',
+                    marginBottom: '0.75rem'
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.parentElement?.querySelector('.initials-fallback') as HTMLElement;
+                    if (fallback) fallback.style.display = 'inline-flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className="initials-fallback"
+                style={{
+                  display: merchantInfo?.logo_url ? 'none' : 'inline-flex',
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)',
+                  border: isLight ? '2px solid #D8B4FE' : '2px solid rgba(139,92,246,0.4)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '0.75rem',
+                  fontSize: '22px',
+                  fontWeight: 900,
+                  color: isLight ? '#6D28D9' : '#A78BFA',
+                  letterSpacing: '-0.02em',
+                  userSelect: 'none'
+                }}
+              >
+                {getMerchantInitials(merchantName)}
+              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.25rem', color: isLight ? '#0F172A' : '#E2E8F0' }}>
+                {merchantName}
+              </h2>
+              {locationLine && (
+                <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', margin: 0, fontSize: '0.8rem', fontWeight: 500 }}>{locationLine}</p>
+              )}
+            </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ width: '100%', maxWidth: '400px' }}>
-          {/* Merchant Header */}
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            {merchantInfo?.logo_url && (
-              <img src={merchantInfo.logo_url} alt="" style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'contain', border: isLight ? '2px solid rgba(15,23,42,0.15)' : '2px solid rgba(255,255,255,0.2)', marginBottom: '0.75rem' }} />
+            {/* Offer Counter */}
+            {totalCampaigns > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '1rem' }}>
+                <span style={{ fontSize: '0.8rem', color: isLight ? '#B45309' : '#FDE68A', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <IconGift size={15} color={isLight ? '#B45309' : '#FDE68A'} /> {totalCampaigns} Offers Available
+                </span>
+                <span style={{ fontSize: '0.78rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>({currentIdx + 1} of {totalCampaigns})</span>
+              </div>
             )}
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.25rem', color: isLight ? '#0F172A' : '#E2E8F0' }}>
-              {merchantName}
-            </h2>
-            {locationLine && (
-              <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', margin: 0, fontSize: '0.8rem', fontWeight: 500 }}>{locationLine}</p>
-            )}
+
+            <p className="activate-disclaimer" style={{ textAlign: 'center', fontSize: '0.72rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.3)', margin: '0.5rem 0 0', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+              <IconClock size={13} color="currentColor" /> Valid for <strong>3 minutes</strong> once activated
+            </p>
           </div>
 
-          {/* Offer Counter */}
-          {totalCampaigns > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '0.8rem', color: isLight ? '#B45309' : '#FDE68A', fontWeight: 800 }}>🎁 {totalCampaigns} Offers Available</span>
-              <span style={{ fontSize: '0.78rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{currentIdx + 1} of {totalCampaigns}</span>
-            </div>
-          )}
+          {/* Right Column in Landscape (Bottom in Portrait): Offer Card, Button, Pagination */}
+          <div className="activate-right-col">
+            {/* Error Message */}
+            {error && (
+              <div style={{ background: isLight ? '#FEE2E2' : 'rgba(248,113,113,0.15)', border: isLight ? '1px solid #FCA5A5' : '1px solid rgba(248,113,113,0.35)', borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: isLight ? '#991B1B' : '#FCA5A5', fontWeight: 600 }}>
+                {error}
+              </div>
+            )}
 
-          {/* Error Message */}
-          {error && (
-            <div style={{ background: isLight ? '#FEE2E2' : 'rgba(248,113,113,0.15)', border: isLight ? '1px solid #FCA5A5' : '1px solid rgba(248,113,113,0.35)', borderRadius: '12px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: isLight ? '#991B1B' : '#FCA5A5', fontWeight: 600 }}>
-              {error}
-            </div>
-          )}
-
-          {/* Offer Card */}
-          <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '2rem', textAlign: 'center', boxShadow: isLight ? '0 10px 30px rgba(15,23,42,0.08)' : '0 20px 40px rgba(0,0,0,0.5)', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <div>
-              <div style={{ background: isLight ? 'linear-gradient(135deg, #F3E8FF 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(16,185,129,0.2) 100%)', padding: '1.5rem', borderRadius: '16px', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(255,255,255,0.08)', marginBottom: '1.25rem' }}>
-                <h1 style={{ margin: '0 0 0.5rem', fontSize: '2rem', fontWeight: 800, lineHeight: 1.1, color: isLight ? '#0F172A' : '#FFFFFF', background: isLight ? 'none' : 'linear-gradient(to right, #fff, #A78BFA)', WebkitBackgroundClip: isLight ? 'none' : 'text', WebkitTextFillColor: isLight ? 'initial' : 'transparent' }}>
-                  {campaign?.title || 'Offer'}
-                </h1>
-                {campaign?.terms && (
-                  <p style={{ margin: 0, color: isLight ? '#334155' : 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.5, fontWeight: 500 }}>{campaign.terms}</p>
-                )}
+            {/* Offer Card */}
+            <div style={{ background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '1.75rem', textAlign: 'center', boxShadow: isLight ? '0 10px 30px rgba(15,23,42,0.08)' : '0 20px 40px rgba(0,0,0,0.5)', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ background: isLight ? 'linear-gradient(135deg, #F3E8FF 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(16,185,129,0.2) 100%)', padding: '1.25rem', borderRadius: '16px', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem' }}>
+                  <h1 style={{ margin: '0 0 0.5rem', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1, color: isLight ? '#0F172A' : '#FFFFFF', background: isLight ? 'none' : 'linear-gradient(to right, #fff, #A78BFA)', WebkitBackgroundClip: isLight ? 'none' : 'text', WebkitTextFillColor: isLight ? 'initial' : 'transparent' }}>
+                    {campaign?.title || 'Offer'}
+                  </h1>
+                  {campaign?.terms && (
+                    <p style={{ margin: 0, color: isLight ? '#334155' : 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.45, fontWeight: 500 }}>{campaign.terms}</p>
+                  )}
+                </div>
               </div>
 
+              {/* Expiration Line */}
+              {(() => {
+                const expiration = formatExpirationLine((campaign as Campaign)?.end_at);
+                const expColor = isLight ? (expiration.color.includes('F87171') ? '#DC2626' : expiration.color.includes('FDE68A') ? '#B45309' : '#475569') : expiration.color;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.85rem', fontSize: '0.78rem', color: expColor, fontWeight: 700 }}>
+                    {expiration.iconType === 'sparkles' && <IconSparkles size={14} color={expColor} />}
+                    {expiration.iconType === 'flame' && <IconFlame size={14} color={expColor} />}
+                    {expiration.iconType === 'warning' && <IconAlertTriangle size={14} color={expColor} />}
+                    {expiration.iconType === 'calendar' && <IconCalendar size={14} color={expColor} />}
+                    <span>{expiration.text}</span>
+                  </div>
+                );
+              })()}
+
+              <button
+                onClick={() => campaign && handleActivate(campaign.id)}
+                disabled={!!activating}
+                style={{ width: '100%', padding: '1rem', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: activating ? 'not-allowed' : 'pointer', boxShadow: isLight ? '0 8px 20px rgba(109,40,217,0.25)' : '0 10px 20px rgba(139,92,246,0.3)', opacity: activating ? 0.7 : 1, transition: 'opacity 0.2s' }}
+              >
+                {activating === campaign?.id ? 'Activating...' : 'Activate This Offer'}
+              </button>
             </div>
 
-             {/* Expiration Line */}
-            {(() => {
-              const expiration = formatExpirationLine((campaign as Campaign)?.end_at);
-              const expColor = isLight ? (expiration.color.includes('F87171') ? '#DC2626' : expiration.color.includes('FDE68A') ? '#B45309' : '#475569') : expiration.color;
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.85rem', fontSize: '0.78rem', color: expColor, fontWeight: 700 }}>
-                  <span>{expiration.icon}</span>
-                  <span>{expiration.text}</span>
+            {/* Pagination */}
+            {totalCampaigns > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                <button onClick={() => setCurrentIdx(i => Math.max(0, i - 1))} disabled={currentIdx === 0} style={{ padding: '0.6rem 1.25rem', background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: currentIdx === 0 ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : (isLight ? '#0F172A' : '#fff'), cursor: currentIdx === 0 ? 'default' : 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>← Prev</button>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {displayCampaigns.map((_, i) => (
+                    <div key={i} onClick={() => setCurrentIdx(i)} style={{ width: i === currentIdx ? '20px' : '8px', height: '8px', borderRadius: '4px', background: i === currentIdx ? (isLight ? '#6D28D9' : '#A78BFA') : (isLight ? '#CBD5E1' : 'rgba(255,255,255,0.25)'), cursor: 'pointer', transition: 'all 0.25s' }} />
+                  ))}
                 </div>
-              );
-            })()}
+                <button onClick={() => setCurrentIdx(i => Math.min(totalCampaigns - 1, i + 1))} disabled={currentIdx === totalCampaigns - 1} style={{ padding: '0.6rem 1.25rem', background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: currentIdx === totalCampaigns - 1 ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : (isLight ? '#0F172A' : '#fff'), cursor: currentIdx === totalCampaigns - 1 ? 'default' : 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>Next →</button>
+              </div>
+            )}
 
+            {/* Done / Cancel */}
             <button
-              onClick={() => campaign && handleActivate(campaign.id)}
-              disabled={!!activating}
-              style={{ width: '100%', padding: '1.1rem', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6 0%, #6BC17A 100%)', color: '#fff', border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 700, cursor: activating ? 'not-allowed' : 'pointer', boxShadow: isLight ? '0 8px 20px rgba(109,40,217,0.25)' : '0 10px 20px rgba(139,92,246,0.3)', opacity: activating ? 0.7 : 1, transition: 'opacity 0.2s' }}
+              onClick={() => router.push('/')}
+              style={{ width: '100%', padding: '0.875rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
             >
-              {activating === campaign?.id ? 'Activating...' : 'Activate This Offer'}
+              Done / Cancel
             </button>
           </div>
-
-          {/* Pagination */}
-          {totalCampaigns > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-              <button onClick={() => setCurrentIdx(i => Math.max(0, i - 1))} disabled={currentIdx === 0} style={{ padding: '0.6rem 1.25rem', background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: currentIdx === 0 ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : (isLight ? '#0F172A' : '#fff'), cursor: currentIdx === 0 ? 'default' : 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>← Prev</button>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                {displayCampaigns.map((_, i) => (
-                  <div key={i} onClick={() => setCurrentIdx(i)} style={{ width: i === currentIdx ? '20px' : '8px', height: '8px', borderRadius: '4px', background: i === currentIdx ? (isLight ? '#6D28D9' : '#A78BFA') : (isLight ? '#CBD5E1' : 'rgba(255,255,255,0.25)'), cursor: 'pointer', transition: 'all 0.25s' }} />
-                ))}
-              </div>
-              <button onClick={() => setCurrentIdx(i => Math.min(totalCampaigns - 1, i + 1))} disabled={currentIdx === totalCampaigns - 1} style={{ padding: '0.6rem 1.25rem', background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.08)', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: currentIdx === totalCampaigns - 1 ? (isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)') : (isLight ? '#0F172A' : '#fff'), cursor: currentIdx === totalCampaigns - 1 ? 'default' : 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>Next →</button>
-            </div>
-          )}
-
-          <p style={{ textAlign: 'center', fontSize: '0.72rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.3)', margin: '0.5rem 0 0', fontWeight: 600 }}>
-            ⏳ Valid for <strong>3 minutes</strong> once activated
-          </p>
         </div>
+
+        <style jsx>{`
+          .activate-root-container {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          .activate-grid {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .activate-left-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+
+          .activate-right-col {
+            width: 100%;
+          }
+
+          @media (orientation: landscape), (horizontal-viewport-segments: 2), (min-width: 600px) and (orientation: landscape) {
+            .activate-root-container {
+              padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(8rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+              justify-content: center !important;
+            }
+            .activate-grid {
+              display: grid !important;
+              grid-template-columns: 1fr 1.15fr !important;
+              gap: 2rem !important;
+              max-width: 780px !important;
+              align-items: center !important;
+            }
+            .activate-merchant-header {
+              padding-top: 0 !important;
+            }
+            .status-modal-card {
+              display: grid !important;
+              grid-template-columns: 1fr 1.25fr !important;
+              gap: 2.25rem !important;
+              max-width: 720px !important;
+              text-align: left !important;
+              align-items: center !important;
+              padding: 2.25rem 2.5rem !important;
+            }
+            .status-modal-left {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              text-align: center;
+            }
+            .status-modal-right p {
+              margin-bottom: 1.25rem !important;
+            }
+          }
+        `}</style>
       </div>
-    </div>
     </>
   );
 }

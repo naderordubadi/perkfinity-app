@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 function parseDeepLink(rawUrl: string): string | null {
   if (!rawUrl) return null;
   try {
+    let host = '';
     let pathname = '';
     let search = '';
     if (rawUrl.includes('://')) {
       const parsed = new URL(rawUrl);
+      host = (parsed.host || '').toLowerCase();
       pathname = parsed.pathname || '';
       search = parsed.search || '';
     } else {
@@ -22,25 +24,37 @@ function parseDeepLink(rawUrl: string): string | null {
     const params = new URLSearchParams(search);
     const mParam = params.get('m') || params.get('code') || params.get('merchant');
     if (mParam) {
-      return `/qr/${encodeURIComponent(mParam)}`;
+      return `/qr/_/?code=${encodeURIComponent(mParam)}`;
     }
 
-    // Check pathname for /qr/..., /join/...
+    // Check custom scheme hosts like perkfinity://qr/CODE or perkfinity://join/CODE
+    if (host === 'qr' || host === 'join') {
+      const code = pathname.replace(/^\/+/, '').split('/')[0];
+      if (code) return `/qr/_/?code=${encodeURIComponent(code)}`;
+    }
+
+    // Check custom scheme hosts like perkfinity://perk/PERK_ID
+    if (host === 'perk') {
+      const perkId = pathname.replace(/^\/+/, '').split('/')[0];
+      if (perkId) return `/perk/_/?id=${encodeURIComponent(perkId)}`;
+    }
+
+    // Check pathname for /qr/..., /join/... (e.g. https://app.perkfinity.net/qr/CODE)
     const qrMatch = pathname.match(/\/(qr|join)\/([^/?#]+)/i);
-    if (qrMatch && qrMatch[2]) {
-      return `/qr/${encodeURIComponent(qrMatch[2])}`;
+    if (qrMatch && qrMatch[2] && qrMatch[2] !== '_') {
+      return `/qr/_/?code=${encodeURIComponent(qrMatch[2])}`;
     }
 
     // Check pathname for /perk/...
     const perkMatch = pathname.match(/\/perk\/([^/?#]+)/i);
-    if (perkMatch && perkMatch[1]) {
-      return `/perk/${encodeURIComponent(perkMatch[1])}`;
+    if (perkMatch && perkMatch[1] && perkMatch[1] !== '_') {
+      return `/perk/_/?id=${encodeURIComponent(perkMatch[1])}`;
     }
 
     // Check for other standard routes
-    if (pathname.includes('/history')) return '/history';
-    if (pathname.includes('/profile')) return '/profile';
-    if (pathname.includes('/scan')) return '/scan';
+    if (pathname.includes('/history') || host === 'history') return '/history';
+    if (pathname.includes('/profile') || host === 'profile') return '/profile';
+    if (pathname.includes('/scan') || host === 'scan') return '/scan';
 
     return null;
   } catch (err) {
@@ -91,7 +105,7 @@ export default function PushHandler() {
             const data = (action as any)?.notification?.data;
             if (data) {
               if (data.merchant_code) {
-                router.push(`/qr/${encodeURIComponent(data.merchant_code)}`);
+                router.push(`/qr/_/?code=${encodeURIComponent(data.merchant_code)}`);
                 return;
               }
               if (data.url) {

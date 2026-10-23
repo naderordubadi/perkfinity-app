@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { getUserData, setUserData } from "@/lib/user";
 import { useTheme } from "../components/ThemeProvider";
+import { IconMapPin, IconBell, IconCheckCircle } from "@/app/components/Icons";
 
 type PermState = 'loading' | 'prompt' | 'granted' | 'denied';
 
@@ -187,14 +188,14 @@ export default function PermissionsPage() {
 
   const renderLocationButton = () => {
     if (geoState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (geoState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}>✓ Location Services Enabled</button>;
+    if (geoState === 'granted') return <button style={{ ...greenBtn, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}><IconCheckCircle size={16} /> Location Services Enabled</button>;
     if (geoState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
     return <button style={purpleBtn} onClick={handleAllowLocation}>Continue</button>;
   };
 
   const renderNotifButton = () => {
     if (pushState === 'loading') return <button style={{ ...purpleBtn, opacity: 0.5 }} disabled>Checking...</button>;
-    if (pushState === 'granted') return <button style={greenBtn} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}>✓ Notifications Enabled</button>;
+    if (pushState === 'granted') return <button style={{ ...greenBtn, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }} onClick={() => alert('To change this permission, go to Settings › Apps › Perkfinity.')}><IconCheckCircle size={16} /> Notifications Enabled</button>;
     if (pushState === 'denied') return <button style={purpleBtn} onClick={openAppSettings}>Open Settings to change the permission</button>;
     return <button style={purpleBtn} onClick={handleAllowNotifications}>Continue</button>;
   };
@@ -217,26 +218,31 @@ export default function PermissionsPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-gradient)',
-      color: 'var(--text-main)',
-      padding: '2rem',
-      fontFamily: 'Outfit, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      <div style={{ flex: 1, maxWidth: '400px', margin: '0 auto', paddingTop: '4rem', display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>Never Miss a Perk</h1>
-        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
+    <div
+      className="permissions-root-container"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-gradient)',
+        color: 'var(--text-main)',
+        padding: '2rem',
+        fontFamily: 'Outfit, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div className="permissions-inner-box" style={{ flex: 1, maxWidth: '440px', width: '100%', margin: '0 auto', paddingTop: '2.5rem', display: 'flex', flexDirection: 'column' }}>
+        <h1 className="permissions-title" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>Never Miss a Perk</h1>
+        <p className="permissions-subtitle" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2.5rem', fontWeight: 500 }}>
           Enable permissions to get the most out of Perkfinity in your local neighborhood.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="permissions-cards-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
           {/* Location Card */}
           <div style={cardStyle}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📍</div>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
+              <IconMapPin size={32} color={isLight ? '#6D28D9' : '#C4B5FD'} />
+            </div>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Location Services</h3>
             <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
               We use your location solely to notify you when you walk near a participating store offering a targeted discount.
@@ -247,7 +253,9 @@ export default function PermissionsPage() {
 
           {/* Push Notifications Card */}
           <div style={cardStyle}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔔</div>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
+              <IconBell size={32} color={isLight ? '#6D28D9' : '#C4B5FD'} />
+            </div>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff', fontWeight: 800 }}>Push Notifications</h3>
             <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1rem', lineHeight: '1.5' }}>
               Get instantly alerted when businesses you love drop exclusive flash sales and new perks.
@@ -258,7 +266,7 @@ export default function PermissionsPage() {
 
         </div>
 
-        <div style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '2rem' }}>
+        <div className="permissions-footer-action" style={{ marginTop: 'auto', paddingTop: '2rem', paddingBottom: '2rem' }}>
           {(() => {
             const bothResponded = (geoState === 'granted' || geoState === 'denied') && (pushState === 'granted' || pushState === 'denied');
             const isDisabled = loading || !bothResponded;
@@ -282,6 +290,47 @@ export default function PermissionsPage() {
           })()}
         </div>
       </div>
+
+      <style jsx>{`
+        .permissions-root-container {
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+
+        @media (orientation: landscape), (horizontal-viewport-segments: 2) {
+          .permissions-root-container {
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(1.5rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+            justify-content: center !important;
+          }
+          .permissions-inner-box {
+            padding-top: 1rem !important;
+            max-width: 760px !important;
+            width: 100% !important;
+          }
+          .permissions-title {
+            font-size: 1.75rem !important;
+            margin-bottom: 0.25rem !important;
+            text-align: center !important;
+          }
+          .permissions-subtitle {
+            margin-bottom: 1.25rem !important;
+            font-size: 0.95rem !important;
+            text-align: center !important;
+          }
+          .permissions-cards-wrapper {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1.25rem !important;
+          }
+          .permissions-footer-action {
+            padding-top: 1.25rem !important;
+            padding-bottom: 0.5rem !important;
+            max-width: 400px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

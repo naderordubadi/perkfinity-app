@@ -40,20 +40,23 @@ export default function PIIPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-gradient)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '2rem',
-      color: 'var(--text-main)',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>Personalize Your Profile</h1>
-        <p style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2rem', fontWeight: 500 }}>This helps us find the best perks near you.</p>
+    <div
+      className="onb-pii-root"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-gradient)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '2rem',
+        color: 'var(--text-main)',
+        fontFamily: 'Outfit, sans-serif'
+      }}
+    >
+      <div className="onb-pii-inner" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <h1 className="onb-pii-title" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', color: isLight ? '#0F172A' : '#fff' }}>Personalize Your Profile</h1>
+        <p className="onb-pii-subtitle" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)', marginBottom: '2rem', fontWeight: 500 }}>This helps us find the best perks near you.</p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} className="onb-pii-form" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={inputGroup}>
             <label style={dynamicLabelStyle}>Full Name</label>
             <input name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="John Doe" style={dynamicInputStyle} />
@@ -93,11 +96,37 @@ export default function PIIPage() {
           </button>
         </form>
       </div>
+
+      <style jsx>{`
+        @media (orientation: landscape) and (max-height: 550px) {
+          .onb-pii-root {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 1.25rem max(1.5rem, env(safe-area-inset-left)) calc(2rem + env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-right)) !important;
+          }
+          .onb-pii-inner {
+            max-width: 600px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+          }
+          .onb-pii-title {
+            font-size: 1.5rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .onb-pii-subtitle {
+            margin-bottom: 1rem !important;
+            font-size: 0.85rem !important;
+          }
+          .onb-pii-form {
+            gap: 0.75rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
-const inputGroup = {
+const inputGroup: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '0.5rem'

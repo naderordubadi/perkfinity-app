@@ -15,12 +15,17 @@ export default function BottomNav() {
   //  - /permissions → hide when logged in (only reachable via the gate, never via a nav tab)
   //  - /profile → hide ONLY when profile is incomplete (gate flow).
   //              When complete, user is freely editing → show nav.
+  const isGateRoute =
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/permissions') ||
+    pathname.startsWith('/download') ||
+    pathname.startsWith('/delete-account');
+
   const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('pf_user_token');
-  let isHidden = false;
-  if (isLoggedIn) {
-    if (pathname.startsWith('/permissions')) {
-      isHidden = true;
-    } else if (pathname.startsWith('/profile')) {
+  let isHidden = isGateRoute;
+  if (!isHidden && isLoggedIn) {
+    if (pathname.startsWith('/profile')) {
       try {
         const raw = localStorage.getItem('pf_user_data');
         const u = raw ? JSON.parse(raw) : null;

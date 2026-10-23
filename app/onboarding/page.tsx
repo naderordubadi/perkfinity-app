@@ -12,7 +12,12 @@ const getSteps = (platform: string, isLight: boolean = false) => [
     subtitle: "Your data, protected always",
     description: "Your personal information is encrypted and never shared with merchants. They only see anonymized, ZIP-code level stats.",
     highlight: "Your personal info stays 100% private",
-    highlightIcon: "🛡️",
+    highlightIcon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
     accentColor: isLight ? "#15803D" : "#6BC17A",
     gradientFrom: "#0F172A",
     gradientTo: "#162032",
@@ -62,7 +67,11 @@ const getSteps = (platform: string, isLight: boolean = false) => [
     subtitle: "Scan. Show. Save.",
     description: "No plastic cards or loyalty punch cards. Just scan the QR code at any participating store and instantly receive your discount — applied right at checkout.",
     highlight: "Works on all local participating stores instantly",
-    highlightIcon: "⚡",
+    highlightIcon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+    ),
     accentColor: isLight ? "#6D28D9" : "#8B5CF6",
     gradientFrom: "#0F172A",
     gradientTo: "#1A1040",
@@ -103,7 +112,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
         <line x1="22" y1="108" x2="80" y2="96" stroke={isLight ? "#6D28D9" : "#8B5CF6"} strokeWidth="1" strokeLinecap="round" opacity="0.5" />
         {/* Coupon tag on left */}
         <rect x="22" y="125" width="46" height="20" rx="10" fill={isLight ? "#DCFCE7" : "rgba(107,193,122,0.12)"} stroke={isLight ? "#86EFAC" : "rgba(107,193,122,0.4)"} strokeWidth="1" />
-        <text x="45" y="138" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">💰 Instant Save</text>
+        <text x="45" y="138" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">Instant Save</text>
         <defs>
           <radialGradient id="redeemGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={isLight ? "#6D28D9" : "#8B5CF6"} />
@@ -123,7 +132,13 @@ const getSteps = (platform: string, isLight: boolean = false) => [
     subtitle: "Shop from anywhere",
     description: "Some merchants are fully online. Browse their offers in the app, tap Reveal & Copy to get your personal discount code, then use it at checkout on their website — no QR scan needed.",
     highlight: "No store visit required — shop from your couch",
-    highlightIcon: "🌐",
+    highlightIcon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    ),
     accentColor: isLight ? "#BE185D" : "#8B5CF6",
     gradientFrom: "#0F172A",
     gradientTo: "#1A1040",
@@ -138,7 +153,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
         <text x="115" y="74" textAnchor="middle" fill={isLight ? "#9D174D" : "rgba(255,255,255,0.4)"} fontSize="5.5" fontWeight="700">YOUR DISCOUNT CODE</text>
         <rect x="92" y="78" width="46" height="22" rx="5" fill={isLight ? "#FBCFE8" : "rgba(139,92,246,0.2)"} />
         <text x="115" y="93" textAnchor="middle" fill={isLight ? "#BE185D" : "#C4B5FD"} fontSize="9.5" fontWeight="800" letterSpacing="1">HELLO50OFF</text>
-        <text x="115" y="108" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="5.5" fontWeight="700">Auto-copied ✓</text>
+        <text x="115" y="108" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="5.5" fontWeight="700">Auto-copied</text>
         {/* Copy button */}
         <rect x="97" y="112" width="36" height="10" rx="5" fill={isLight ? "#BE185D" : "rgba(139,92,246,0.25)"} stroke={isLight ? "#9D174D" : "rgba(139,92,246,0.5)"} strokeWidth="0.75" />
         <text x="115" y="119.5" textAnchor="middle" fill={isLight ? "#FFFFFF" : "#C4B5FD"} fontSize="5" fontWeight="800">Copy Again</text>
@@ -154,7 +169,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
         {/* Shopping bag — bottom right */}
         <rect x="160" y="130" width="42" height="36" rx="8" fill={isLight ? "#FCE7F3" : "rgba(139,92,246,0.1)"} stroke={isLight ? "#F472B6" : "rgba(139,92,246,0.4)"} strokeWidth="1.25" />
         <path d="M170 130 C170 122 192 122 192 130" stroke={isLight ? "#BE185D" : "rgba(139,92,246,0.6)"} strokeWidth="1.5" fill="none" strokeLinecap="round" />
-        <text x="181" y="154" textAnchor="middle" fontSize="14">🛍️</text>
+        <rect x="175" y="144" width="12" height="12" rx="2" fill={isLight ? "#BE185D" : "rgba(139,92,246,0.4)"} />
         {/* URL bar hint — left */}
         <rect x="16" y="60" width="50" height="18" rx="9" fill={isLight ? "#FCE7F3" : "rgba(139,92,246,0.1)"} stroke={isLight ? "#F472B6" : "rgba(139,92,246,0.3)"} strokeWidth="1" />
         <circle cx="26" cy="69" r="3.5" fill={isLight ? "#BE185D" : "#8B5CF6"} opacity="0.8" />
@@ -165,7 +180,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
         <line x1="154" y1="115" x2="164" y2="133" stroke={isLight ? "#BE185D" : "rgba(139,92,246,0.3)"} strokeWidth="1" strokeDasharray="3 2" />
         {/* Discount tag — left bottom */}
         <rect x="16" y="145" width="48" height="20" rx="10" fill={isLight ? "#DCFCE7" : "rgba(107,193,122,0.1)"} stroke={isLight ? "#86EFAC" : "rgba(107,193,122,0.4)"} strokeWidth="1" />
-        <text x="40" y="158" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">💰 50% Off</text>
+        <text x="40" y="158" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">50% Off</text>
         <defs>
           <radialGradient id="onlineGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={isLight ? "#BE185D" : "#8B5CF6"} />
@@ -181,7 +196,12 @@ const getSteps = (platform: string, isLight: boolean = false) => [
     subtitle: "Your neighborhood in one place",
     description: "Perkfinity connects you to a growing network of local businesses. One scan gets you instant discounts wherever you shop.",
     highlight: "Growing network of local merchants",
-    highlightIcon: "🏪",
+    highlightIcon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
     accentColor: isLight ? "#15803D" : "#6BC17A",
     gradientFrom: "#0F172A",
     gradientTo: "#0D2318",
@@ -210,7 +230,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill={isLight ? "#FBCFE8" : "rgba(236,72,153,0.2)"} stroke={isLight ? "#BE185D" : "rgba(236,72,153,0.6)"} strokeWidth="1.5" strokeLinejoin="round" />
           <rect x="8" y="26" width="12" height="20" rx="2" fill={isLight ? "#F472B6" : "rgba(236,72,153,0.15)"} />
           <rect x="26" y="22" width="16" height="14" rx="2" fill={isLight ? "#F472B6" : "rgba(236,72,153,0.15)"} />
-          <text x="34" y="32.5" textAnchor="middle" fontSize="9">💐</text>
+          <circle cx="34" cy="30" r="4" fill={isLight ? "#BE185D" : "#F472B6"} />
           <text x="25" y="60" textAnchor="middle" fill={isLight ? "#BE185D" : "#F9A8D4"} fontSize="6.5" fontWeight="800">FLOWER SHOP</text>
         </g>
 
@@ -220,7 +240,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill={isLight ? "#BBF7D0" : "rgba(107,193,122,0.2)"} stroke={isLight ? "#15803D" : "rgba(107,193,122,0.6)"} strokeWidth="1.5" strokeLinejoin="round" />
           <rect x="8" y="26" width="12" height="20" rx="2" fill={isLight ? "#86EFAC" : "rgba(107,193,122,0.15)"} />
           <rect x="26" y="22" width="16" height="14" rx="2" fill={isLight ? "#86EFAC" : "rgba(107,193,122,0.15)"} />
-          <text x="34" y="32.5" textAnchor="middle" fontSize="9">🧖</text>
+          <circle cx="34" cy="30" r="4" fill={isLight ? "#15803D" : "#86EFAC"} />
           <text x="25" y="60" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">SPA</text>
         </g>
 
@@ -230,7 +250,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill={isLight ? "#DDD6FE" : "rgba(139,92,246,0.2)"} stroke={isLight ? "#6D28D9" : "rgba(139,92,246,0.6)"} strokeWidth="1.5" strokeLinejoin="round" />
           <rect x="8" y="26" width="12" height="20" rx="2" fill={isLight ? "#C4B5FD" : "rgba(139,92,246,0.15)"} />
           <rect x="26" y="22" width="16" height="14" rx="2" fill={isLight ? "#C4B5FD" : "rgba(139,92,246,0.15)"} />
-          <text x="34" y="32.5" textAnchor="middle" fontSize="9">💇</text>
+          <circle cx="34" cy="30" r="4" fill={isLight ? "#6D28D9" : "#C4B5FD"} />
           <text x="25" y="60" textAnchor="middle" fill={isLight ? "#6D28D9" : "#C4B5FD"} fontSize="6.5" fontWeight="800">HAIR SALON</text>
         </g>
 
@@ -240,7 +260,7 @@ const getSteps = (platform: string, isLight: boolean = false) => [
           <path d="M -2 12 L 52 12 L 48 2 L 2 2 Z" fill={isLight ? "#BBF7D0" : "rgba(107,193,122,0.2)"} stroke={isLight ? "#15803D" : "rgba(107,193,122,0.6)"} strokeWidth="1.5" strokeLinejoin="round" />
           <rect x="8" y="26" width="12" height="20" rx="2" fill={isLight ? "#86EFAC" : "rgba(107,193,122,0.15)"} />
           <rect x="26" y="22" width="16" height="14" rx="2" fill={isLight ? "#86EFAC" : "rgba(107,193,122,0.15)"} />
-          <text x="34" y="32.5" textAnchor="middle" fontSize="9">✂️</text>
+          <circle cx="34" cy="30" r="4" fill={isLight ? "#15803D" : "#86EFAC"} />
           <text x="25" y="60" textAnchor="middle" fill={isLight ? "#15803D" : "#86EFAC"} fontSize="6.5" fontWeight="800">TAILOR</text>
         </g>
 
@@ -279,152 +299,320 @@ export default function OnboardingPage() {
     }).catch(() => {});
   }, []);
 
-  const nextStep = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleFinish = () => {
+    const isSignedIn = !!getUserToken();
+    router.push(isSignedIn ? "/scan" : "/auth");
+  };
+
+  const nextStep = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(prev => prev + 1);
     } else {
-      // If already signed in → go to Scan so they know what to do next; if not → sign up
-      const isSignedIn = !!getUserToken();
-      router.push(isSignedIn ? "/scan" : "/auth");
+      handleFinish();
     }
   };
 
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  // Keyboard navigation for simulator & desktop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        nextStep();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prevStep();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentStep]);
+
+  // Touch & Mouse swipe gesture support
+  const [dragStartX, setDragStartX] = useState<number | null>(null);
+
+  const handlePointerDown = (clientX: number) => {
+    setDragStartX(clientX);
+  };
+
+  const handlePointerUp = (clientX: number) => {
+    if (dragStartX === null) return;
+    const diff = dragStartX - clientX;
+    if (diff > 40) {
+      nextStep();
+    } else if (diff < -40) {
+      prevStep();
+    }
+    setDragStartX(null);
+  };
+
   return (
-    <div style={{
-      height: '100vh',
-      background: isLight ? 'var(--bg-gradient)' : `linear-gradient(160deg, ${step.gradientFrom} 0%, ${step.gradientTo} 100%)`,
-      display: 'flex',
-      flexDirection: 'column',
-      color: isLight ? '#0F172A' : '#fff',
-      fontFamily: 'Outfit, sans-serif',
-      overflow: 'hidden',
-      transition: 'background 0.6s ease'
-    }}>
-      {/* Top bar */}
-      <div style={{
+    <div
+      className="onboarding-root"
+      onTouchStart={(e) => handlePointerDown(e.touches[0].clientX)}
+      onTouchEnd={(e) => handlePointerUp(e.changedTouches[0].clientX)}
+      onMouseDown={(e) => handlePointerDown(e.clientX)}
+      onMouseUp={(e) => handlePointerUp(e.clientX)}
+      style={{
+        height: '100vh',
+        background: isLight ? 'var(--bg-gradient)' : `linear-gradient(160deg, ${step.gradientFrom} 0%, ${step.gradientTo} 100%)`,
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 'var(--safe-top, 44px) 1.5rem 0'
-      }}>
-        <img src={platform === 'android' ? "/app-icon.png" : "/app-icon.png"} alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
-        <div style={{ display: 'flex', gap: '6px' }}>
+        flexDirection: 'column',
+        color: isLight ? '#0F172A' : '#fff',
+        fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif",
+        overflow: 'hidden',
+        transition: 'background 0.6s ease'
+      }}
+    >
+      {/* Top bar — exact baseline design */}
+      <div
+        className="onboarding-topbar"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: 'var(--safe-top, 44px) 1.5rem 0'
+        }}
+      >
+        <img src="/app-icon.png" alt="Perkfinity" width={36} height={36} style={{ borderRadius: '10px' }} />
+        
+        {/* Step dots */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {steps.map((_, i) => (
-            <div key={i} style={{
-              width: i === currentStep ? '24px' : '8px',
-              height: '8px',
-              borderRadius: '4px',
-              background: i === currentStep ? (isLight ? '#6D28D9' : step.accentColor) : (isLight ? 'rgba(15,23,42,0.15)' : 'rgba(255,255,255,0.2)'),
-              transition: 'all 0.4s ease'
-            }} />
+            <button
+              key={i}
+              aria-label={`Go to slide ${i + 1}`}
+              onClick={(e) => { e.stopPropagation(); setCurrentStep(i); }}
+              style={{
+                width: i === currentStep ? '24px' : '8px',
+                height: '8px',
+                borderRadius: '4px',
+                background: i === currentStep ? (isLight ? '#6D28D9' : step.accentColor) : (isLight ? 'rgba(15,23,42,0.2)' : 'rgba(255,255,255,0.2)'),
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                transition: 'all 0.4s ease'
+              }}
+            />
           ))}
         </div>
+
         <button
-          onClick={() => router.push(getUserToken() ? "/scan" : "/auth")}
-          style={{ background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}
+          onClick={(e) => { e.stopPropagation(); handleFinish(); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)',
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            padding: 0
+          }}
         >
           Skip
         </button>
       </div>
 
-      {/* Illustration */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0.5rem 2rem',
-        maxHeight: '260px',
-        animation: 'fadeIn 0.5s ease'
-      }}>
-        {step.illustration}
-      </div>
-
-      {/* Text Content */}
-      <div style={{ padding: '0 1.5rem 1rem', animation: 'slideUp 0.4s ease' }}>
-        <p style={{
-          color: isLight ? '#6D28D9' : step.accentColor,
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          letterSpacing: '2px',
-          textTransform: 'uppercase',
-          margin: '0 0 6px'
-        }}>
-          {step.subtitle}
-        </p>
-        <h1 style={{
-          fontSize: '2rem',
-          fontWeight: 800,
-          margin: '0 0 0.75rem',
-          lineHeight: 1.1,
-          letterSpacing: '-0.02em',
-          color: isLight ? '#0F172A' : '#fff'
-        }}>
-          {step.title}
-        </h1>
-        <p style={{
-          fontSize: '0.975rem',
-          lineHeight: '1.6',
-          color: isLight ? '#475569' : 'rgba(255,255,255,0.6)',
-          margin: '0 0 1rem',
-          fontWeight: 500
-        }}>
-          {step.description}
-        </p>
-
-        {/* Highlight box */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '0.875rem 1rem',
-          background: isLight
-            ? (step.id === 'easy' ? '#F3E8FF' : '#DCFCE7')
-            : (step.id === 'easy' ? 'rgba(139,92,246,0.15)' : 'rgba(107,193,122,0.13)'),
-          border: isLight
-            ? (step.id === 'easy' ? '1px solid #D8B4FE' : '1px solid #86EFAC')
-            : (step.id === 'easy' ? '1px solid rgba(139,92,246,0.35)' : '1px solid rgba(107,193,122,0.35)'),
-          borderRadius: '14px',
-          marginBottom: '1.25rem'
-        }}>
-          <span style={{ fontSize: '1.25rem' }}>{step.highlightIcon}</span>
-          <span style={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: isLight
-              ? (step.id === 'easy' ? '#6D28D9' : '#15803D')
-              : (step.id === 'easy' ? '#C4B5FD' : '#86EFAC')
-          }}>
-            {step.highlight}
-          </span>
+      {/* Main Content Area (Portrait vertical default; 2-col on Landscape Duo) */}
+      <div className="onboarding-main-split">
+        {/* Illustration — beautifully centered in available space */}
+        <div
+          className="onboarding-illustration-leaf"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0.75rem 1.5rem',
+            width: '100%',
+            animation: 'fadeIn 0.5s ease'
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: '300px', maxHeight: '290px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {step.illustration}
+          </div>
         </div>
 
-        {/* CTA Button */}
-        <button
-          onClick={nextStep}
+        {/* Text Content — exact baseline vertical design & spacing */}
+        <div
+          className="onboarding-text-leaf"
           style={{
-            width: '100%',
-            padding: '1.1rem',
-            background: `linear-gradient(135deg, ${step.accentColor}, ${step.id === 'easy' ? '#6D28D9' : '#3B9A52'})`,
-            border: 'none',
-            borderRadius: '18px',
-            color: '#fff',
-            fontSize: '1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            letterSpacing: '0.01em',
-            boxShadow: `0 8px 24px ${step.accentColor}40`,
-            transition: 'transform 0.15s, box-shadow 0.15s'
+            padding: '0 1.5rem calc(1.25rem + env(safe-area-inset-bottom, 0px))',
+            animation: 'slideUp 0.4s ease'
           }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          {currentStep === steps.length - 1 ? (getUserToken() ? "Back to App →" : "Let's Go! →") : "Continue →"}
-        </button>
+          <p
+            className="onboarding-subtitle"
+            style={{
+              color: isLight ? '#6D28D9' : step.accentColor,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              margin: '0 0 6px'
+            }}
+          >
+            {step.subtitle}
+          </p>
+          <h1
+            className="onboarding-title"
+            style={{
+              fontSize: '2rem',
+              fontWeight: 800,
+              margin: '0 0 0.75rem',
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+              color: isLight ? '#0F172A' : '#fff'
+            }}
+          >
+            {step.title}
+          </h1>
+          <p
+            className="onboarding-description"
+            style={{
+              fontSize: '0.975rem',
+              lineHeight: '1.6',
+              color: isLight ? '#475569' : 'rgba(255,255,255,0.6)',
+              margin: '0 0 1rem'
+            }}
+          >
+            {step.description}
+          </p>
+
+          {/* Highlight box */}
+          <div
+            className="onboarding-highlight-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '0.875rem 1rem',
+              background: isLight
+                ? (step.id === 'easy' ? '#F3E8FF' : '#DCFCE7')
+                : (step.id === 'easy' ? 'rgba(139,92,246,0.15)' : 'rgba(107,193,122,0.13)'),
+              border: isLight
+                ? (step.id === 'easy' ? '1px solid #D8B4FE' : '1px solid #86EFAC')
+                : (step.id === 'easy' ? '1px solid rgba(139,92,246,0.35)' : '1px solid rgba(107,193,122,0.35)'),
+              borderRadius: '14px',
+              marginBottom: '1.25rem'
+            }}
+          >
+            <span
+              className="onboarding-highlight-icon"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isLight
+                  ? (step.id === 'easy' ? '#6D28D9' : '#15803D')
+                  : (step.id === 'easy' ? '#C4B5FD' : '#86EFAC')
+              }}
+            >
+              {step.highlightIcon}
+            </span>
+            <span
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: isLight
+                  ? (step.id === 'easy' ? '#6D28D9' : '#15803D')
+                  : (step.id === 'easy' ? '#C4B5FD' : '#86EFAC')
+              }}
+            >
+              {step.highlight}
+            </span>
+          </div>
+
+          {/* CTA Button */}
+          <button
+            className="onboarding-cta-btn"
+            onClick={(e) => { e.stopPropagation(); nextStep(); }}
+            style={{
+              width: '100%',
+              padding: '1.1rem',
+              background: `linear-gradient(135deg, ${step.accentColor}, ${step.id === 'easy' ? '#6D28D9' : '#3B9A52'})`,
+              border: 'none',
+              borderRadius: '18px',
+              color: '#fff',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              letterSpacing: '0.01em',
+              boxShadow: `0 8px 24px ${step.accentColor}40`,
+              transition: 'transform 0.15s, box-shadow 0.15s'
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            {currentStep === steps.length - 1 ? (getUserToken() ? "Back to App →" : "Let's Go! →") : "Continue →"}
+          </button>
+        </div>
       </div>
 
-      <style>{`
+      <style jsx>{`
+        .onboarding-main-split {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+
+        /* Landscape, Tablet, & Duo Split View */
+        @media (orientation: landscape), (min-width: 600px), (horizontal-viewport-segments: 2) {
+          .onboarding-main-split {
+            flex-direction: row;
+            align-items: center;
+            gap: 2rem;
+            padding: 0 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+          }
+
+          .onboarding-illustration-leaf {
+            flex: 1;
+            max-height: 220px !important;
+            padding: 0 !important;
+          }
+
+          .onboarding-text-leaf {
+            flex: 1.25;
+            padding: 0 !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+
+          .onboarding-subtitle {
+            font-size: 0.72rem !important;
+            margin-bottom: 2px !important;
+          }
+
+          .onboarding-title {
+            font-size: 1.45rem !important;
+            margin-bottom: 0.35rem !important;
+          }
+
+          .onboarding-description {
+            font-size: 0.825rem !important;
+            line-height: 1.4 !important;
+            margin-bottom: 0.45rem !important;
+          }
+
+          .onboarding-highlight-card {
+            padding: 0.5rem 0.75rem !important;
+            margin-bottom: 0.6rem !important;
+          }
+
+          .onboarding-cta-btn {
+            padding: 0.75rem !important;
+            font-size: 0.925rem !important;
+          }
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }

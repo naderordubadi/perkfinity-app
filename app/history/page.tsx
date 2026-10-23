@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { useTheme } from "../components/ThemeProvider";
+import { IconBell, IconGift, IconClock, IconCheckCircle, IconSparkles } from "@/app/components/Icons";
 
 interface HistoryItem {
   id: string;
@@ -108,7 +109,7 @@ function HistoryContent() {
           setHistError(json.error || "Failed to load history");
         }
       })
-      .catch(() => setHistError("Network error loading history"))
+      .catch((err) => setHistError(err.message || "Failed to load history"))
       .finally(() => setHistLoading(false));
 
     // Fetch notifications
@@ -121,7 +122,7 @@ function HistoryContent() {
           setNotifError(json.error || "Failed to load notifications");
         }
       })
-      .catch(() => setNotifError("Network error loading notifications"))
+      .catch((err) => setNotifError(err.message || "Failed to load notifications"))
       .finally(() => setNotifLoading(false));
   }, [router]);
 
@@ -157,6 +158,10 @@ function HistoryContent() {
       fontFamily: "Outfit, sans-serif",
       color: "var(--text-main)",
       padding: "var(--safe-top, 44px) 1.5rem 10rem",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      overflowX: "hidden",
     }}>
       <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "0.25rem", color: "var(--text-main)" }}>History</h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: 0, marginBottom: "1.25rem" }}>
@@ -252,7 +257,7 @@ function HistoryContent() {
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div className="duo-feed-grid">
             {items.map((item) => {
               const status = getStatus(item);
               const isRedeemed = status === "Redeemed";
@@ -274,7 +279,19 @@ function HistoryContent() {
                 ? (isRedeemed ? "#15803D" : isClaimed ? "#6D28D9" : "#B91C1C")
                 : (isRedeemed ? "#10B981" : isClaimed ? "#8B5CF6" : "#EF4444");
 
-              const badgeLabel = isRedeemed ? "✅ Redeemed" : isClaimed ? "🎁 Claimed" : "⏰ Expired";
+              const badgeContent = isRedeemed ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <IconCheckCircle size={12} color={badgeColor} /> Redeemed
+                </span>
+              ) : isClaimed ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <IconGift size={12} color={badgeColor} /> Claimed
+                </span>
+              ) : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <IconClock size={12} color={badgeColor} /> Expired
+                </span>
+              );
               const timestampLabel = isRedeemed ? "Redeemed" : isClaimed ? "Claimed" : "Expired";
 
               return (
@@ -287,9 +304,13 @@ function HistoryContent() {
                   flexDirection: "column",
                   gap: "0.4rem",
                   boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
+                  width: "100%",
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                  minWidth: 0,
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 800, fontSize: "0.95rem", color: isLight ? "#0F172A" : "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                    <span style={{ fontWeight: 800, fontSize: "0.95rem", color: isLight ? "#0F172A" : "#fff", wordBreak: "break-word" }}>
                       {item.merchant_name}
                     </span>
                     <span style={{
@@ -300,11 +321,12 @@ function HistoryContent() {
                       background: badgeBg,
                       border: `1px solid ${badgeBorder}`,
                       color: badgeColor,
+                      flexShrink: 0,
                     }}>
-                      {badgeLabel}
+                      {badgeContent}
                     </span>
                   </div>
-                  <div style={{ fontSize: "0.85rem", color: isLight ? "#334155" : "rgba(255,255,255,0.65)" }}>
+                  <div style={{ fontSize: "0.85rem", color: isLight ? "#334155" : "rgba(255,255,255,0.65)", wordBreak: "break-word" }}>
                     {item.campaign_title}
                   </div>
                   <div style={{ fontSize: "0.72rem", color: isLight ? "#64748B" : "rgba(255,255,255,0.3)" }}>
@@ -358,14 +380,15 @@ function HistoryContent() {
               fontSize: "0.9rem",
               boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.05)" : "none",
             }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔔</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                <IconBell size={36} color={isLight ? "#6D28D9" : "#C4B5FD"} />
+              </div>
               No notifications yet. When merchants near you create new offers, you&apos;ll see them here.
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div className="duo-feed-grid">
             {notifications.map((notif) => {
-              const emoji = notif.type === "digest" ? "🎉" : "🔔";
               const previewText = notif.payload && notif.payload.length > 0
                 ? notif.payload.map(p => p.store_name).join(", ")
                 : notif.body || "";
@@ -393,6 +416,11 @@ function HistoryContent() {
                     cursor: "pointer",
                     transition: "background 0.2s ease",
                     boxShadow: isLight ? "0 4px 14px rgba(15,23,42,0.04)" : "none",
+                    width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
+                    overflow: "hidden",
                   }}
                 >
                   {/* Unread dot */}
@@ -404,7 +432,7 @@ function HistoryContent() {
                     flexShrink: 0,
                   }} />
 
-                  {/* Logo / emoji */}
+                  {/* Logo / icon */}
                   <div style={{
                     width: "40px",
                     height: "40px",
@@ -414,19 +442,20 @@ function HistoryContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "1.1rem",
                     flexShrink: 0,
                     overflow: "hidden",
                   }}>
                     {notif.payload && notif.payload.length === 1 && notif.payload[0].logo_url ? (
                       <img src={notif.payload[0].logo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    ) : notif.type === "digest" ? (
+                      <IconSparkles size={20} color={isLight ? "#6D28D9" : "#C4B5FD"} />
                     ) : (
-                      emoji
+                      <IconBell size={20} color={isLight ? "#6D28D9" : "#C4B5FD"} />
                     )}
                   </div>
 
                   {/* Text content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                     <div style={{
                       fontWeight: notif.read ? 600 : 800,
                       fontSize: "0.88rem",
@@ -455,6 +484,7 @@ function HistoryContent() {
                     color: isLight ? "#64748B" : "rgba(255,255,255,0.3)",
                     flexShrink: 0,
                     whiteSpace: "nowrap",
+                    marginLeft: "auto",
                   }}>
                     {formatNotifDate(notif.created_at)}
                   </div>
