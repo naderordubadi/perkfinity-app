@@ -1,13 +1,15 @@
 package net.perkfinity.app;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
-import android.webkit.WebView;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -31,14 +33,32 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().getSettings()
             .setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
-        // Grant WebView media (camera) permission requests so that
-        // navigator.mediaDevices.getUserMedia() works on Android.
-        // Without this override, getUserMedia always throws NotAllowedError
-        // even when the OS camera permission is granted.
-        getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
+        // Ensure video elements playing camera stream do not require synchronous user gestures.
+        getBridge().getWebView().getSettings()
+            .setMediaPlaybackRequiresUserGesture(false);
+
+        // Grant WebView media (camera) permission requests immediately when OS permission is granted,
+        // while preserving Capacitor's built-in file picker, alerts, and fallback handlers.
+        getBridge().getWebView().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
-                runOnUiThread(() -> request.grant(request.getResources()));
+                runOnUiThread(() -> {
+                    boolean needsCamera = false;
+                    for (String res : request.getResources()) {
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)) {
+                            needsCamera = true;
+                            break;
+                        }
+                    }
+
+                    if (needsCamera) {
+                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            request.grant(request.getResources());
+                            return;
+                        }
+                    }
+                    super.onPermissionRequest(request);
+                });
             }
         });
     }

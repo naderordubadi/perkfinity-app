@@ -82,6 +82,47 @@ export default function ScanPage() {
     };
   }, [stopCamera]);
 
+  // Listen for app returning to foreground (e.g. returning from phone Settings)
+  useEffect(() => {
+    let removeListener: (() => void) | undefined;
+
+    async function setupResumeListener() {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          const { App } = await import('@capacitor/app');
+          const handle = await App.addListener('appStateChange', async (state) => {
+            if (state.isActive) {
+              // If user was on the denied screen and enabled permission in Settings, auto-start camera
+              if (permissionState === 'denied' && Capacitor.getPlatform() === 'android') {
+                try {
+                  const { registerPlugin } = await import('@capacitor/core');
+                  const AndroidCameraPermission = registerPlugin<{
+                    checkPermissions(): Promise<{ camera: string }>;
+                  }>('AndroidCameraPermission');
+                  const check = await AndroidCameraPermission.checkPermissions();
+                  if (check?.camera === 'granted') {
+                    startCamera();
+                  }
+                } catch {
+                  // Ignore
+                }
+              }
+            }
+          });
+          removeListener = () => handle.remove();
+        }
+      } catch (err) {
+        console.warn("[Camera] Resume listener error:", err);
+      }
+    }
+
+    setupResumeListener();
+    return () => {
+      if (removeListener) removeListener();
+    };
+  }, [permissionState]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // startCamera: called when the user taps "Allow Camera Access" / "Continue".
   // On Android, requests native OS permission first (pops up system dialog).
@@ -115,14 +156,30 @@ export default function ScanPage() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+      } catch (primaryErr: any) {
+        // Fallback for tablets or front-only cameras where environment camera is unavailable
+        if (primaryErr?.name === 'OverconstrainedError' || primaryErr?.name === 'NotFoundError') {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        } else {
+          throw primaryErr;
+        }
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
+          videoRef.current?.play().catch((playErr) => {
+            console.warn("[Camera] video.play() error:", playErr);
+          });
           setPermissionState("granted");
           setScanning(true);
           animFrameRef.current = requestAnimationFrame(scanFrame);
