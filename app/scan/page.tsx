@@ -83,12 +83,37 @@ export default function ScanPage() {
   }, [stopCamera]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // startCamera: called when the user taps "Allow Camera Access".
-  // getUserMedia() is what triggers iOS's native permission dialog.
-  // NSCameraUsageDescription MUST be in Info.plist for this to work on iOS.
+  // startCamera: called when the user taps "Allow Camera Access" / "Continue".
+  // On Android, requests native OS permission first (pops up system dialog).
+  // On iOS, getUserMedia() natively triggers the iOS permission dialog.
   // ─────────────────────────────────────────────────────────────────────────
   async function startCamera() {
     setPermissionState("requesting");
+
+    // On Android native, request the OS-level runtime permission FIRST.
+    // This triggers the native Android system permission prompt:
+    // "Allow Perkfinity to take pictures and record video? While using the app / Only this time / Don't allow"
+    // Just like Apple's native dialog, without kicking the user into device settings!
+    try {
+      const { Capacitor, registerPlugin } = await import('@capacitor/core');
+      if (Capacitor.getPlatform() === 'android') {
+        const AndroidCameraPermission = registerPlugin<{
+          requestPermissions(): Promise<{ camera: string }>;
+          checkPermissions(): Promise<{ camera: string }>;
+          openSettings(): Promise<void>;
+        }>('AndroidCameraPermission');
+
+        const status = await AndroidCameraPermission.requestPermissions();
+        if (status?.camera !== 'granted') {
+          console.warn("[Camera] Android native permission not granted:", status?.camera);
+          setPermissionState("denied");
+          return;
+        }
+      }
+    } catch (pluginErr) {
+      console.warn("[Camera] Native Android permission handler skipped or failed:", pluginErr);
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -105,9 +130,25 @@ export default function ScanPage() {
       }
     } catch (err: any) {
       console.error("Camera error:", err?.name, err?.message);
-      // NotAllowedError → user tapped "Don't Allow" in iOS native dialog
+      // NotAllowedError → user tapped "Don't Allow" in native dialog
       // NotFoundError   → no camera found (simulator etc.)
       setPermissionState("denied");
+    }
+  }
+
+  async function openDeviceSettings() {
+    try {
+      const { Capacitor, registerPlugin } = await import('@capacitor/core');
+      if (Capacitor.getPlatform() === 'android') {
+        const AndroidCameraPermission = registerPlugin<{
+          openSettings(): Promise<void>;
+        }>('AndroidCameraPermission');
+        await AndroidCameraPermission.openSettings();
+      } else if (Capacitor.getPlatform() === 'ios') {
+        window.location.href = 'app-settings:';
+      }
+    } catch (err) {
+      console.error("[Camera] Failed to open device settings:", err);
     }
   }
 
@@ -289,10 +330,33 @@ export default function ScanPage() {
                   : 'You tapped "Don\'t Allow" when Perkfinity asked for camera access. To scan QR codes, please re-enable it in your iPhone Settings.'}
               </p>
             </div>
-            <button onClick={() => setPermissionState("idle")} style={{ ...styles.primaryBtn, background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
-              Try Again
-            </button>
-            <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.7)', fontWeight: 700 }}>Go Back</a>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', maxWidth: '280px' }}>
+              <button onClick={startCamera} style={{ ...styles.primaryBtn, width: '100%', background: isLight ? '#6D28D9' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
+                Try Again
+              </button>
+              <button
+                onClick={openDeviceSettings}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '24px',
+                  background: isLight ? '#F1F5F9' : 'rgba(255,255,255,0.1)',
+                  border: isLight ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.15)',
+                  color: isLight ? '#334155' : '#fff',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                ⚙️ Open App Settings
+              </button>
+            </div>
+            <a href="/" style={{ ...styles.cancelLink, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.7)', fontWeight: 700, marginTop: '0.25rem' }}>Go Back</a>
           </div>
         </div>
 

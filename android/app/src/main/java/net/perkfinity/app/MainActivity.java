@@ -11,7 +11,8 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(AndroidCameraPermissionPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Enable Android Autofill Framework (API 26+) on the Capacitor WebView.
