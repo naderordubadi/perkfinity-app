@@ -34,8 +34,8 @@ export default function BottomNav() {
     }
   }
 
-  // Poll unread notification count — hooks must run unconditionally,
-  // but we skip the actual fetch when the nav is hidden.
+  // Check unread notification count on mount and tab switch.
+  // Hooks must run unconditionally, but we skip the actual fetch when the nav is hidden.
   useEffect(() => {
     if (isHidden) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('pf_user_token') : null;
@@ -50,8 +50,6 @@ export default function BottomNav() {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 60000);
-    return () => clearInterval(interval);
   }, [pathname, isHidden]);
 
   // Early return AFTER all hooks (Rules of Hooks requirement).
