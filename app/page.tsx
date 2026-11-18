@@ -321,14 +321,15 @@ export default function Home() {
 
   const handleMapClick = (addr: string, merchantId?: string | null) => {
     const isIos = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (merchantId) {
-      trackOutboundClick(merchantId, 'map', addr, 'app_map_click', platform);
-    }
     if (isIos) {
       setMapChoiceAddress(addr);
       setMapChoiceMerchantId(merchantId || null);
     } else {
-      window.open(`https://maps.google.com/maps?q=${encodeURIComponent(addr)}`, '_blank');
+      const url = `https://maps.google.com/maps?q=${encodeURIComponent(addr)}`;
+      if (merchantId) {
+        trackOutboundClick(merchantId, 'map_directions', url, 'app_map_click', platform);
+      }
+      window.open(url, '_blank');
     }
   };
 
@@ -991,7 +992,7 @@ export default function Home() {
                     {!isOnline && joinModal.store_address && (
                       isMobile
                         ? <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.5)', marginTop: '3px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><IconMapPin size={13} /> {joinModal.store_address}</div>
-                        : <div onClick={() => { if (mapsUrl) { trackOutboundClick(joinModal.id, 'map', mapsUrl, 'app_merchant_modal', platform); window.open(mapsUrl, '_blank'); } }} style={{ fontSize: '0.78rem', color: isLight ? '#6D28D9' : '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><IconMapPin size={13} /> {joinModal.store_address}</div>
+                        : <div onClick={() => { if (mapsUrl) { trackOutboundClick(joinModal.id, 'map_directions', mapsUrl, 'app_merchant_modal', platform); window.open(mapsUrl, '_blank'); } }} style={{ fontSize: '0.78rem', color: isLight ? '#6D28D9' : '#8B5CF6', marginTop: '3px', cursor: mapsUrl ? 'pointer' : 'default', textDecoration: mapsUrl ? 'underline' : 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><IconMapPin size={13} /> {joinModal.store_address}</div>
                     )}
                     {joinModal.discount && <div style={{ fontSize: '0.75rem', color: isLight ? '#15803D' : '#86EFAC', marginTop: '2px', fontWeight: 700 }}>{joinModal.discount}</div>}
                     {(joinModal.public_phone || joinModal.public_email) && (
@@ -1461,7 +1462,7 @@ export default function Home() {
             <button
               onClick={() => {
                 const url = `https://maps.apple.com/?q=${encodeURIComponent(mapChoiceAddress)}`;
-                if (mapChoiceMerchantId) trackOutboundClick(mapChoiceMerchantId, 'map', url, 'app_map_sheet', platform);
+                if (mapChoiceMerchantId) trackOutboundClick(mapChoiceMerchantId, 'map_directions', url, 'app_map_sheet', platform);
                 setMapChoiceAddress(null);
                 window.open(url, '_blank');
               }}
@@ -1472,7 +1473,7 @@ export default function Home() {
             <button
               onClick={() => {
                 const url = `https://maps.google.com/maps?q=${encodeURIComponent(mapChoiceAddress)}`;
-                if (mapChoiceMerchantId) trackOutboundClick(mapChoiceMerchantId, 'map', url, 'app_map_sheet', platform);
+                if (mapChoiceMerchantId) trackOutboundClick(mapChoiceMerchantId, 'map_directions', url, 'app_map_sheet', platform);
                 setMapChoiceAddress(null);
                 window.open(url, '_blank');
               }}

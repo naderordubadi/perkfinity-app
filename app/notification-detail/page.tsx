@@ -259,7 +259,7 @@ function OfferCard({ offer, platform, router }: OfferCardProps) {
             onClick={(e) => {
               e.stopPropagation();
               if (mapsUrl) {
-                trackOutboundClick(offer.merchant_id, 'map', mapsUrl, 'app_notification', platform);
+                trackOutboundClick(offer.merchant_id, 'map_directions', mapsUrl, 'app_notification', platform);
                 window.open(mapsUrl, '_blank');
               }
             }}
