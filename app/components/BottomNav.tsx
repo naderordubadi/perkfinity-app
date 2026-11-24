@@ -34,6 +34,27 @@ export default function BottomNav() {
     }
   }
 
+  // Track app backgrounding timestamp across all tabs so >15 min background inactivity resets Home to default feed.
+  useEffect(() => {
+    const SESSION_TTL_MS = 15 * 60 * 1000;
+    const onVis = () => {
+      try {
+        if (document.visibilityState === 'hidden') {
+          sessionStorage.setItem('pf_home_hidden_at', String(Date.now()));
+        } else if (document.visibilityState === 'visible') {
+          const hiddenAtRaw = sessionStorage.getItem('pf_home_hidden_at');
+          sessionStorage.removeItem('pf_home_hidden_at');
+          if (hiddenAtRaw && Date.now() - Number(hiddenAtRaw) > SESSION_TTL_MS) {
+            sessionStorage.removeItem('pf_home_view_session');
+            window.dispatchEvent(new CustomEvent('pf-home-tab-reset'));
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   // Check unread notification count on mount and tab switch.
   // Hooks must run unconditionally, but we skip the actual fetch when the nav is hidden.
   useEffect(() => {
@@ -105,6 +126,12 @@ export default function BottomNav() {
         <Link
           key={tab.href}
           href={tab.href}
+          onClick={(e) => {
+            if (tab.href === "/" && pathname === "/") {
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent("pf-home-tab-reset"));
+            }
+          }}
           className={`nav-item${tab.match(pathname) ? " active" : ""}`}
           style={{ position: "relative" }}
         >

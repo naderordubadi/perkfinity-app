@@ -193,6 +193,63 @@ function getCategoryIcon(cat: string) {
   }
 }
 
+const SPLIT_VIEW_MEDIA_QUERY =
+  '(horizontal-viewport-segments: 2), (min-width: 760px) and (min-height: 320px) and (orientation: landscape), (min-width: 900px) and (min-height: 500px)';
+const HOME_VIEW_SESSION_KEY = 'pf_home_view_session';
+const HOME_HIDDEN_AT_KEY = 'pf_home_hidden_at';
+const HOME_SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes background inactivity resets to fresh Home
+
+interface HomeViewSessionState {
+  viewMode: 'list' | 'map';
+  isMapExpanded: boolean;
+  userToggled: boolean;
+  updatedAt: number;
+}
+
+function readHomeViewSession(): HomeViewSessionState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const hiddenAtRaw = sessionStorage.getItem(HOME_HIDDEN_AT_KEY);
+    if (hiddenAtRaw && Date.now() - Number(hiddenAtRaw) > HOME_SESSION_TTL_MS) {
+      sessionStorage.removeItem(HOME_VIEW_SESSION_KEY);
+      sessionStorage.removeItem(HOME_HIDDEN_AT_KEY);
+      return null;
+    }
+    const raw = sessionStorage.getItem(HOME_VIEW_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as HomeViewSessionState;
+    if (!parsed || (parsed.viewMode !== 'list' && parsed.viewMode !== 'map')) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeHomeViewSession(viewMode: 'list' | 'map', isMapExpanded: boolean, userToggled: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: HomeViewSessionState = {
+      viewMode,
+      isMapExpanded,
+      userToggled,
+      updatedAt: Date.now(),
+    };
+    sessionStorage.setItem(HOME_VIEW_SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
+function clearHomeViewSession() {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(HOME_VIEW_SESSION_KEY);
+    sessionStorage.removeItem(HOME_HIDDEN_AT_KEY);
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
 export default function Home() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
@@ -256,13 +313,43 @@ export default function Home() {
     }
   };
 
+  const applyUserViewChoice = (nextMode: 'list' | 'map', nextExpanded = false) => {
+    const splitDefault =
+      typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia(SPLIT_VIEW_MEDIA_QUERY).matches
+        : false;
+    const defaultMode: 'list' | 'map' = splitDefault ? 'map' : 'list';
+    const isCustom = nextMode !== defaultMode || nextExpanded;
+
+    userToggledMapRef.current = isCustom;
+    setIsMapExpanded(nextExpanded);
+    setViewMode(nextMode);
+
+    if (isCustom) {
+      writeHomeViewSession(nextMode, nextExpanded, true);
+    } else {
+      clearHomeViewSession();
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     // Default 50/50 Split View on Horizontal Duo, Desktop, Tablets, and regular iPhones/Androids in landscape
     // (excludes portrait phones and very short/compact screens < 760px wide or < 320px tall).
-    const splitMq = window.matchMedia(
-      '(horizontal-viewport-segments: 2), (min-width: 760px) and (min-height: 320px) and (orientation: landscape), (min-width: 900px) and (min-height: 500px)'
-    );
+    const splitMq = window.matchMedia(SPLIT_VIEW_MEDIA_QUERY);
+
+    // Restore active tab-switch session preference if within 15-minute session window
+    const savedSession = readHomeViewSession();
+    try { sessionStorage.removeItem(HOME_HIDDEN_AT_KEY); } catch { /* ignore */ }
+    if (savedSession && savedSession.userToggled) {
+      userToggledMapRef.current = true;
+      const hasDuo = Boolean(window.matchMedia && window.matchMedia('(horizontal-viewport-segments: 2)').matches);
+      const currentlyWide = hasDuo || (window.innerWidth >= 760 && window.innerHeight >= 320);
+      setIsMapExpanded(currentlyWide ? Boolean(savedSession.isMapExpanded) : false);
+      setViewMode(savedSession.viewMode);
+      writeHomeViewSession(savedSession.viewMode, currentlyWide ? Boolean(savedSession.isMapExpanded) : false, true);
+    }
+
     const syncViewport = () => {
       const hasDuoSegments = Boolean(window.matchMedia && window.matchMedia('(horizontal-viewport-segments: 2)').matches);
       const wide = hasDuoSegments || (window.innerWidth >= 760 && window.innerHeight >= 320);
@@ -280,15 +367,30 @@ export default function Home() {
         }
       }
     };
+
+    const resetHomeToDefault = (scrollTop = false) => {
+      clearHomeViewSession();
+      userToggledMapRef.current = false;
+      setIsMapExpanded(false);
+      setViewMode(splitMq.matches ? 'map' : 'list');
+      if (scrollTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    const onHomeTabReset = () => resetHomeToDefault(true);
+
     syncViewport();
     window.addEventListener('resize', syncViewport);
     window.addEventListener('orientationchange', syncViewport);
+    window.addEventListener('pf-home-tab-reset', onHomeTabReset);
     if (typeof splitMq.addEventListener === 'function') {
       splitMq.addEventListener('change', syncViewport);
     }
     return () => {
       window.removeEventListener('resize', syncViewport);
       window.removeEventListener('orientationchange', syncViewport);
+      window.removeEventListener('pf-home-tab-reset', onHomeTabReset);
       if (typeof splitMq.removeEventListener === 'function') {
         splitMq.removeEventListener('change', syncViewport);
       }
@@ -818,9 +920,7 @@ export default function Home() {
 
           <button
             onClick={() => {
-              userToggledMapRef.current = true;
-              setIsMapExpanded(false);
-              setViewMode(prev => prev === 'list' ? 'map' : 'list');
+              applyUserViewChoice(viewMode === 'list' ? 'map' : 'list', false);
             }}
             style={{
               background: isLight ? '#0F172A' : '#8B5CF6',
@@ -1150,7 +1250,7 @@ export default function Home() {
                 hasActualGps={!!gpsCoords}
                 onRequestGps={() => requestUserGps(true)}
                 onOpenMerchant={(m) => handleJoin(m)}
-                onSwitchToList={() => setViewMode('list')}
+                onSwitchToList={() => applyUserViewChoice('list', false)}
                 isOnlineFilterOnly={activeFilters.has('online')}
                 hasActiveSearch={!!query}
                 height={showFilters
@@ -1178,7 +1278,7 @@ export default function Home() {
                     hasActualGps={!!gpsCoords}
                     onRequestGps={() => requestUserGps(true)}
                     onOpenMerchant={(m) => handleJoin(m)}
-                    onSwitchToList={() => { setIsMapExpanded(false); setViewMode('list'); }}
+                    onSwitchToList={() => applyUserViewChoice('list', false)}
                     isOnlineFilterOnly={activeFilters.has('online')}
                     hasActiveSearch={!!query}
                     hoveredMerchantId={hoveredMerchantId}
@@ -1186,7 +1286,7 @@ export default function Home() {
                     height={wideMapHeight}
                     allowFullPage={true}
                     isFullPage={isMapExpanded}
-                    onToggleFullPage={() => setIsMapExpanded(prev => !prev)}
+                    onToggleFullPage={() => applyUserViewChoice('map', !isMapExpanded)}
                   />
                 </div>
               </div>
