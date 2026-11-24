@@ -21,19 +21,27 @@ export default function AuthPage() {
   const [hasSavedCred, setHasSavedCred] = useState<{u:string;p:string}|null>(null);
   const router = useRouter();
 
-  // Detect platform on mount — redirect web visitors to download page
+  // Detect platform on mount — redirect web visitors to download page (except local dev)
   useEffect(() => {
+    const isLocalDev =
+      process.env.NODE_ENV === "development" &&
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
     import("@capacitor/core").then(({ Capacitor }) => {
       const p = Capacitor.getPlatform();
       setPlatform(p);
-      if (p === "web") {
+      if (p === "web" && !isLocalDev) {
         router.replace("/download");
       } else {
         setPlatformLoaded(true);
       }
     }).catch(() => {
-      // Can't load Capacitor — must be web
-      router.replace("/download");
+      if (isLocalDev) {
+        setPlatformLoaded(true);
+      } else {
+        router.replace("/download");
+      }
     });
   }, []);
 

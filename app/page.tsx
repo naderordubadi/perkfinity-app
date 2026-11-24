@@ -46,6 +46,14 @@ import {
   IconSmartphone,
   IconX
 } from "./components/Icons";
+import MerchantsMapView from "./components/MerchantsMapView";
+import {
+  LatLng,
+  formatDistanceMiles,
+  getZipFallbackCoords,
+  haversineMiles,
+  isFiniteCoord,
+} from "@/lib/geo";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +91,22 @@ interface Merchant {
   business_name?: string;
   address_line1?: string;
   welcome_offer_text?: string | null;
+  location_id?: string | null;
+  city?: string | null;
+  state?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  geocode_precision?: string | null;
+  locations?: Array<{
+    location_id?: string;
+    city?: string | null;
+    state?: string | null;
+    postal_code?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    geocode_precision?: string | null;
+    store_address?: string;
+  }>;
 }
 
 interface CampaignOffer {
@@ -193,8 +217,49 @@ export default function Home() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isWideViewport, setIsWideViewport] = useState(false);
+  const [gpsCoords, setGpsCoords] = useState<LatLng | null>(null);
+  const [hoveredMerchantId, setHoveredMerchantId] = useState<string | null>(null);
   const [sponsoredMerchants, setSponsoredMerchants] = useState<Merchant[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const requestUserGps = async (promptIfNeeded = false) => {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        const perm = await Geolocation.checkPermissions();
+        const granted = perm.location === 'granted' || perm.coarseLocation === 'granted';
+        if (!granted && !promptIfNeeded) return;
+        if (!granted && promptIfNeeded) {
+          const reqPerm = await Geolocation.requestPermissions();
+          if (reqPerm.location !== 'granted' && reqPerm.coarseLocation !== 'granted') return;
+        }
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 6000, maximumAge: 180000 });
+        if (pos?.coords) {
+          setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }
+      } else if (promptIfNeeded && typeof navigator !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {},
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 180000 }
+        );
+      }
+    } catch {
+      /* ignore location errors silently */
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateWidth = () => setIsWideViewport(window.innerWidth >= 768);
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const toggleFilter = (key: string) => {
     if (key === 'all') { setActiveFilters(new Set()); return; }
@@ -239,6 +304,7 @@ export default function Home() {
       const qr = localStorage.getItem('pending_qr');
       if (qr) setPendingQr(qr);
       setIsLoggedIn(!!token);
+      requestUserGps(false);
 
       const pendingCancelRaw = localStorage.getItem('pending_cancel');
       if (pendingCancelRaw) {
@@ -302,12 +368,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (sponsoredMerchants.length === 0) return;
+    if (sponsoredMerchants.length === 0 || viewMode === 'map') return;
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % (sponsoredMerchants.length + 1));
     }, 4000);
     return () => clearInterval(interval);
-  }, [sponsoredMerchants.length, currentSlide]);
+  }, [sponsoredMerchants.length, currentSlide, viewMode]);
 
   const handleSignOut = () => {
     localStorage.removeItem('pf_user_token');
@@ -423,24 +489,26 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: 'var(--text-main)', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: '12rem', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: 'var(--text-main)', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: viewMode === 'map' ? '6.75rem' : '12rem', overflowY: 'auto' }}>
 
       {/* Header Spacer */}
       <div style={{ height: 'var(--safe-top, 44px)' }} />
 
-      {/* Unified Carousel / Info Card */}
+      {/* Unified Carousel / Info Card — Auto-collapsed in Map View (Refinement #1) */}
+      {viewMode === 'list' && (
       <div style={{ padding: '0.875rem 1.5rem 1.25rem', position: 'relative' }}>
-        <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box' }}>
+        <div style={{ position: 'relative', width: '100%', height: isWideViewport ? '260px' : '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box', transition: 'height 0.2s ease' }}>
           
           {/* Slide 0: Info Card */}
           {currentSlide === 0 && (
             <div style={{
               background: isLight ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)',
-              padding: '1.25rem 1.4rem',
+              padding: isWideViewport ? '1.6rem 1.75rem' : '1.25rem 1.4rem',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
+              justifyContent: isWideViewport ? 'center' : 'space-between',
+              gap: isWideViewport ? '1.15rem' : undefined,
               boxSizing: 'border-box'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -619,9 +687,10 @@ export default function Home() {
 
         </div>
       </div>
+      )}
 
       {/* Pending QR Banner */}
-      {pendingQr && !isLoggedIn && (
+      {viewMode === 'list' && pendingQr && !isLoggedIn && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
             <div style={{
@@ -647,7 +716,7 @@ export default function Home() {
 
 
       {/* Pending Offers Banner */}
-      {isLoggedIn && pendingOffers.length > 0 && (
+      {viewMode === 'list' && isLoggedIn && pendingOffers.length > 0 && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: isLight ? '#0F172A' : 'var(--text-main)' }}>Available Perks</h3>
@@ -677,35 +746,108 @@ export default function Home() {
         </div>
       )}
 
-      {/* Merchants Section */}
-      <div style={{ padding: '0 1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: isLight ? '#0F172A' : 'var(--text-main)' }}>Participating Merchants</h3>
+      {/* Merchants Section — Single-Line Action Row (Search & Filter + See Map / See List) */}
+      <div style={{ padding: '0 1.5rem', paddingTop: viewMode === 'map' ? '0.875rem' : 0 }}>
+        {/* Hilton-Style Action Row: Collapsible Search & Filter (left) + Solid See Map / See List (right) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
+          {(() => {
+            const activeCount = (searchQuery.trim() ? 1 : 0) + activeFilters.size + (activeCategory !== 'all' ? 1 : 0);
+            const highlighted = showFilters || activeCount > 0;
+            return (
+              <button
+                onClick={() => setShowFilters(prev => !prev)}
+                style={{
+                  background: isLight ? (highlighted ? '#EDE9FE' : '#FFFFFF') : (highlighted ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.06)'),
+                  border: `1px solid ${isLight ? (highlighted ? '#6D28D9' : 'rgba(15,23,42,0.18)') : (highlighted ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.14)')}`,
+                  borderRadius: '20px',
+                  padding: '7px 14px',
+                  fontSize: '0.78rem',
+                  color: isLight ? (highlighted ? '#6D28D9' : '#0F172A') : (highlighted ? '#C4B5FD' : 'rgba(255,255,255,0.85)'),
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontFamily: 'Outfit, sans-serif',
+                  fontWeight: 700,
+                  transition: 'all 0.2s',
+                  boxShadow: isLight ? '0 2px 8px rgba(15,23,42,0.05)' : 'none',
+                }}
+              >
+                <IconSearch size={13} color={isLight ? (highlighted ? '#6D28D9' : '#475569') : (highlighted ? '#C4B5FD' : 'rgba(255,255,255,0.75)')} />
+                <span>Search &amp; Filter{activeCount > 0 ? ` (${activeCount})` : ''}</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{showFilters ? '▴' : '▾'}</span>
+              </button>
+            );
+          })()}
+
           <button
-            onClick={() => setShowFilters(prev => !prev)}
+            onClick={() => {
+              setIsMapExpanded(false);
+              setViewMode(prev => prev === 'list' ? 'map' : 'list');
+            }}
             style={{
-              background: isLight ? (showFilters ? '#EDE9FE' : '#FFFFFF') : (showFilters ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.06)'),
-              border: `1px solid ${isLight ? (showFilters ? '#6D28D9' : 'rgba(15,23,42,0.18)') : (showFilters ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)')}`,
-              borderRadius: '20px',
-              padding: '6px 14px',
-              fontSize: '0.78rem',
-              color: isLight ? (showFilters ? '#6D28D9' : '#0F172A') : (showFilters ? '#C4B5FD' : 'rgba(255,255,255,0.7)'),
+              background: isLight ? '#0F172A' : '#8B5CF6',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '8px 16px',
+              fontSize: '0.8rem',
+              color: '#FFFFFF',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               fontFamily: 'Outfit, sans-serif',
-              fontWeight: 700,
+              fontWeight: 800,
+              letterSpacing: '0.01em',
+              boxShadow: isLight ? '0 4px 12px rgba(15,23,42,0.18)' : '0 4px 14px rgba(139,92,246,0.35)',
               transition: 'all 0.2s',
-              boxShadow: isLight ? '0 2px 8px rgba(15,23,42,0.05)' : 'none',
             }}
           >
-            <IconSearch size={14} /> {showFilters ? 'Hide Filters' : 'Search & Filter'}
+            {viewMode === 'list' ? (
+              <>
+                <IconMapPin size={14} /> See Map
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>☰</span> See List
+              </>
+            )}
           </button>
         </div>
 
         {showFilters && (
-          <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div style={{ animation: 'fadeIn 0.2s ease-out', marginBottom: '0.6rem' }}>
+            {/* Search input inside collapsible Search & Filter panel */}
+            <div style={{ position: 'relative', marginBottom: '0.6rem' }}>
+              <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 1 }}>
+                <IconSearch size={16} color={isLight ? '#94A3B8' : 'rgba(255,255,255,0.35)'} />
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="Search business, city, or ZIP..."
+                style={{
+                  width: '100%',
+                  padding: '0.62rem 2.25rem 0.62rem 2.25rem',
+                  background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${searchFocused ? '#6D28D9' : (isLight ? 'rgba(15,23,42,0.16)' : 'rgba(255,255,255,0.12)')}`,
+                  borderRadius: '14px',
+                  color: isLight ? '#0F172A' : '#fff',
+                  fontSize: '0.875rem',
+                  fontFamily: 'Outfit, sans-serif',
+                  outline: 'none',
+                  boxSizing: 'border-box' as const,
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxShadow: searchFocused ? '0 0 0 3px rgba(109,40,217,0.15)' : (isLight ? '0 2px 8px rgba(15,23,42,0.04)' : 'none'),
+                }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.45)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
+              )}
+            </div>
             {/* Filter chips — Presence / Membership */}
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
               {(['all', 'nearby', 'online', 'mobile', 'joined', 'notjoined'] as const).map((key) => {
@@ -726,7 +868,7 @@ export default function Home() {
               })}
             </div>
             {/* Filter chips — Category */}
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.75rem', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
               {(['all', 'Restaurants & Dining', 'Cafes, Bakery & Desserts', 'Grocery & Gourmet Market', 'Hair & Barber Shops', 'Beauty, Spa & Wellness', 'Fitness & Movement', 'Education & Learning', 'Health & Medical', 'Retail & Boutiques', 'Professional & Financial', 'Home, Auto & Trade', 'Pet Care & Services', 'Entertainment & Recreation', 'Photography & Creative', 'Other'] as const).map((cat) => {
                 const catLabels: Record<string, string> = {
                   all: 'All Categories',
@@ -764,88 +906,95 @@ export default function Home() {
                 );
               })}
             </div>
-            {/* Search bar */}
-            <div style={{ position: 'relative', marginBottom: '1rem' }}>
-              <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', pointerEvents: 'none', zIndex: 1 }}>
-                <IconSearch size={16} color={isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)'} />
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Search merchants..."
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 2.25rem 0.6rem 2.25rem',
-                  background: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${searchFocused ? '#6D28D9' : (isLight ? 'rgba(15,23,42,0.15)' : 'rgba(255,255,255,0.1)')}`,
-                  borderRadius: '14px',
-                  color: isLight ? '#0F172A' : '#fff',
-                  fontSize: '0.875rem',
-                  fontFamily: 'Outfit, sans-serif',
-                  outline: 'none',
-                  boxSizing: 'border-box' as const,
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
-                  boxShadow: searchFocused ? '0 0 0 3px rgba(109,40,217,0.15)' : (isLight ? '0 2px 8px rgba(15,23,42,0.04)' : 'none'),
-                }}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', fontSize: '1.1rem', cursor: 'pointer', padding: 0, lineHeight: 1, zIndex: 1 }}>×</button>
-              )}
-            </div>
           </div>
         )}
-        {/* Vertical merchant list / Duo 2-Column Responsive Feed */}
-        <div className="duo-feed-grid">
-          {(() => {
-            const userZip = (() => { try { return JSON.parse(localStorage.getItem('pf_user_data') || '{}').zip_code || null; } catch { return null; } })();
-            // 1. Filter
-            const filtered = merchants.filter(m => {
-              if (activeFilters.size === 0) return true;
-              for (const f of Array.from(activeFilters)) {
-                if (f === 'nearby' && (m.business_presence === 'online' || (userZip && m.zip_code !== userZip))) return false;
-                if (f === 'online' && !['online', 'hybrid'].includes(m.business_presence || '')) return false;
-                if (f === 'mobile' && m.business_presence !== 'mobile') return false;
-                if (f === 'joined' && !m.is_member) return false;
-                if (f === 'notjoined' && !!m.is_member) return false;
+
+        {/* Unified List / Map / Wide 50-50 Split View */}
+        {(() => {
+          const userZip = (() => { try { return JSON.parse(localStorage.getItem('pf_user_data') || '{}').zip_code || null; } catch { return null; } })();
+          const effectiveUserCoords = gpsCoords || getZipFallbackCoords(userZip, merchants);
+
+          const getMerchantMiles = (m: Merchant): number | null => {
+            if (!effectiveUserCoords || m.business_presence === 'online') return null;
+            if (Array.isArray(m.locations) && m.locations.length > 0) {
+              let best: number | null = null;
+              for (const loc of m.locations) {
+                if (isFiniteCoord(loc.latitude, loc.longitude)) {
+                  const d = haversineMiles(effectiveUserCoords, { lat: Number(loc.latitude), lng: Number(loc.longitude) });
+                  if (best === null || d < best) best = d;
+                }
               }
-              return true;
-            });
-            // 1b. Category filter
-            const catFiltered = activeCategory === 'all'
-              ? filtered
-              : filtered.filter(m => m.business_category === activeCategory);
-            // 2. Search
-            const query = searchQuery.trim().toLowerCase();
-            const searched = query
-              ? catFiltered.filter(m => m.merchant_name.toLowerCase().includes(query))
-              : catFiltered;
-            // 3. Sort
-            let sorted: Merchant[];
-            if (activeFilters.size === 0 && !query) {
-              // No filter, no search — preserve initial QR-at-top order
-              sorted = searched;
-            } else if (activeFilters.has('nearby')) {
-              sorted = [...searched].sort((a, b) => {
-                const aZip = userZip && a.zip_code === userZip ? 1 : 0;
-                const bZip = userZip && b.zip_code === userZip ? 1 : 0;
-                if (aZip !== bZip) return bZip - aZip;
-                return a.merchant_name.localeCompare(b.merchant_name);
-              });
-            } else if (activeFilters.has('online') || activeFilters.has('mobile') || activeFilters.has('notjoined')) {
-              sorted = [...searched].sort((a, b) => a.merchant_name.localeCompare(b.merchant_name));
-            } else {
-              // All+search, Joined — latest offer date DESC, nulls last
-              sorted = [...searched].sort((a, b) => {
-                const aDate = a.latest_offer_at ? new Date(a.latest_offer_at).getTime() : 0;
-                const bDate = b.latest_offer_at ? new Date(b.latest_offer_at).getTime() : 0;
-                return bDate - aDate;
-              });
+              if (best !== null) return best;
             }
+            if (isFiniteCoord(m.latitude, m.longitude)) {
+              return haversineMiles(effectiveUserCoords, { lat: Number(m.latitude), lng: Number(m.longitude) });
+            }
+            return null;
+          };
+
+          // 1. Filter
+          const filtered = merchants.filter(m => {
+            if (activeFilters.size === 0) return true;
+            for (const f of Array.from(activeFilters)) {
+              if (f === 'nearby') {
+                if (m.business_presence === 'online') return false;
+                const miles = getMerchantMiles(m);
+                if (miles !== null) {
+                  if (miles > 20) return false;
+                } else if (userZip && m.zip_code !== userZip) {
+                  return false;
+                }
+              }
+              if (f === 'online' && !['online', 'hybrid'].includes(m.business_presence || '')) return false;
+              if (f === 'mobile' && m.business_presence !== 'mobile') return false;
+              if (f === 'joined' && !m.is_member) return false;
+              if (f === 'notjoined' && !!m.is_member) return false;
+            }
+            return true;
+          });
+          // 1b. Category filter
+          const catFiltered = activeCategory === 'all'
+            ? filtered
+            : filtered.filter(m => m.business_category === activeCategory);
+          // 2. Search (Business Name, City, ZIP, or Address)
+          const query = searchQuery.trim().toLowerCase();
+          const searched = query
+            ? catFiltered.filter(m =>
+                (m.merchant_name || '').toLowerCase().includes(query) ||
+                (m.city || '').toLowerCase().includes(query) ||
+                (m.zip_code || '').toLowerCase().includes(query) ||
+                (m.store_address || '').toLowerCase().includes(query)
+              )
+            : catFiltered;
+          // 3. Sort
+          let sorted: Merchant[];
+          if (activeFilters.size === 0 && !query) {
+            sorted = searched;
+          } else if (activeFilters.has('nearby')) {
+            sorted = [...searched].sort((a, b) => {
+              const dA = getMerchantMiles(a);
+              const dB = getMerchantMiles(b);
+              if (dA !== null && dB !== null && Math.abs(dA - dB) > 0.01) return dA - dB;
+              if (dA !== null && dB === null) return -1;
+              if (dA === null && dB !== null) return 1;
+              const aZip = userZip && a.zip_code === userZip ? 1 : 0;
+              const bZip = userZip && b.zip_code === userZip ? 1 : 0;
+              if (aZip !== bZip) return bZip - aZip;
+              return a.merchant_name.localeCompare(b.merchant_name);
+            });
+          } else if (activeFilters.has('online') || activeFilters.has('mobile') || activeFilters.has('notjoined')) {
+            sorted = [...searched].sort((a, b) => a.merchant_name.localeCompare(b.merchant_name));
+          } else {
+            sorted = [...searched].sort((a, b) => {
+              const aDate = a.latest_offer_at ? new Date(a.latest_offer_at).getTime() : 0;
+              const bDate = b.latest_offer_at ? new Date(b.latest_offer_at).getTime() : 0;
+              return bDate - aDate;
+            });
+          }
+
+          const renderListCards = () => {
             if (merchants.length === 0) return <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1rem 0' }}>Loading merchants...</div>;
-            if (sorted.length === 0) return <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1rem 0' }}>{query ? `No merchants found for “${searchQuery}”.` : 'No merchants match this filter.'}</div>;
+            if (sorted.length === 0) return <div style={{ color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '1rem 0' }}>{query ? `No merchants found for “${searchQuery}”.` : 'No merchants match this filter.'}</div>;
             return sorted.map((m, i) => {
               const isOnline = m.business_presence === 'online';
               const isMobile = m.business_presence === 'mobile';
@@ -868,11 +1017,16 @@ export default function Home() {
                 }
               }
 
+              const distLabel = formatDistanceMiles(getMerchantMiles(m));
+              const isHovered = hoveredMerchantId === m.id;
+
               const cardBg = isLight
                 ? (hasOffer ? '#F5F3FF' : '#FFFFFF')
                 : (hasOffer ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.03)');
 
-              const cardBorder = isLight
+              const cardBorder = isHovered
+                ? '1.5px solid #8B5CF6'
+                : isLight
                 ? (hasOffer ? '1px solid rgba(109,40,217,0.3)' : '1px solid rgba(15,23,42,0.12)')
                 : (hasOffer ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.08)');
 
@@ -880,7 +1034,13 @@ export default function Home() {
               const logoBorder = isLight ? '1px solid #DDD6FE' : '1px solid rgba(139,92,246,0.3)';
 
               return (
-                <div key={i} onClick={() => handleJoin(m)} style={{ padding: '0.875rem 1rem', background: cardBg, borderRadius: '16px', border: cardBorder, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden', boxShadow: isLight ? '0 4px 14px rgba(15,23,42,0.04)' : 'none' }}>
+                <div
+                  key={m.id || i}
+                  onClick={() => handleJoin(m)}
+                  onMouseEnter={() => setHoveredMerchantId(m.id)}
+                  onMouseLeave={() => setHoveredMerchantId(null)}
+                  style={{ flexShrink: 0, padding: '0.875rem 1rem', background: cardBg, borderRadius: '16px', border: cardBorder, display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', position: 'relative', overflow: 'hidden', boxShadow: isLight ? '0 4px 14px rgba(15,23,42,0.04)' : 'none', transition: 'border-color 0.15s ease' }}
+                >
                   {hasOffer && <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: 'linear-gradient(180deg,#8B5CF6,#6BC17A)', borderRadius: '3px 0 0 3px' }} />}
                   <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: logoBg, border: logoBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                     {m.logo_url ? (
@@ -916,19 +1076,89 @@ export default function Home() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#fff' }}>{m.merchant_name}</div>
                     {displayWebsite && <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayWebsite}</div>}
-                    {displayAddress && <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayAddress}</div>}
+                    {displayAddress && (
+                      <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : 'rgba(255,255,255,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {displayAddress}
+                      </div>
+                    )}
                     {hasOffer && m.latest_offer_title && <div style={{ fontSize: '0.75rem', color: isLight ? '#15803D' : '#86EFAC', fontWeight: 700, marginTop: '3px' }}>{m.latest_offer_title}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                    {m.is_member && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(107,193,122,0.3)', borderRadius: '6px', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><IconCheckCircle size={10} color={isLight ? '#15803D' : '#86EFAC'} /> Member</span>}
+                    {m.is_member && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isLight ? '#15803D' : '#86EFAC', background: isLight ? '#DCFCE7' : 'rgba(107,193,122,0.15)', border: isLight ? '1px solid #86EFAC' : '1px solid rgba(139,193,122,0.3)', borderRadius: '6px', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><IconCheckCircle size={10} color={isLight ? '#15803D' : '#86EFAC'} /> Member</span>}
                     {hasOffer && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isLight ? '#6D28D9' : '#C4B5FD', background: isLight ? '#F3E8FF' : 'rgba(139,92,246,0.2)', border: isLight ? '1px solid #D8B4FE' : '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '2px 7px' }}>{m.offer_count} offer{(m.offer_count ?? 0) > 1 ? 's' : ''}</span>}
-                    <span style={{ color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>›</span>
+                    {distLabel ? (
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isLight ? '#475569' : 'rgba(255,255,255,0.75)', background: isLight ? '#F1F5F9' : 'rgba(255,255,255,0.07)', border: isLight ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.14)', borderRadius: '6px', padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                        {distLabel}
+                      </span>
+                    ) : (
+                      <span style={{ color: isLight ? '#94A3B8' : 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>›</span>
+                    )}
                   </div>
                 </div>
               );
             });
-          })()}
-        </div>
+          };
+
+          // Map Mode on Mobile (< 768px): Full Map View
+          if (viewMode === 'map' && !isWideViewport) {
+            return (
+              <MerchantsMapView
+                merchants={sorted}
+                isLight={isLight}
+                userCoords={effectiveUserCoords}
+                hasActualGps={!!gpsCoords}
+                onRequestGps={() => requestUserGps(true)}
+                onOpenMerchant={(m) => handleJoin(m)}
+                onSwitchToList={() => setViewMode('list')}
+                isOnlineFilterOnly={activeFilters.has('online')}
+                hasActiveSearch={!!query}
+                height={showFilters
+                  ? 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 300px)'
+                  : 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 172px)'}
+              />
+            );
+          }
+
+          // Map Mode on Wide Screens (>= 768px, e.g. Unfolded iPhone Duo): 50/50 Split View or Full App-Width Map
+          if (viewMode === 'map' && isWideViewport) {
+            const wideMapHeight = showFilters
+              ? 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 300px)'
+              : 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 172px)';
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: isMapExpanded ? '1fr' : '1fr 1fr', gap: '1rem', alignItems: 'start' }}>
+                <div style={{ display: isMapExpanded ? 'none' : 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: wideMapHeight, overflowY: 'auto', paddingRight: '4px', paddingBottom: '1rem' }}>
+                  {renderListCards()}
+                </div>
+                <div style={{ position: 'sticky', top: '12px' }}>
+                  <MerchantsMapView
+                    merchants={sorted}
+                    isLight={isLight}
+                    userCoords={effectiveUserCoords}
+                    hasActualGps={!!gpsCoords}
+                    onRequestGps={() => requestUserGps(true)}
+                    onOpenMerchant={(m) => handleJoin(m)}
+                    onSwitchToList={() => { setIsMapExpanded(false); setViewMode('list'); }}
+                    isOnlineFilterOnly={activeFilters.has('online')}
+                    hasActiveSearch={!!query}
+                    hoveredMerchantId={hoveredMerchantId}
+                    onHoverMerchant={setHoveredMerchantId}
+                    height={wideMapHeight}
+                    allowFullPage={true}
+                    isFullPage={isMapExpanded}
+                    onToggleFullPage={() => setIsMapExpanded(prev => !prev)}
+                  />
+                </div>
+              </div>
+            );
+          }
+
+          // Default List Mode
+          return (
+            <div className="duo-feed-grid">
+              {renderListCards()}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Merchant Detail Modal */}
@@ -942,7 +1172,7 @@ export default function Home() {
             : `maps://maps.apple.com/?q=${encodeURIComponent(joinModal.store_address)}`)
           : null;
         return (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1001, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontFamily: 'Outfit, sans-serif' }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1050, background: isLight ? 'rgba(15,23,42,0.6)' : 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', fontFamily: 'Outfit, sans-serif' }}>
             <div ref={modalScrollRef} style={{ width: '100%', maxWidth: '620px', background: isLight ? '#FFFFFF' : 'linear-gradient(180deg, #1E1B4B 0%, #0F172A 100%)', borderRadius: '24px 24px 0 0', padding: '2rem 1.5rem calc(2rem + env(safe-area-inset-bottom, 0px))', border: isLight ? '1px solid rgba(15,23,42,0.14)' : '1px solid rgba(139,92,246,0.3)', borderBottom: 'none', maxHeight: '85vh', overflowY: 'auto', boxShadow: isLight ? '0 -10px 40px rgba(15,23,42,0.15)' : 'none', margin: '0 auto' }}>
 
               {/* Header row */}

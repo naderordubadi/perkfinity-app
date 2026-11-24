@@ -29,7 +29,7 @@ export default function BottomNav() {
       try {
         const raw = localStorage.getItem('pf_user_data');
         const u = raw ? JSON.parse(raw) : null;
-        isHidden = !u?.full_name || !u?.phone_number || !u?.city || !u?.zip_code;
+        isHidden = !u?.full_name || !u?.phone_number || !u?.city || !u?.zip_code || !u?.gender;
       } catch { isHidden = false; }
     }
   }

@@ -38,7 +38,8 @@ export async function getPostLoginRoute(
     !!user.full_name &&
     !!user.phone_number &&
     !!user.city &&
-    !!user.zip_code;
+    !!user.zip_code &&
+    !!user.gender;
 
   if (!profileComplete) return '/profile';
 

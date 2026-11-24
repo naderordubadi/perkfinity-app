@@ -7,11 +7,20 @@ import { getUserData, setUserData, clearUserSession } from "@/lib/user";
 import { useTheme } from "../components/ThemeProvider";
 import { IconSmartphone, IconMoon, IconSun } from "@/app/components/Icons";
 
+const GENDER_OPTIONS = [
+  "Female",
+  "Male",
+  "Non-binary",
+  "Prefer not to answer",
+] as const;
+
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [gender, setGender] = useState("");
+  const [genderError, setGenderError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -33,7 +42,27 @@ export default function ProfilePage() {
       if (data.phone_number) setPhone(data.phone_number);
       if (data.city) setCity(data.city);
       if (data.zip_code) setZipCode(data.zip_code);
+      if (data.gender) {
+        setGender(data.gender);
+      } else {
+        setGender("");
+      }
     }
+
+    // Refresh profile silently from backend so cached localStorage stays in sync
+    fetchApi("/consumers/profile")
+      .then((res) => {
+        const fresh = res?.data?.user;
+        if (fresh) {
+          setUserData({ ...(getUserData() || {}), ...fresh, gender: fresh.gender || "" });
+          if (fresh.full_name) setFullName(fresh.full_name);
+          if (fresh.phone_number) setPhone(fresh.phone_number);
+          if (fresh.city) setCity(fresh.city);
+          if (fresh.zip_code) setZipCode(fresh.zip_code);
+          setGender(fresh.gender || "");
+        }
+      })
+      .catch(() => { /* non-blocking offline fallback */ });
   }, [router]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,17 +81,24 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !phone || !city || !zipCode) {
-      return setError("All fields are required");
+    if (!fullName.trim() || !phone || !city.trim() || !zipCode) {
+      return setError("Please fill out your name, phone number, city, and ZIP code.");
     }
-    
+
     if (zipCode.length !== 5 || !/^\d+$/.test(zipCode)) {
       return setError("Please enter a valid 5-digit ZIP code");
     }
-    
+
     if (phone.length !== 12) {
       return setError("Please enter a valid 10-digit phone number");
     }
+
+    if (!gender) {
+      setGenderError(true);
+      return setError("Please select a Gender option to continue.");
+    }
+
+    setGenderError(false);
 
     try {
       setLoading(true);
@@ -74,7 +110,8 @@ export default function ProfilePage() {
           full_name: fullName,
           phone_number: phone,
           city: city,
-          zip_code: zipCode
+          zip_code: zipCode,
+          gender: gender
         })
       });
       
@@ -84,7 +121,8 @@ export default function ProfilePage() {
         full_name: fullName,
         phone_number: phone,
         city: city,
-        zip_code: zipCode
+        zip_code: zipCode,
+        gender: gender
       });
       
       router.push("/permissions");
@@ -131,8 +169,6 @@ export default function ProfilePage() {
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {error && <div style={{ color: '#FCA5A5', fontSize: '0.875rem', background: 'rgba(252, 165, 165, 0.1)', padding: '12px', borderRadius: '8px' }}>{error}</div>}
-          
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Full Name</label>
             <input type="text" placeholder="Jane Doe" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} required />
@@ -154,6 +190,64 @@ export default function ProfilePage() {
               <input type="text" placeholder="78701" maxLength={5} value={zipCode} onChange={e => setZipCode(e.target.value.replace(/\D/g, ''))} style={inputStyle} required />
             </div>
           </div>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            padding: genderError ? '0.65rem' : 0,
+            borderRadius: '16px',
+            border: genderError ? '1.5px solid #F87171' : 'none',
+            background: genderError ? 'rgba(248, 113, 113, 0.07)' : 'transparent',
+            transition: 'all 0.2s ease'
+          }}>
+            <label style={{ fontSize: '0.875rem', color: genderError ? '#FCA5A5' : 'var(--text-muted)', fontWeight: genderError ? 700 : 400 }}>
+              Gender {genderError ? '— Please select one' : ''}
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+              {GENDER_OPTIONS.map((option) => {
+                const selected = gender === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setGender(option);
+                      setGenderError(false);
+                      if (error === "Please select a Gender option to continue.") setError("");
+                    }}
+                    style={{
+                      padding: '0.85rem 0.6rem',
+                      borderRadius: '14px',
+                      background: selected
+                        ? (isLight ? 'rgba(109, 40, 217, 0.1)' : 'rgba(139, 92, 246, 0.22)')
+                        : 'var(--input-bg)',
+                      border: selected
+                        ? `1.5px solid ${isLight ? '#6D28D9' : '#8B5CF6'}`
+                        : (genderError ? '1px solid rgba(248, 113, 113, 0.5)' : '1px solid var(--border)'),
+                      color: selected
+                        ? (isLight ? '#6D28D9' : '#DDD6FE')
+                        : 'var(--text-main)',
+                      fontSize: '0.86rem',
+                      fontWeight: selected ? 700 : 500,
+                      cursor: 'pointer',
+                      fontFamily: 'Outfit, sans-serif',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {error && (
+            <div role="alert" style={{ color: isLight ? '#B91C1C' : '#FCA5A5', fontSize: '0.875rem', fontWeight: 700, background: isLight ? '#FEF2F2' : 'rgba(248, 113, 113, 0.14)', border: isLight ? '1px solid #FECACA' : '1px solid rgba(248, 113, 113, 0.4)', padding: '12px 14px', borderRadius: '12px', textAlign: 'center' }}>
+              ⚠️ {error}
+            </div>
+          )}
 
           <button type="submit" disabled={loading} style={{
             marginTop: '1rem',

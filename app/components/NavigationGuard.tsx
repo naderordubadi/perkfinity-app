@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
-import { getUserData } from '@/lib/user';
+import { getUserData, setUserData } from '@/lib/user';
 import { getPostLoginRoute } from '@/lib/postLoginRoute';
 
 /**
@@ -82,7 +82,22 @@ export default function NavigationGuard() {
     }
 
     const checkGate = async () => {
-      const user = getUserData();
+      let user = getUserData();
+      // Smooth v3.1 -> v3.2 upgrade: if pre-existing user completed all 4 legacy fields
+      // before `gender` was cached in localStorage, sync from DB before gating.
+      if (user && user.full_name && user.phone_number && user.city && user.zip_code && !user.gender) {
+        try {
+          const res = await fetchApi('/consumers/profile');
+          const fresh = res?.data?.user;
+          if (fresh) {
+            user = { ...user, ...fresh };
+            setUserData(user);
+          }
+        } catch {
+          /* ignore offline sync error */
+        }
+      }
+
       const pendingQr = localStorage.getItem('pending_qr');
       
       const targetRoute = await getPostLoginRoute(user, pendingQr);
