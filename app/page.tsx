@@ -220,6 +220,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isWideViewport, setIsWideViewport] = useState(false);
+  const userToggledMapRef = useRef(false);
   const [gpsCoords, setGpsCoords] = useState<LatLng | null>(null);
   const [hoveredMerchantId, setHoveredMerchantId] = useState<string | null>(null);
   const [sponsoredMerchants, setSponsoredMerchants] = useState<Merchant[]>([]);
@@ -255,10 +256,37 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const updateWidth = () => setIsWideViewport(window.innerWidth >= 768);
+    const splitMq = window.matchMedia(
+      '(horizontal-viewport-segments: 2), (min-width: 768px) and (min-height: 560px) and (orientation: landscape)'
+    );
+    const updateWidth = () => {
+      const wide = window.innerWidth >= 768 || (window.matchMedia && window.matchMedia('(horizontal-viewport-segments: 2)').matches);
+      setIsWideViewport(wide);
+      if (!wide) {
+        setIsMapExpanded(false);
+      }
+    };
     updateWidth();
+    if (splitMq.matches) {
+      setViewMode('map');
+    }
+    const onSplitChange = (e: MediaQueryListEvent) => {
+      updateWidth();
+      if (!userToggledMapRef.current) {
+        setIsMapExpanded(false);
+        setViewMode(e.matches ? 'map' : 'list');
+      }
+    };
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    if (typeof splitMq.addEventListener === 'function') {
+      splitMq.addEventListener('change', onSplitChange);
+    }
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      if (typeof splitMq.removeEventListener === 'function') {
+        splitMq.removeEventListener('change', onSplitChange);
+      }
+    };
   }, []);
 
   const toggleFilter = (key: string) => {
@@ -367,13 +395,15 @@ export default function Home() {
     init();
   }, []);
 
+  const showTopCarousel = viewMode === 'list' || (viewMode === 'map' && isWideViewport && !isMapExpanded);
+
   useEffect(() => {
-    if (sponsoredMerchants.length === 0 || viewMode === 'map') return;
+    if (sponsoredMerchants.length === 0 || !showTopCarousel) return;
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % (sponsoredMerchants.length + 1));
     }, 4000);
     return () => clearInterval(interval);
-  }, [sponsoredMerchants.length, currentSlide, viewMode]);
+  }, [sponsoredMerchants.length, currentSlide, showTopCarousel]);
 
   const handleSignOut = () => {
     localStorage.removeItem('pf_user_token');
@@ -489,13 +519,13 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: 'var(--text-main)', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: viewMode === 'map' ? '6.75rem' : '12rem', overflowY: 'auto' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg-gradient)', display: 'flex', flexDirection: 'column', fontFamily: 'Outfit, sans-serif', color: 'var(--text-main)', opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)', paddingBottom: !showTopCarousel ? '6.75rem' : '12rem', overflowY: 'auto' }}>
 
       {/* Header Spacer */}
       <div style={{ height: 'var(--safe-top, 44px)' }} />
 
-      {/* Unified Carousel / Info Card — Auto-collapsed in Map View (Refinement #1) */}
-      {viewMode === 'list' && (
+      {/* Unified Carousel / Info Card — Visible on List & 50/50 Split View; Hidden on Full Map */}
+      {showTopCarousel && (
       <div style={{ padding: '0.875rem 1.5rem 1.25rem', position: 'relative' }}>
         <div style={{ position: 'relative', width: '100%', height: isWideViewport ? '260px' : '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box', transition: 'height 0.2s ease' }}>
           
@@ -690,7 +720,7 @@ export default function Home() {
       )}
 
       {/* Pending QR Banner */}
-      {viewMode === 'list' && pendingQr && !isLoggedIn && (
+      {showTopCarousel && pendingQr && !isLoggedIn && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px' }}>
           <Link href="/onboarding" style={{ textDecoration: 'none' }}>
             <div style={{
@@ -716,7 +746,7 @@ export default function Home() {
 
 
       {/* Pending Offers Banner */}
-      {viewMode === 'list' && isLoggedIn && pendingOffers.length > 0 && (
+      {showTopCarousel && isLoggedIn && pendingOffers.length > 0 && (
         <div style={{ padding: '0 1.5rem', marginTop: '0px', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: isLight ? '#0F172A' : 'var(--text-main)' }}>Available Perks</h3>
@@ -746,8 +776,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Merchants Section — Single-Line Action Row (Search & Filter + See Map / See List) */}
-      <div style={{ padding: '0 1.5rem', paddingTop: viewMode === 'map' ? '0.875rem' : 0 }}>
+      {/* Merchants Section — Single-Line Action Row (Search & Filter + See Map / Hide Map / See List) */}
+      <div style={{ padding: '0 1.5rem', paddingTop: !showTopCarousel ? '0.875rem' : 0 }}>
         {/* Hilton-Style Action Row: Collapsible Search & Filter (left) + Solid See Map / See List (right) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
           {(() => {
@@ -782,6 +812,7 @@ export default function Home() {
 
           <button
             onClick={() => {
+              userToggledMapRef.current = true;
               setIsMapExpanded(false);
               setViewMode(prev => prev === 'list' ? 'map' : 'list');
             }}
@@ -806,6 +837,10 @@ export default function Home() {
             {viewMode === 'list' ? (
               <>
                 <IconMapPin size={14} /> See Map
+              </>
+            ) : isWideViewport && !isMapExpanded ? (
+              <>
+                <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>☰</span> Hide Map
               </>
             ) : (
               <>
