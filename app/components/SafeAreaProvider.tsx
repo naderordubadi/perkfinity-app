@@ -18,68 +18,66 @@ import { useEffect } from "react";
 
 export default function SafeAreaProvider() {
   useEffect(() => {
-    const setInsets = async () => {
-      try {
-        const { Capacitor } = await import("@capacitor/core");
-        const platform = Capacitor.getPlatform();
+    let platform = "web";
+    let cancelled = false;
 
-        if (platform === "android") {
-          // On Android the WebView typically sits below the status bar
-          // (no overlaysWebView), so env(safe-area-inset-top) = 0.
-          // Samsung Galaxy status bars are 24-28px; 32px is a safe universal
-          // fallback that prevents any clipping on any Android device.
-          const androidStatusBarHeight = 32;
-          document.documentElement.style.setProperty(
-            "--safe-top",
-            `${androidStatusBarHeight}px`
-          );
-        } else if (platform === "ios") {
-          // iOS exposes env(safe-area-inset-top) correctly via viewport-fit=cover
-          // Fall back to 44px if it ever resolves to 0 (older devices / no notch).
-          const iosDefault = 44;
-          document.documentElement.style.setProperty(
-            "--safe-top",
-            `max(env(safe-area-inset-top, ${iosDefault}px), ${iosDefault}px)`
-          );
-        } else {
-          // Web — no status bar; a small padding for visual breathing room.
-          document.documentElement.style.setProperty("--safe-top", "16px");
-        }
+    const applyInsets = () => {
+      if (cancelled || typeof window === "undefined") return;
+      const isLandscape = window.innerWidth > window.innerHeight;
 
-        document.documentElement.style.setProperty(
-          "--safe-left",
-          "env(safe-area-inset-left, 0px)"
-        );
-        document.documentElement.style.setProperty(
-          "--safe-right",
-          "env(safe-area-inset-right, 0px)"
-        );
-        document.documentElement.style.setProperty(
-          "--safe-bottom",
-          "env(safe-area-inset-bottom, 0px)"
-        );
-      } catch {
-        // Capacitor not available (pure web build) — use CSS env() fallback.
+      if (platform === "android") {
+        // On Android the WebView typically sits below the status bar
+        // (no overlaysWebView), so env(safe-area-inset-top) = 0.
+        const androidStatusBarHeight = isLandscape ? 20 : 32;
         document.documentElement.style.setProperty(
           "--safe-top",
-          "env(safe-area-inset-top, 16px)"
+          `${androidStatusBarHeight}px`
         );
+      } else if (platform === "ios") {
+        // In portrait, iPhones have notch/Dynamic Island at top (fallback 44px).
+        // In landscape, Dynamic Island is on the side (--safe-left/--safe-right) and top inset is 0.
         document.documentElement.style.setProperty(
-          "--safe-left",
-          "env(safe-area-inset-left, 0px)"
+          "--safe-top",
+          isLandscape
+            ? "max(env(safe-area-inset-top, 0px), 10px)"
+            : "max(env(safe-area-inset-top, 44px), 44px)"
         );
-        document.documentElement.style.setProperty(
-          "--safe-right",
-          "env(safe-area-inset-right, 0px)"
-        );
-        document.documentElement.style.setProperty(
-          "--safe-bottom",
-          "env(safe-area-inset-bottom, 0px)"
-        );
+      } else {
+        document.documentElement.style.setProperty("--safe-top", "16px");
       }
+
+      document.documentElement.style.setProperty(
+        "--safe-left",
+        "env(safe-area-inset-left, 0px)"
+      );
+      document.documentElement.style.setProperty(
+        "--safe-right",
+        "env(safe-area-inset-right, 0px)"
+      );
+      document.documentElement.style.setProperty(
+        "--safe-bottom",
+        "env(safe-area-inset-bottom, 0px)"
+      );
     };
 
-    setInsets();
+    const init = async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        platform = Capacitor.getPlatform();
+      } catch {
+        platform = "web";
+      }
+      applyInsets();
+    };
+
+    init();
+    window.addEventListener("resize", applyInsets);
+    window.addEventListener("orientationchange", applyInsets);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", applyInsets);
+      window.removeEventListener("orientationchange", applyInsets);
+    };
   }, []);
 
   return null;

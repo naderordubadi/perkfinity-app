@@ -553,7 +553,7 @@ export default function MerchantsMapView({
         position: "relative",
         width: "100%",
         height,
-        minHeight: "340px",
+        minHeight: "300px",
         borderRadius: "20px",
         overflow: "hidden",
         border: isLight ? "1px solid rgba(15,23,42,0.12)" : "1px solid rgba(255,255,255,0.14)",

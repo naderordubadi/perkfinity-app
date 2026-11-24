@@ -220,7 +220,9 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isWideViewport, setIsWideViewport] = useState(false);
+  const [isTallViewport, setIsTallViewport] = useState(false);
   const userToggledMapRef = useRef(false);
+  const prevSplitEligibleRef = useRef<boolean | null>(null);
   const [gpsCoords, setGpsCoords] = useState<LatLng | null>(null);
   const [hoveredMerchantId, setHoveredMerchantId] = useState<string | null>(null);
   const [sponsoredMerchants, setSponsoredMerchants] = useState<Merchant[]>([]);
@@ -256,35 +258,39 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Default 50/50 Split View on Horizontal Duo, Desktop, Tablets, and regular iPhones/Androids in landscape
+    // (excludes portrait phones and very short/compact screens < 760px wide or < 320px tall).
     const splitMq = window.matchMedia(
-      '(horizontal-viewport-segments: 2), (min-width: 768px) and (min-height: 560px) and (orientation: landscape)'
+      '(horizontal-viewport-segments: 2), (min-width: 760px) and (min-height: 320px) and (orientation: landscape), (min-width: 900px) and (min-height: 500px)'
     );
-    const updateWidth = () => {
-      const wide = window.innerWidth >= 768 || (window.matchMedia && window.matchMedia('(horizontal-viewport-segments: 2)').matches);
+    const syncViewport = () => {
+      const hasDuoSegments = Boolean(window.matchMedia && window.matchMedia('(horizontal-viewport-segments: 2)').matches);
+      const wide = hasDuoSegments || (window.innerWidth >= 760 && window.innerHeight >= 320);
+      const splitEligible = splitMq.matches;
       setIsWideViewport(wide);
+      setIsTallViewport(window.innerHeight >= 540);
       if (!wide) {
         setIsMapExpanded(false);
       }
-    };
-    updateWidth();
-    if (splitMq.matches) {
-      setViewMode('map');
-    }
-    const onSplitChange = (e: MediaQueryListEvent) => {
-      updateWidth();
-      if (!userToggledMapRef.current) {
-        setIsMapExpanded(false);
-        setViewMode(e.matches ? 'map' : 'list');
+      if (prevSplitEligibleRef.current !== splitEligible) {
+        prevSplitEligibleRef.current = splitEligible;
+        if (!userToggledMapRef.current) {
+          setIsMapExpanded(false);
+          setViewMode(splitEligible ? 'map' : 'list');
+        }
       }
     };
-    window.addEventListener('resize', updateWidth);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
     if (typeof splitMq.addEventListener === 'function') {
-      splitMq.addEventListener('change', onSplitChange);
+      splitMq.addEventListener('change', syncViewport);
     }
     return () => {
-      window.removeEventListener('resize', updateWidth);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
       if (typeof splitMq.removeEventListener === 'function') {
-        splitMq.removeEventListener('change', onSplitChange);
+        splitMq.removeEventListener('change', syncViewport);
       }
     };
   }, []);
@@ -527,18 +533,18 @@ export default function Home() {
       {/* Unified Carousel / Info Card — Visible on List & 50/50 Split View; Hidden on Full Map */}
       {showTopCarousel && (
       <div style={{ padding: '0.875rem 1.5rem 1.25rem', position: 'relative' }}>
-        <div style={{ position: 'relative', width: '100%', height: isWideViewport ? '260px' : '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box', transition: 'height 0.2s ease' }}>
+        <div style={{ position: 'relative', width: '100%', height: (isWideViewport && isTallViewport) ? '260px' : '170px', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(139,92,246,0.35)', boxSizing: 'border-box', transition: 'height 0.2s ease' }}>
           
           {/* Slide 0: Info Card */}
           {currentSlide === 0 && (
             <div style={{
               background: isLight ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, rgba(107,193,122,0.22) 0%, rgba(59,154,82,0.15) 100%)',
-              padding: isWideViewport ? '1.6rem 1.75rem' : '1.25rem 1.4rem',
+              padding: (isWideViewport && isTallViewport) ? '1.6rem 1.75rem' : '1.25rem 1.4rem',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: isWideViewport ? 'center' : 'space-between',
-              gap: isWideViewport ? '1.15rem' : undefined,
+              justifyContent: (isWideViewport && isTallViewport) ? 'center' : 'space-between',
+              gap: (isWideViewport && isTallViewport) ? '1.15rem' : undefined,
               boxSizing: 'border-box'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -1134,7 +1140,7 @@ export default function Home() {
             });
           };
 
-          // Map Mode on Mobile (< 768px): Full Map View
+          // Map Mode on Portrait / Compact Mobile: Full Map View
           if (viewMode === 'map' && !isWideViewport) {
             return (
               <MerchantsMapView
@@ -1148,20 +1154,20 @@ export default function Home() {
                 isOnlineFilterOnly={activeFilters.has('online')}
                 hasActiveSearch={!!query}
                 height={showFilters
-                  ? 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 300px)'
-                  : 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 172px)'}
+                  ? 'max(300px, calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 300px))'
+                  : 'max(320px, calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 172px))'}
               />
             );
           }
 
-          // Map Mode on Wide Screens (>= 768px, e.g. Unfolded iPhone Duo): 50/50 Split View or Full App-Width Map
+          // Map Mode on Wide Screens (Duo, Desktop, Tablets & Regular Landscape Phones): 50/50 Split View or Full App-Width Map
           if (viewMode === 'map' && isWideViewport) {
             const wideMapHeight = showFilters
-              ? 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 300px)'
-              : 'calc(100dvh - var(--safe-top, 44px) - var(--safe-bottom, 0px) - 172px)';
+              ? 'max(300px, calc(100dvh - var(--safe-top, 12px) - var(--safe-bottom, 0px) - 250px))'
+              : 'max(330px, calc(100dvh - var(--safe-top, 12px) - var(--safe-bottom, 0px) - 140px))';
             return (
               <div style={{ display: 'grid', gridTemplateColumns: isMapExpanded ? '1fr' : '1fr 1fr', gap: '1rem', alignItems: 'start' }}>
-                <div style={{ display: isMapExpanded ? 'none' : 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: wideMapHeight, overflowY: 'auto', paddingRight: '4px', paddingBottom: '1rem' }}>
+                <div style={{ display: isMapExpanded ? 'none' : 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: wideMapHeight, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingRight: '4px', paddingBottom: '3.5rem' }}>
                   {renderListCards()}
                 </div>
                 <div style={{ position: 'sticky', top: '12px' }}>
