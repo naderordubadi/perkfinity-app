@@ -359,12 +359,12 @@ export default function ProfilePage() {
         <div style={{ textAlign: 'center', marginTop: '2.5rem', paddingBottom: '2rem' }}>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
             <button
-              onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+              onClick={() => window.open('https://www.perkfinity.net/terms-of-use', '_system')}
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
             >Terms of Use</button>
             <span style={{ margin: '0 8px' }}>•</span>
             <button
-              onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+              onClick={() => window.open('https://www.perkfinity.net/privacy-policy', '_system')}
               style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
             >Privacy Policy</button>
           </p>

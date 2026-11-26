@@ -251,15 +251,15 @@ export default function ScanPage() {
             }}>
               <p style={{ margin: 0, fontSize: '0.74rem', color: isLight ? '#15803D' : '#fff', fontWeight: 600 }}>
                 By scanning a merchant&apos;s QR code, you agree to join their exclusive local perks member list
-                and consent to receive promotional emails and notifications from the merchant and Perkfinity.
+                and consent to receive promotional emails and notifications from Perkfinity about participating merchants&apos; offers.
                 By proceeding, you agree to our{' '}
                 <button
-                  onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+                  onClick={() => window.open('https://www.perkfinity.net/privacy-policy', '_system')}
                   style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#fff', fontWeight: 800, fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                 >Privacy Policy</button>{' '}
                 and{' '}
                 <button
-                  onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+                  onClick={() => window.open('https://www.perkfinity.net/terms-of-use', '_system')}
                   style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#fff', fontWeight: 800, fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                 >Terms of Use</button>.
               </p>

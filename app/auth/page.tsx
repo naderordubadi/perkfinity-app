@@ -533,12 +533,12 @@ export default function AuthPage() {
       <p style={{ textAlign: 'center', fontSize: '0.75rem', color: isLight ? '#64748B' : 'rgba(255,255,255,0.4)', paddingBottom: '1rem', fontWeight: 500 }}>
         By continuing, you agree to Perkfinity&apos;s <br/>
         <button
-          onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+          onClick={() => window.open('https://www.perkfinity.net/terms-of-use', '_system')}
           style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
         >Terms of Use</button>
         {' '}and{' '}
         <button
-          onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+          onClick={() => window.open('https://www.perkfinity.net/privacy-policy', '_system')}
           style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#6D28D9' : 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
         >Privacy Policy</button>.
       </p>

@@ -1428,11 +1428,11 @@ export default function Home() {
                     <p style={{ margin: 0, fontSize: '0.77rem', color: isLight ? '#15803D' : '#fff', lineHeight: 1.65, fontWeight: 600 }}>
                       By joining <strong>{joinModal.merchant_name}</strong>&apos;s member list, you consent to receive promotional emails and notifications.{' '}
                       <button
-                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy', '_system')}
                         style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                       >Privacy Policy</button>{' '}&amp;{' '}
                       <button
-                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use', '_system')}
                         style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                       >Terms of Use</button>.
                     </p>
@@ -1659,11 +1659,11 @@ export default function Home() {
                     <p style={{ margin: 0, fontSize: '0.77rem', color: isLight ? '#15803D' : '#fff', lineHeight: 1.65, fontWeight: 600 }}>
                       By joining <strong>{m.merchant_name || (m as any).business_name}</strong>&apos;s member list, you consent to receive promotional emails and notifications.{' '}
                       <button
-                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy.html', '_system')}
+                        onClick={() => window.open('https://www.perkfinity.net/privacy-policy', '_system')}
                         style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                       >Privacy Policy</button>{' '}&amp;{' '}
                       <button
-                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use.html', '_system')}
+                        onClick={() => window.open('https://www.perkfinity.net/terms-of-use', '_system')}
                         style={{ background: 'none', border: 'none', padding: 0, color: isLight ? '#15803D' : '#86EFAC', fontWeight: 800, fontSize: '0.77rem', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}
                       >Terms of Use</button>.
                     </p>
